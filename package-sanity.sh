@@ -37,11 +37,9 @@
 # env BUILD=cabal GHCVER=7.8.4 CABALVER=1.24 STACK_SDIST=y
 #     STACK_YAML=stack-7.8.yaml PVP_BOUNDS=both
 
-# TODO
-# COVERAGE=y Generate coverage
-# COVERALLS=y Generate coverage report and send it to coveralls.io
-
 # cabal build can use stack ghc if GHCVER is not specified
+# TODO: an option to not use cached installs, force fresh installs of tools
+# What if we are using a tool from system path - invert path?
 
 # ---------Skip to the end for main flow of script-----------
 
@@ -121,15 +119,18 @@ help_envvar() {
 
 show_help() {
   echo "The following env variables can be passed. BUILD is mandatory."
-  help_envvar BUILD "[stack | cabal]"
+  help_envvar BUILD "[stack | cabal] Mandatory"
   help_envvar PVP_BOUNDS "Argument to stack --pvp-bounds to use for stack sdist"
   help_envvar RESOLVER "Resolver to use for stack commands"
   help_envvar STACK_YAML "Alternative stack config file to use"
-  help_envvar STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
 
   help_envvar GHCVER "[a.b.c] GHC version requested"
   help_envvar CABALVER "[a.b.c.d] Cabal version requested"
+  help_envvar STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
   help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
+
+  help_envvar COVERALLS_OPTIONS "[args] Generate coverage information and send it to coveralls.io"
+  help_envvar COVERAGE "[y] Just generate coverage information"
 
   echo
   echo "Example usage:"
@@ -157,21 +158,25 @@ check_boolean_var() {
 show_build_config() {
   check_boolean_var STACK_SDIST
   check_boolean_var DESTRUCTIVE
+  check_boolean_var COVERAGE
   echo "$1"
   show_nonempty_var BUILD
   show_nonempty_var GHCVER
-  show_nonempty_var PVP_BOUNDS
-  show_nonempty_var RESOLVER
-  show_nonempty_var STACK_YAML
+  show_nonempty_var PVP_BOUNDS # sdist options
+  show_nonempty_var RESOLVER  # stack options
+  show_nonempty_var STACK_YAML # stack options
   show_nonempty_var CABALVER
   show_nonempty_var STACK_SDIST
   show_nonempty_var DESTRUCTIVE
+  show_nonempty_var COVERAGE
+  show_nonempty_var COVERALLS
   show_nonempty_var PATH
   echo "----End build config----"
 }
 
 verify_build_config() {
   init_default BUILD stack
+  test -n "$COVERALLS_OPTIONS" && COVERAGE=y
 
   if test "$BUILD" != cabal
   then
@@ -298,6 +303,10 @@ EOF
 }
 
 ensure_cabal() {
+  # If we have to install tools like hpc-coveralls
+  # User specified PATH takes precedence
+  export PATH=$PATH:$HOME/.local/bin
+
   require_cmd cabal && cabal --version
   test -n "$CABALVER" && check_version cabal $CABALVER
   init_cabal_config
@@ -356,7 +365,7 @@ remove_pkg_executables() {
 }
 
 cabal_configure() {
-    cabal configure -v2 \
+    run_verbose_errexit cabal configure -v2 \
                      --enable-tests \
                      --enable-benchmarks \
                      --ghc-options="-O0 -Werror"
@@ -409,6 +418,7 @@ install_deps() {
       run_verbose_errexit cabal install --only-dependencies \
                     --enable-tests \
                     --enable-benchmarks \
+                    $(test -n "$COVERAGE && echo --enable-coverage") \
                     --force-reinstalls \
                     --ghc-options=-O0 \
                     --reorder-goals \
@@ -422,7 +432,9 @@ build_and_test() {
   echo "Building and testing [$1]"
   case "$BUILD" in
     stack)
-        $STACKCMD test --haddock --no-haddock-deps --ghc-options="-Werror";;
+      run_verbose_errexit $STACKCMD test \
+        $(test -n "$COVERAGE && echo --coverage") \
+        --haddock --no-haddock-deps --ghc-options="-Werror";;
     cabal)
       cabal_configure
       run_verbose_errexit cabal build
@@ -437,6 +449,19 @@ build_and_test() {
         remove_pkg_executables
       fi ;;
   esac
+}
+
+coveralls_io() {
+  if test -z "$(which hpc-coveralls)"
+  then
+    if test "$BUILD" = stack
+    then
+      run_verbose_errexit stack install hpc-coveralls
+    else
+      run_verbose_errexit cabal install hpc-coveralls
+    fi
+  fi
+  hpc-coveralls $COVERALLS_OPTIONS
 }
 
 #------------------------------------------------------------------------------
@@ -472,3 +497,4 @@ create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 cd $PACKAGE_FULL_NAME
 install_deps $PACKAGE_FULL_NAME
 build_and_test $PACKAGE_FULL_NAME $PACKAGE_NAME
+test -n $COVERALLS_OPTIONS && coveralls_io
