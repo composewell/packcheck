@@ -33,6 +33,7 @@
 
 # cabal build can use stack ghc if GHCVER is not specified
 # Be interactive and warn about auto-install etc when run from a terminal
+# or use DANGEROUS=y for such ops
 
 #------------------------------------------------------------------------------
 # Utility functions
@@ -164,16 +165,27 @@ ensure_stack() {
 
   if test -z "$(type -t stack)"
   then
+    echo "Downloading stack..."
     fetch_stack
   fi
   require_cmd stack
   # stack upgrade
   STACKCMD="stack --no-terminal"
   $STACKCMD --version
+
+  # We need cabal to retrieve the package version as well as for the solver
+  # Do not consider the resolver to install this, install the latest
+  if test -z "$(which cabal)"
+  then
+    echo "Installing cabal-install..."
+    $STACKCMD install cabal-install
+  fi
+
   if test -n "$RESOLVER"
   then
     STACKCMD="$STACKCMD --resolver $RESOLVER"
   fi
+
 }
 
 use_travis_paths() {
@@ -241,12 +253,11 @@ ensure_stack_yaml() {
     require_file $STACK_YAML
   elif test ! -e stack.yaml
   then
-    # solver needs cabal
-    #if test -z "$(type -t cabal)"
-    #then
-    # $STACKCMD install cabal-install
-    #fi
-    $STACKCMD init --solver
+    # solver seems to be broken with latest cabal
+    local SOLVER_CMD="$STACKCMD init --solver"
+    echo "Trying [$SOLVER_CMD] to generate a stack.yaml"
+    $SOLVER_CMD || die "Solver failed to generate a stack.yaml.\n\
+Please provide a working stack.yaml or use cabal build."
     require_file stack.yaml
   fi
   test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
@@ -369,7 +380,7 @@ unset CC
 
 # Show, process and verify the config
 show_build_config "----Requested build config----"
-# Anything other than "y/Y/yes/YES/Yes" is considered fals
+# Anything other than "y/Y/yes/YES/Yes" is considered false
 # Set or unset the global var for easy tests later on
 STACK_SDIST=$(use_stack_sdist)
 verify_build_config
