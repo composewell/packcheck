@@ -35,6 +35,8 @@
 # Be interactive and warn about auto-install etc when run from a terminal
 # or use DANGEROUS=y for such ops
 
+# ---------Skip to the end for main flow of script-----------
+
 #------------------------------------------------------------------------------
 # Utility functions
 #------------------------------------------------------------------------------
@@ -130,6 +132,10 @@ verify_build_config() {
   fi
 }
 
+#------------------------------------------------------------------------------
+# Stack fetch and install etc.
+#------------------------------------------------------------------------------
+
 need_stack() {
   if test "$BUILD" = stack -o -n "$STACK_SDIST"
   then
@@ -205,6 +211,10 @@ use_stack_paths() {
   unset STACKPATH
 }
 
+#------------------------------------------------------------------------------
+# Ensure ghc, cabal are available and the right versions when requested
+#------------------------------------------------------------------------------
+
 # $1: tool name
 # $2: expected version
 check_version() {
@@ -263,6 +273,10 @@ Please provide a working stack.yaml or use cabal build."
   test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
   echo "Using stack command [$STACKCMD]"
 }
+
+#------------------------------------------------------------------------------
+# Create a dist, install deps and test
+#------------------------------------------------------------------------------
 
 get_pkg_name() {
   local name=$(echo *.cabal)
@@ -373,6 +387,10 @@ build_and_test() {
       remove_pkg_executables ;;
   esac
 }
+
+#------------------------------------------------------------------------------
+# Main flow of script starts here
+#------------------------------------------------------------------------------
 
 set -e
 set -o pipefail
