@@ -170,6 +170,10 @@ ensure_stack() {
   # stack upgrade
   STACKCMD="stack --no-terminal"
   $STACKCMD --version
+  if test -n "$RESOLVER"
+  then
+    STACKCMD="$STACKCMD --resolver $RESOLVER"
+  fi
 }
 
 use_travis_paths() {
@@ -207,6 +211,10 @@ ensure_ghc() {
   if test -n "$GHCVER"
   then
     check_version ghc $GHCVER
+    # If the user specified GHCVER then use it as system-ghc
+    # Stack will still silently choose its own ghc if the ghc does not match
+    # the snapshot.
+    STACKCMD="$STACKCMD --system-ghc"
   else
     GHCVER=$(ghc --numeric-version) || exit 1
   fi
