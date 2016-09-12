@@ -83,6 +83,8 @@ require_cmd () {
   then
     echo "Required command [$1] not found in PATH [$PATH]."
     exit 1
+  else
+    echo "Using [$1] at [$(which $1)]"
   fi
 }
 
@@ -105,7 +107,7 @@ show_build_config() {
 
 # Rationalise the STACK_SDIST global var
 use_stack_sdist() {
-  case STACK_SDIST in
+  case $STACK_SDIST in
     y|Y|yes|YES|Yes) echo true ;;
     *) : ;;
   esac
@@ -124,15 +126,6 @@ verify_build_config() {
   then
     test -z "$RESOLVER" || die "RESOLVER is not meaningful in this config"
     test -z "$STACK_YAML" || die "STACK_YAML is not meaningful in this config"
-  fi
-}
-
-get_sdist_cmd() {
-  if test "$BUILD" = stack -o -n "$STACK_SDIST"
-  then
-     echo "$STACKCMD sdist"
-  else
-     echo "cabal sdist"
   fi
 }
 
@@ -166,33 +159,17 @@ fetch_stack() {
 }
 
 ensure_stack() {
-  case STACK_SDIST in
-    y|Y|yes|YES|Yes)
-      NEED_STACK=true
-      SDIST_CMD="$STACKCMD sdist" ;;
-    *) STACK_SDIST=
-      if test "$BUILD" = stack
-      then
-         SDIST_CMD="$STACKCMD sdist"
-      else
-         SDIST_CMD="cabal sdist"
-      fi ;;
-  esac
+  # User specified PATH takes precedence
+  export PATH=$PATH:$HOME/.local/bin
 
-  if test "$BUILD" = stack -o -n "$NEED_STACK"
+  if test -z "$(type -t stack)"
   then
-    # User specified PATH takes precedence
-    export PATH=$PATH:$HOME/.local/bin
-    if test -z "$(type -t stack)"
-    then
-      fetch_stack
-    fi
-    require_cmd stack
-    # stack upgrade
-    STACKCMD="stack --no-terminal"
-    echo "Using stack..."
-    $STACKCMD --version
+    fetch_stack
   fi
+  require_cmd stack
+  # stack upgrade
+  STACKCMD="stack --no-terminal"
+  $STACKCMD --version
 }
 
 use_travis_paths() {
@@ -227,7 +204,7 @@ ensure_ghc() {
   fi
   require_cmd ghc && \
     echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
-  if test -n "$GHCVER" 
+  if test -n "$GHCVER"
   then
     check_version ghc $GHCVER
   else
@@ -274,6 +251,7 @@ get_pkg_name() {
   name=${name%.cabal}
   test -f "${name}.cabal" || \
     die "Cannot determine package name. File [${name}.cabal] does not exist"
+  echo $name
 }
 
 get_pkg_full_name() {
@@ -289,15 +267,49 @@ get_pkg_full_name() {
   echo $full_name
 }
 
+remove_pkg_executables() {
+  exes=$(cabal info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
+  echo "Removing [$exes] from [$HOME/.cabal/bin]"
+  for i in $exes
+  do
+    rm -f $HOME/.cabal/bin/$i
+  done
+}
+
+cabal_configure() {
+    cabal configure -v2 \
+                     --enable-tests \
+                     --enable-benchmarks \
+                     --ghc-options="-O0 -Werror"
+}
+
 # $1: package full name (name + ver)
 create_and_unpack_pkg_dist() {
-  echo "Creating source distribution tarball for [$1]"
-
   local pkgtar=${1}.tar.gz
-  local tarpath
-  tarpath=$($STACKCMD --compiler=ghc-$GHCVER path --dist-dir)/${pkgtar} || exit 1
+  local pvp
+  local SDIST_DIR
+  local SDIST_CMD
+
+  test -n "$PVP_BOUNDS" && pvp="--pvp-bounds $PVP_BOUNDS"
+
+  if test "$BUILD" = stack
+  then
+    SDIST_CMD="$STACKCMD sdist $pvp"
+    SDIST_DIR=$($STACKCMD path --dist-dir) || exit 1
+  elif test -n "$STACK_SDIST"
+  then
+    SDIST_CMD="$STACKCMD --compiler=ghc-$GHCVER sdist $pvp"
+    SDIST_DIR=$($STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
+  else
+    cabal_configure
+    SDIST_CMD="cabal sdist"
+    SDIST_DIR=dist
+  fi
+
+  local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
-  $STACKCMD --compiler=ghc-$GHCVER sdist --pvp-bounds=both || exit 1
+  echo "Using [$SDIST_CMD] to create source distribution tarball for [$1]"
+  $SDIST_CMD || exit 1
   if test ! -f $tarpath
   then
     echo "stack sdist did not create [$tarpath]"
@@ -332,21 +344,18 @@ build_and_test() {
     stack)
         $STACKCMD test --haddock --no-haddock-deps --ghc-options="-Werror";;
     cabal)
-      cabal configure -v2 \
-                       --enable-tests \
-                       --enable-benchmarks \
-                       --ghc-options="-O0 -Werror"
+      cabal_configure
       cabal build
       cabal test
       cabal check
       cabal sdist
       cabal copy
       (cd dist && cabal install --force-reinstalls "${1}.tar.gz")
-      rm -f $HOME/.cabal/bin/$2 ;;
+      remove_pkg_executables ;;
   esac
 }
 
-#set -eux
+set -e
 set -o pipefail
 unset CC
 
@@ -369,8 +378,6 @@ show_build_config "----Using build config----"
 PACKAGE_NAME=$(get_pkg_name) || exit 1
 PACKAGE_FULL_NAME=$(get_pkg_full_name) || exit 1
 test -n "$(need_stack)" && ensure_stack_yaml
-SDIST_CMD=$(get_sdist_cmd)
-echo "Using [$SDIST_CMD] for creating source distribution of [$PACKAGE_FULL_NAME]"
 create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 cd $PACKAGE_FULL_NAME
 install_deps $PACKAGE_FULL_NAME
