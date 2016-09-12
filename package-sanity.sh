@@ -6,6 +6,13 @@
 # Uses stack to create a dist of the pkg in CURRENT DIR
 # Unpacks, builds and tests the distribution using stack or cabal
 
+# NOTE: When using stack build, if stack and cabal are not
+# found in PATH, it will install both in ~/.local/bin automatically
+# without any explicit permission. It will also install ghc via stack if
+# you are not using a system ghc in PATH or if it is not suitable for
+# building your package. When using a cabal build it will also do a cabal
+# update.
+
 # Pass the following build params via environment variables
 # BUILD=cabal | stack
 # GHCVER=x.y.z (stack build will install ghc if this is not specified)
@@ -22,6 +29,9 @@
 # Only for stack builds
 # RESOLVER=<resolver> (optional)
 # STACK_YAML=filename or path (will be created by stack init --solver if missing)
+
+# DESTRUCTIVE=y  for CI environments or if you can tolerate changes to your
+# cabal config, bin and force installing the package being tested.
 #
 # For example:
 # env BUILD=cabal GHCVER=7.8.4 CABALVER=1.24 STACK_SDIST=y
@@ -32,8 +42,6 @@
 # COVERALLS=y Generate coverage report and send it to coveralls.io
 
 # cabal build can use stack ghc if GHCVER is not specified
-# Be interactive and warn about auto-install etc when run from a terminal
-# or use DANGEROUS=y for such ops
 
 # ---------Skip to the end for main flow of script-----------
 
@@ -91,12 +99,64 @@ require_cmd () {
   fi
 }
 
+# $1: command
+function run_verbose() {
+  echo "$*"
+  /bin/bash -c "$*"
+}
+
+function run_verbose_errexit() {
+  run_verbose "$*" || die "Command [$*] failed. Exiting."
+}
+
 #------------------------------------------------------------------------------
 # Build config show and determine
 #------------------------------------------------------------------------------
 
+# $1: varname
+# $2: help text
+help_envvar() {
+  printf "%-15s: %s\n" "$1" "$2"
+}
+
+show_help() {
+  echo "The following env variables can be passed. BUILD is mandatory."
+  help_envvar BUILD "[stack | cabal]"
+  help_envvar PVP_BOUNDS "Argument to stack --pvp-bounds to use for stack sdist"
+  help_envvar RESOLVER "Resolver to use for stack commands"
+  help_envvar STACK_YAML "Alternative stack config file to use"
+  help_envvar STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
+
+  help_envvar GHCVER "[a.b.c] GHC version requested"
+  help_envvar CABALVER "[a.b.c.d] Cabal version requested"
+  help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
+
+  echo
+  echo "Example usage:"
+  echo "env BUILD=stack RESOLVER=lts-6 PVP_BOUNDS=both $0"
+  exit 1
+}
+
+required_envvar() {
+  local var=$(eval "echo \$$1")
+  test -n "$var" || show_help
+}
+
+# $1: envvar
+check_boolean_var() {
+  local var=$(eval "echo \$$1")
+  if test -n "$var" -a "$var" != y
+  then
+    echo "Error: Boolean envvar [$1] can only be empty or 'y'"
+    echo
+    show_help
+  fi
+}
+
 # $1: msg
 show_build_config() {
+  check_boolean_var STACK_SDIST
+  check_boolean_var DESTRUCTIVE
   echo "$1"
   show_nonempty_var BUILD
   show_nonempty_var GHCVER
@@ -105,15 +165,9 @@ show_build_config() {
   show_nonempty_var STACK_YAML
   show_nonempty_var CABALVER
   show_nonempty_var STACK_SDIST
+  show_nonempty_var DESTRUCTIVE
+  show_nonempty_var PATH
   echo "----End build config----"
-}
-
-# Rationalise the STACK_SDIST global var
-use_stack_sdist() {
-  case $STACK_SDIST in
-    y|Y|yes|YES|Yes) echo true ;;
-    *) : ;;
-  esac
 }
 
 verify_build_config() {
@@ -121,14 +175,14 @@ verify_build_config() {
 
   if test "$BUILD" != cabal
   then
-    test -z "$CABALVER" || die "CABALVER is meaningful only for cabal build"
-    test -z "$STACK_SDIST" || die "STACK_SDIST is meaningful only for cabal build"
+    test -z "$CABALVER" || die "Error: CABALVER is meaningful only for cabal build"
+    test -z "$STACK_SDIST" || die "Error: STACK_SDIST is meaningful only for cabal build"
   fi
 
   if test "$BUILD" = cabal -a -z "$STACK_SDIST"
   then
-    test -z "$RESOLVER" || die "RESOLVER is not meaningful in this config"
-    test -z "$STACK_YAML" || die "STACK_YAML is not meaningful in this config"
+    test -z "$RESOLVER" || die "Error: RESOLVER is not meaningful in this config"
+    test -z "$STACK_YAML" || die "Error: STACK_YAML is not meaningful in this config"
   fi
 }
 
@@ -192,14 +246,6 @@ ensure_stack() {
     STACKCMD="$STACKCMD --resolver $RESOLVER"
   fi
 
-}
-
-use_travis_paths() {
-  test -n "$GHCVER" && PATH=/opt/ghc/$GHCVER/bin:$PATH
-  if test "$BUILD" = "cabal" -a -n "$CABALVER"
-  then
-     export PATH=$HOME/.cabal/bin:/opt/cabal/$CABALVER/bin:$PATH
-  fi
 }
 
 use_stack_paths() {
@@ -342,24 +388,25 @@ create_and_unpack_pkg_dist() {
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
   echo "Using [$SDIST_CMD] to create source distribution tarball for [$1]"
-  $SDIST_CMD || exit 1
+  run_verbose_errexit $SDIST_CMD
   if test ! -f $tarpath
   then
     echo "stack sdist did not create [$tarpath]"
     exit 1
   fi
   echo "Unpacking the source distribution tarball..."
-  tar xzvf $tarpath || exit 1
+  run_verbose_errexit tar xzvf $tarpath
 }
 
 install_deps() {
   echo "Installing dependencies..."
   case "$BUILD" in
-    stack) $STACKCMD test --only-dependencies ;;
+    stack) run_verbose_errexit $STACKCMD test --only-dependencies ;;
     cabal)
       cabal --version;
       retry_cmd cabal update
-      cabal install --only-dependencies \
+      run_verbose_errexit cabal sandbox init
+      run_verbose_errexit cabal install --only-dependencies \
                     --enable-tests \
                     --enable-benchmarks \
                     --force-reinstalls \
@@ -378,13 +425,17 @@ build_and_test() {
         $STACKCMD test --haddock --no-haddock-deps --ghc-options="-Werror";;
     cabal)
       cabal_configure
-      cabal build
-      cabal test
-      cabal check
-      cabal sdist
-      cabal copy
-      (cd dist && cabal install --force-reinstalls "${1}.tar.gz")
-      remove_pkg_executables ;;
+      run_verbose_errexit cabal build
+      run_verbose_errexit cabal test
+      run_verbose_errexit cabal check
+      run_verbose_errexit cabal sdist
+
+      if test "$DESTRUCTIVE" = "y"
+      then
+        run_verbose_errexit cabal copy
+        (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
+        remove_pkg_executables
+      fi ;;
   esac
 }
 
@@ -396,22 +447,24 @@ set -e
 set -o pipefail
 unset CC
 
-# Show, process and verify the config
+test $# -eq 0 || show_help
+
+# Require at least one param so that accidentally running the script does not
+# create surprises.
+required_envvar BUILD
+
+# ---------Show, process and verify the config------------
 show_build_config "----Requested build config----"
-# Anything other than "y/Y/yes/YES/Yes" is considered false
-# Set or unset the global var for easy tests later on
-STACK_SDIST=$(use_stack_sdist)
 verify_build_config
 
-use_travis_paths
-echo "PATH is [$PATH]"
-
-# Install any tools needed
+# ---------Install any tools needed--------
+require_cmd /bin/bash
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
 test "$BUILD" = "cabal" && ensure_cabal
 show_build_config "----Using build config----"
 
+# ---------Create dist, unpack, install deps, test--------
 PACKAGE_NAME=$(get_pkg_name) || exit 1
 PACKAGE_FULL_NAME=$(get_pkg_full_name) || exit 1
 test -n "$(need_stack)" && ensure_stack_yaml
