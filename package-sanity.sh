@@ -104,6 +104,7 @@ show_help() {
   help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. pvp-bounds)"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar GHCVER "[a.b.c] GHC version (may not be enforced when using stack)"
+  help_envvar PATH "Use an explicitly set PATH for predictable builds"
   echo
   help_envvar RESOLVER "Resolver to use for stack commands"
   help_envvar STACK_YAML "Alternative stack config file to use"
@@ -159,7 +160,12 @@ show_build_config() {
 
   show_nonempty_var COVERAGE
   show_nonempty_var COVERALLS
+}
+
+show_build_env() {
+  show_nonempty_var HOME
   show_nonempty_var PATH
+  show_nonempty_var STACK_ROOT
 }
 
 need_stack() {
@@ -193,7 +199,8 @@ verify_build_config() {
       $STACK_BUILD_OPTIONS
       $(test -n "${COVERAGE}" && echo --coverage)
       $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
-EOF)
+EOF
+)
   else
     init_default CABAL_CONFIGURE_OPTIONS \
                  "-v2 \
@@ -203,7 +210,8 @@ EOF)
       $CABAL_CONFIGURE_OPTIONS
       $(test -n "$COVERAGE" && echo --enable-coverage)
       $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
-EOF)
+EOF
+)
   fi
 
   # These variables are now combined with other options so clear them
@@ -343,9 +351,12 @@ ensure_cabal() {
   # User specified PATH takes precedence
   export PATH=$PATH:$HOME/.local/bin
 
-  require_cmd cabal && cabal --version
+  require_cmd cabal
+  run_verbose cabal --version
   test -n "$CABALVER" && check_version cabal $CABALVER
-  init_cabal_config
+  test "$DESTRUCTIVE" = y && init_cabal_config
+  # For set -e to work
+  true
 }
 
 ensure_stack_yaml() {
@@ -381,11 +392,10 @@ get_pkg_full_name() {
   local pkgname
   local full_name
   pkgname=$(get_pkg_name) || exit 1
-  full_name=$(cabal info . | awk '{print $2;exit}') || exit 1
+  full_name=$(cabal info . | awk '{ if ($1 == "*") {print $2; exit}}') || die "cabal info failed"
   if test "${pkgname}${full_name#$pkgname}" != "${full_name}"
   then
-    echo "Cabal file name does not match the package name."
-    exit 1
+    die "Inconsistent package name [$pkgname] and package full name [$full_name]"
   fi
   echo $full_name
 }
@@ -409,6 +419,12 @@ create_and_unpack_pkg_dist() {
   local opts
   local SDIST_DIR
   local SDIST_CMD
+
+  if test "$BUILD" = cabal
+  then
+    echo "cabal update"
+    retry_cmd cabal update
+  fi
 
   test -n "$SDIST_OPTIONS" && opts="$SDIST_OPTIONS"
 
@@ -447,8 +463,6 @@ install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD test --only-dependencies ;;
     cabal)
-      cabal --version;
-      retry_cmd cabal update
       run_verbose_errexit cabal sandbox init
       run_verbose_errexit cabal install --only-dependencies \
             --force-reinstalls \
@@ -506,13 +520,31 @@ test $# -eq 0 || show_help
 required_envvar BUILD
 
 # ---------Show, process and verify the config------------
-show_step "Requested build config"
+show_step "Requested build config and environment"
 show_build_config
+echo
+show_build_env
+
+# Determine home independent of the environment
+export HOME=$(echo ~)
+
+show_step "Check basic tools"
+require_cmd awk
+require_cmd /bin/bash
+require_cmd cat
+require_cmd curl
+require_cmd mkdir
+require_cmd printf
+require_cmd rm
+require_cmd sleep
+require_cmd tar
+require_cmd which
+
 verify_build_config
 
 # ---------Install any tools needed--------
 show_step "Install tools needed for build"
-require_cmd /bin/bash
+
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
 test "$BUILD" = "cabal" && ensure_cabal
@@ -522,8 +554,12 @@ show_build_config
 
 # ---------Create dist, unpack, install deps, test--------
 show_step "Create source distribution and unpack it"
-PACKAGE_NAME=$(get_pkg_name) || exit 1
-PACKAGE_FULL_NAME=$(get_pkg_full_name) || exit 1
+PACKAGE_NAME=$(get_pkg_name) || die "PACKAGE_NAME"
+echo "Package name: [$PACKAGE_NAME]"
+
+PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
+echo "Package name and version: [$PACKAGE_FULL_NAME]"
+
 test -n "$(need_stack)" && ensure_stack_yaml
 create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 
