@@ -117,8 +117,7 @@ show_help() {
   # create and sdist and once to build the sdist. For a CI DESTRUCTIVE mode
   # makes more sense while for a local user machine if the cabal config matters
   # then non-destructive will be safe.
-  # XXX change the name to CABAL_DESTRUCTIVE
-  help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
+  help_envvar CABAL_DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
   echo
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
@@ -147,7 +146,7 @@ check_boolean_var() {
 
 show_build_config() {
   check_boolean_var USE_STACK_SDIST
-  check_boolean_var DESTRUCTIVE
+  check_boolean_var CABAL_DESTRUCTIVE
   check_boolean_var COVERAGE
 
   show_nonempty_var BUILD
@@ -161,7 +160,7 @@ show_build_config() {
   show_nonempty_var GHCVER
   show_nonempty_var CABALVER
   show_nonempty_var USE_STACK_SDIST
-  show_nonempty_var DESTRUCTIVE
+  show_nonempty_var CABAL_DESTRUCTIVE
   show_nonempty_var CABAL_CONFIGURE_OPTIONS
 
   show_nonempty_var COVERAGE
@@ -232,7 +231,7 @@ EOF
     cabal_only_var CABALVER
     cabal_only_var USE_STACK_SDIST
     cabal_only_var CABAL_CONFIGURE_OPTIONS
-    cabal_only_var DESTRUCTIVE
+    cabal_only_var CABAL_DESTRUCTIVE
   fi
 
   if test -z "$(need_stack)"
@@ -360,7 +359,7 @@ ensure_cabal() {
   require_cmd cabal
   run_verbose cabal --version
   test -n "$CABALVER" && check_version cabal $CABALVER
-  test "$DESTRUCTIVE" = y && init_cabal_config
+  test "$CABAL_DESTRUCTIVE" = y && init_cabal_config
   # For set -e to work
   true
 }
@@ -416,7 +415,7 @@ remove_pkg_executables() {
 }
 
 install_cabal_deps() {
-  if test "$DESTRUCTIVE" != "y"
+  if test "$CABAL_DESTRUCTIVE" != "y"
   then
     run_verbose_errexit cabal sandbox init
   fi
@@ -501,7 +500,7 @@ build_and_test() {
       run_verbose_errexit cabal check
       run_verbose_errexit cabal sdist
 
-      if test "$DESTRUCTIVE" = "y"
+      if test "$CABAL_DESTRUCTIVE" = "y"
       then
         run_verbose_errexit cabal copy
         (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
