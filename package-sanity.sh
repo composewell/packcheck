@@ -528,7 +528,6 @@ coveralls_io() {
 
 set -e
 set -o pipefail
-unset CC
 
 test $# -eq 0 || show_help
 
