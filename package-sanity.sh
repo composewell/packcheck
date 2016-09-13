@@ -120,7 +120,9 @@ help_envvar() {
 show_help() {
   echo "The following env variables can be passed. BUILD is mandatory."
   help_envvar BUILD "[stack | cabal] Mandatory"
+  help_envvar GHC_OPTIONS "[options] Specify GHC options to use"
   help_envvar PVP_BOUNDS "Argument to stack --pvp-bounds to use for stack sdist"
+
   help_envvar RESOLVER "Resolver to use for stack commands"
   help_envvar STACK_YAML "Alternative stack config file to use"
 
@@ -129,7 +131,7 @@ show_help() {
   help_envvar STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
   help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
 
-  help_envvar COVERALLS_OPTIONS "[args] Generate coverage information and send it to coveralls.io"
+  help_envvar COVERALLS_OPTIONS "[options] Generate coverage information and send it to coveralls.io"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
   echo
@@ -161,6 +163,7 @@ show_build_config() {
   check_boolean_var COVERAGE
   echo "$1"
   show_nonempty_var BUILD
+  show_nonempty_var GHC_OPTIONS
   show_nonempty_var GHCVER
   show_nonempty_var PVP_BOUNDS # sdist options
   show_nonempty_var RESOLVER  # stack options
@@ -366,9 +369,9 @@ remove_pkg_executables() {
 
 cabal_configure() {
     run_verbose_errexit cabal configure -v2 \
-                     --enable-tests \
-                     --enable-benchmarks \
-                     --ghc-options="-O0 -Werror"
+           --enable-tests \
+           --enable-benchmarks \
+           $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
 }
 
 # $1: package full name (name + ver)
@@ -416,13 +419,13 @@ install_deps() {
       retry_cmd cabal update
       run_verbose_errexit cabal sandbox init
       run_verbose_errexit cabal install --only-dependencies \
-                    --enable-tests \
-                    --enable-benchmarks \
-                    $(test -n "$COVERAGE && echo --enable-coverage") \
-                    --force-reinstalls \
-                    --ghc-options=-O0 \
-                    --reorder-goals \
-                    --max-backjumps=-1 ;;
+            --enable-tests \
+            --enable-benchmarks \
+            $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\") \
+            $(test -n "$COVERAGE" && echo --enable-coverage) \
+            --force-reinstalls \
+            --reorder-goals \
+            --max-backjumps=-1 ;;
   esac
 }
 
@@ -433,8 +436,9 @@ build_and_test() {
   case "$BUILD" in
     stack)
       run_verbose_errexit $STACKCMD test \
-        $(test -n "$COVERAGE && echo --coverage") \
-        --haddock --no-haddock-deps --ghc-options="-Werror";;
+        $(test -n "$COVERAGE" && echo --coverage) \
+        $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\") \
+        --haddock --no-haddock-deps ;;
     cabal)
       cabal_configure
       run_verbose_errexit cabal build
@@ -497,4 +501,4 @@ create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 cd $PACKAGE_FULL_NAME
 install_deps $PACKAGE_FULL_NAME
 build_and_test $PACKAGE_FULL_NAME $PACKAGE_NAME
-test -n $COVERALLS_OPTIONS && coveralls_io
+test -n "$COVERALLS_OPTIONS" && coveralls_io
