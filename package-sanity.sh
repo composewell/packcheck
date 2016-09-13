@@ -434,6 +434,12 @@ create_and_unpack_pkg_dist() {
     echo "stack sdist did not create [$tarpath]"
     exit 1
   fi
+
+  # Unpack the tar inside .sanity-test directory
+  mkdir -p .sanity-test || exit 1
+  echo "cd .sanity-test"
+  cd .sanity-test || exit 1
+  test "${tarpath:0:1}" == / || tarpath=../$tarpath
   run_verbose_errexit tar xzvf $tarpath
 }
 
@@ -521,6 +527,7 @@ PACKAGE_FULL_NAME=$(get_pkg_full_name) || exit 1
 test -n "$(need_stack)" && ensure_stack_yaml
 create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 
+# Note the above functions leaves us in the .sanity-test dir
 show_step "Install dependencies"
 cd $PACKAGE_FULL_NAME
 install_deps $PACKAGE_FULL_NAME
