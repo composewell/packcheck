@@ -87,6 +87,12 @@ show_step() {
   echo "------------------------------------------"
 }
 
+# $1: var
+# $2: path
+add_path() {
+  eval "test -n \"\$$1\"" && PATH=$2:$PATH
+}
+
 #------------------------------------------------------------------------------
 # Build config show and determine
 #------------------------------------------------------------------------------
@@ -199,6 +205,7 @@ verify_build_config() {
   then
     init_default STACK_BUILD_OPTIONS \
           "--test \
+          --bench --no-run-benchmarks \
           --haddock --no-haddock-deps"
     STACK_BUILD_OPTIONS=$(cat << EOF
       $STACK_BUILD_OPTIONS
@@ -311,7 +318,7 @@ use_stack_paths() {
 # Ensure ghc, cabal are available and the right versions when requested
 #------------------------------------------------------------------------------
 
-# $1: tool name
+# $1: tool name (used only for ghc and cabal)
 # $2: expected version
 check_version() {
   local real_ver=$($1 --numeric-version)
@@ -371,7 +378,7 @@ ensure_stack_yaml() {
   then
     # solver seems to be broken with latest cabal
     echo "Trying to generate a stack.yaml"
-    run_verbose $STACKCMD init --solver || die "Solver failed to generate a stack.yaml.\n\
+    run_verbose $STACKCMD init --solver --ignore-subdirs || die "Solver failed to generate a stack.yaml.\n\
 Please provide a working stack.yaml or use cabal build."
     require_file stack.yaml
   fi
@@ -482,7 +489,7 @@ create_and_unpack_pkg_dist() {
 
 install_deps() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD test --only-dependencies ;;
+    stack) run_verbose_errexit $STACKCMD test --bench --only-dependencies ;;
     cabal) install_cabal_deps ;;
   esac
 }
