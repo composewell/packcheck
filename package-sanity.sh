@@ -1,47 +1,20 @@
 #!/bin/bash
 
-# Works on Linux and OSX
-# Installs stack if required
-# On OSX - Installs ghc using stack and puts it on PATH
-# Uses stack to create a dist of the pkg in CURRENT DIR
-# Unpacks, builds and tests the distribution using stack or cabal
+#------------------------------------------------------------------------------
+# Skip to the end for main flow of script
+#------------------------------------------------------------------------------
 
-# NOTE: When using stack build, if stack and cabal are not
-# found in PATH, it will install both in ~/.local/bin automatically
-# without any explicit permission. It will also install ghc via stack if
-# you are not using a system ghc in PATH or if it is not suitable for
-# building your package. When using a cabal build it will also do a cabal
-# update.
+# See the Readme.md file for details on how it works and the user guide.
 
-# Pass the following build params via environment variables
-# BUILD=cabal | stack
-# GHCVER=x.y.z (stack build will install ghc if this is not specified)
+#------------------------------------------------------------------------------
+# TODO
+#------------------------------------------------------------------------------
 
-# Only for cabal builds
-# CABALVER=x.y.z
-# STACK_SDIST=y (optional)
-#   always use stack for sdist. This will require stack to be installed even
-#   for a cabal build.
-
-# Only when using stack for sdist
-# PVP_BOUNDS=
-
-# Only for stack builds
-# RESOLVER=<resolver> (optional)
-# STACK_YAML=filename or path (will be created by stack init --solver if missing)
-
-# DESTRUCTIVE=y  for CI environments or if you can tolerate changes to your
-# cabal config, bin and force installing the package being tested.
-#
-# For example:
-# env BUILD=cabal GHCVER=7.8.4 CABALVER=1.24 STACK_SDIST=y
-#     STACK_YAML=stack-7.8.yaml PVP_BOUNDS=both
-
-# cabal build can use stack ghc if GHCVER is not specified
-# TODO: an option to not use cached installs, force fresh installs of tools
-# What if we are using a tool from system path - invert path?
-
-# ---------Skip to the end for main flow of script-----------
+# FORCE_TOOL_INSTALL: an option to not use cached installs, force fresh
+# installs of tools What if we are using a tool from system path -
+# invert path?
+# NO_TOOL_INSTALL: do not download/install any tools
+# cabal build can use stack installed ghc if GHCVER is not specified
 
 #------------------------------------------------------------------------------
 # Utility functions
@@ -78,7 +51,7 @@ require_file () {
 
 # $1: message
 die () {
-  >&2 echo -e $1
+  >&2 echo -e "Error: $1"
   exit 1
 }
 
@@ -121,26 +94,27 @@ show_step() {
 # $1: varname
 # $2: help text
 help_envvar() {
-  printf "%-15s: %s\n" "$1" "$2"
+  printf "%-23s: %s\n" "$1" "$2"
 }
 
 show_help() {
-  echo "The following env variables can be passed. BUILD is mandatory."
-  help_envvar BUILD "[stack | cabal] Mandatory"
-  help_envvar GHC_OPTIONS "[options] Specify GHC options to use"
-  help_envvar SDIST_OPTIONS "Argument to stack sdist"
+  echo "The following environment variables can be passed."
+  echo
+  help_envvar BUILD "[stack | cabal] The only mandatory option"
+  help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. pvp-bounds)"
+  help_envvar GHC_OPTIONS "Specify GHC options to use"
+  help_envvar GHCVER "[a.b.c] GHC version (may not be enforced when using stack)"
   echo
   help_envvar RESOLVER "Resolver to use for stack commands"
   help_envvar STACK_YAML "Alternative stack config file to use"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
   echo
-  help_envvar GHCVER "[a.b.c] GHC version requested"
   help_envvar CABALVER "[a.b.c.d] Cabal version requested"
   help_envvar USE_STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
   help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
   echo
-  help_envvar COVERALLS_OPTIONS "[options] Generate coverage information and send it to coveralls.io"
+  help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
   help_envvar COVERAGE "[y] Just generate coverage information"
   echo
   echo "Example usage:"
@@ -198,17 +172,16 @@ need_stack() {
 # $1: varname
 cabal_only_var() {
   local var=$(eval "echo \$$1")
-  test -z "$var" || die "Error: [$1] is meaningful only for cabal build"
+  test -z "$var" || die "[$1] is meaningful only for cabal build"
 }
 
 # $1: varname
 stack_only_var() {
   local var=$(eval "echo \$$1")
-  test -z "$var" || die "Error: [$1] is meaningful only when stack is used"
+  test -z "$var" || die "[$1] is meaningful only when stack is used"
 }
 
 verify_build_config() {
-  init_default BUILD stack
   test -n "$COVERALLS_OPTIONS" && COVERAGE=y
 
   if test "$BUILD" = stack
@@ -236,6 +209,9 @@ EOF)
   # These variables are now combined with other options so clear them
   COVERAGE=
   GHC_OPTIONS=
+
+  test "$BUILD" = stack -o "$BUILD" = cabal || \
+    die "build can only be 'stack' or 'cabal'"
 
   if test "$BUILD" != cabal
   then
