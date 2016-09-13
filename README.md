@@ -12,6 +12,7 @@ testing for package maintainers or end users.
 * Optionally, installs the tools as well (stack, cabal, ghc etc.)
 * Tests the source dist instead of the repo so that there are no surprises later
 * Test with stack even if you do not have a stack.yaml (it creates one automatically)
+* Use stack installed GHC for cabal builds
 * Optionally, generates and sends *coverage* information to coveralls.io
 
 ## Usage
@@ -42,9 +43,9 @@ BUILD                  : [stack | cabal] The only mandatory option
 SDIST_OPTIONS          : Argument to stack sdist (e.g. pvp-bounds)
 GHC_OPTIONS            : Specify GHC options to use
 GHCVER                 : [a.b.c] GHC version (may not be enforced when using stack)
+RESOLVER               : Stack resolver to use for stack or cabal builds
 PATH                   : Use an explicitly set PATH for predictable builds
 
-RESOLVER               : Resolver to use for stack commands
 STACK_YAML             : Alternative stack config file to use
 STACK_BUILD_OPTIONS    : Override the default stack build command options
 
@@ -69,6 +70,16 @@ will install both in ~/.local/bin automatically without any explicit
 permission. It will also install ghc via stack when using stack build
 and you do not have a ghc in PATH or if it is not suitable for building
 your package. When using a cabal build it initiates a cabal update.
+
+For stack builds you can use GHCVER as well. This will mean a preference
+will be given to the compiler in the PATH but if the compiler in the
+PATH is not suitable for the given RESOLVER then stack may choose
+another compiler if already installed by stack (it will not install
+though when GHCVER is specified).
+
+You can use stack installed GHC for cabal builds by specifying a
+RESOLVER for BUILD type cabal. For cabal builds you cannot use RESOLVER
+and GHCVER at the same time.
 
 ### Generate and unpack source distribution
 

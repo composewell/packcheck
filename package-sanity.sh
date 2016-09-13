@@ -104,9 +104,9 @@ show_help() {
   help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. pvp-bounds)"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar GHCVER "[a.b.c] GHC version (may not be enforced when using stack)"
+  help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
   help_envvar PATH "Use an explicitly set PATH for predictable builds"
   echo
-  help_envvar RESOLVER "Resolver to use for stack commands"
   help_envvar STACK_YAML "Alternative stack config file to use"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
   echo
@@ -174,7 +174,7 @@ show_build_env() {
 }
 
 need_stack() {
-  if test "$BUILD" = stack -o -n "$USE_STACK_SDIST"
+  if test "$BUILD" = stack -o -n "$RESOLVER" -o -n "$USE_STACK_SDIST"
   then
     echo true
   fi
@@ -232,17 +232,17 @@ EOF
     cabal_only_var USE_STACK_SDIST
     cabal_only_var CABAL_CONFIGURE_OPTIONS
     cabal_only_var CABAL_DESTRUCTIVE
+  else
+    stack_only_var STACK_BUILD_OPTIONS
+    if test -n "$GHCVER" -a -n "$RESOLVER"
+    then
+      die "GHCVER and RESOLVER cannot be used together in cabal build."
+    fi
   fi
 
   if test -z "$(need_stack)"
   then
-    stack_only_var RESOLVER
     stack_only_var STACK_YAML
-  fi
-
-  if test "$BUILD" != stack
-  then
-    stack_only_var STACK_BUILD_OPTIONS
   fi
 }
 
@@ -265,8 +265,6 @@ fetch_stack() {
   if [ `uname` = "Darwin" ]
   then
     retry_cmd fetch_stack_osx
-    # Use stack installed ghc on OSX
-    retry_cmd $STACKCMD setup
   else
     retry_cmd fetch_stack_linux
   fi
@@ -324,6 +322,7 @@ ensure_ghc() {
   if test -n "$(need_stack)" -a -z "$GHCVER"
   then
     # Use stack supplied ghc
+    retry_cmd $STACKCMD setup
     use_stack_paths
   fi
   require_cmd ghc && \
