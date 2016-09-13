@@ -112,6 +112,12 @@ show_help() {
   echo
   help_envvar CABALVER "[a.b.c.d] Cabal version requested"
   help_envvar USE_STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
+  # The non-destructive mode is a bit expensive because a sandbox is used and
+  # dependencies have to be installed twice in two separate sandboxes, once to
+  # create and sdist and once to build the sdist. For a CI DESTRUCTIVE mode
+  # makes more sense while for a local user machine if the cabal config matters
+  # then non-destructive will be safe.
+  # XXX change the name to CABAL_DESTRUCTIVE
   help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
   echo
@@ -409,6 +415,17 @@ remove_pkg_executables() {
   done
 }
 
+install_cabal_deps() {
+  if test "$DESTRUCTIVE" != "y"
+  then
+    run_verbose_errexit cabal sandbox init
+  fi
+  run_verbose_errexit cabal install --only-dependencies \
+        --force-reinstalls \
+        --reorder-goals \
+        --max-backjumps=-1
+}
+
 cabal_configure() {
     run_verbose_errexit cabal configure $CABAL_CONFIGURE_OPTIONS
 }
@@ -437,6 +454,12 @@ create_and_unpack_pkg_dist() {
     SDIST_CMD="$STACKCMD --compiler=ghc-$GHCVER sdist $opts"
     SDIST_DIR=$($STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
   else
+    # We need to configure to use sdist and we need to install
+    # dependencies to configure. So to just create the sdist we will
+    # have to go through the whole process once and then again after
+    # unpacking the sdist and to build it. If we use a sandbox then
+    # we actually have to install the dependencies twice.
+    install_cabal_deps
     cabal_configure
     SDIST_CMD="cabal sdist $opts"
     SDIST_DIR=dist
@@ -462,12 +485,7 @@ create_and_unpack_pkg_dist() {
 install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD test --only-dependencies ;;
-    cabal)
-      run_verbose_errexit cabal sandbox init
-      run_verbose_errexit cabal install --only-dependencies \
-            --force-reinstalls \
-            --reorder-goals \
-            --max-backjumps=-1 ;;
+    cabal) install_cabal_deps ;;
   esac
 }
 
