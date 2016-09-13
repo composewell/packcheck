@@ -65,7 +65,7 @@ show_nonempty_var() {
 # $2: default value
 init_default() {
   local var=$(eval "echo \$$1")
-  test -n "$var" || eval "export $1=$2"
+  test -n "$var" || eval "export $1=\"$2\""
 }
 
 require_file () {
@@ -107,6 +107,13 @@ function run_verbose_errexit() {
   run_verbose "$*" || die "Command [$*] failed. Exiting."
 }
 
+# $1: msg
+show_step() {
+  echo "------------------------------------------"
+  echo "$1"
+  echo "------------------------------------------"
+}
+
 #------------------------------------------------------------------------------
 # Build config show and determine
 #------------------------------------------------------------------------------
@@ -121,22 +128,23 @@ show_help() {
   echo "The following env variables can be passed. BUILD is mandatory."
   help_envvar BUILD "[stack | cabal] Mandatory"
   help_envvar GHC_OPTIONS "[options] Specify GHC options to use"
-  help_envvar PVP_BOUNDS "Argument to stack --pvp-bounds to use for stack sdist"
-
+  help_envvar SDIST_OPTIONS "Argument to stack sdist"
+  echo
   help_envvar RESOLVER "Resolver to use for stack commands"
   help_envvar STACK_YAML "Alternative stack config file to use"
-
+  help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
+  echo
   help_envvar GHCVER "[a.b.c] GHC version requested"
   help_envvar CABALVER "[a.b.c.d] Cabal version requested"
-  help_envvar STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
+  help_envvar USE_STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
   help_envvar DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
-
+  help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
+  echo
   help_envvar COVERALLS_OPTIONS "[options] Generate coverage information and send it to coveralls.io"
   help_envvar COVERAGE "[y] Just generate coverage information"
-
   echo
   echo "Example usage:"
-  echo "env BUILD=stack RESOLVER=lts-6 PVP_BOUNDS=both $0"
+  echo "env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS=\"--pvp-bounds both\" $0"
   exit 1
 }
 
@@ -156,54 +164,102 @@ check_boolean_var() {
   fi
 }
 
-# $1: msg
 show_build_config() {
-  check_boolean_var STACK_SDIST
+  check_boolean_var USE_STACK_SDIST
   check_boolean_var DESTRUCTIVE
   check_boolean_var COVERAGE
-  echo "$1"
+
   show_nonempty_var BUILD
   show_nonempty_var GHC_OPTIONS
-  show_nonempty_var GHCVER
-  show_nonempty_var PVP_BOUNDS # sdist options
+  show_nonempty_var SDIST_OPTIONS
+
   show_nonempty_var RESOLVER  # stack options
   show_nonempty_var STACK_YAML # stack options
+  show_nonempty_var STACK_BUILD_OPTIONS
+
+  show_nonempty_var GHCVER
   show_nonempty_var CABALVER
-  show_nonempty_var STACK_SDIST
+  show_nonempty_var USE_STACK_SDIST
   show_nonempty_var DESTRUCTIVE
+  show_nonempty_var CABAL_CONFIGURE_OPTIONS
+
   show_nonempty_var COVERAGE
   show_nonempty_var COVERALLS
   show_nonempty_var PATH
-  echo "----End build config----"
+}
+
+need_stack() {
+  if test "$BUILD" = stack -o -n "$USE_STACK_SDIST"
+  then
+    echo true
+  fi
+}
+
+# $1: varname
+cabal_only_var() {
+  local var=$(eval "echo \$$1")
+  test -z "$var" || die "Error: [$1] is meaningful only for cabal build"
+}
+
+# $1: varname
+stack_only_var() {
+  local var=$(eval "echo \$$1")
+  test -z "$var" || die "Error: [$1] is meaningful only when stack is used"
 }
 
 verify_build_config() {
   init_default BUILD stack
   test -n "$COVERALLS_OPTIONS" && COVERAGE=y
 
-  if test "$BUILD" != cabal
+  if test "$BUILD" = stack
   then
-    test -z "$CABALVER" || die "Error: CABALVER is meaningful only for cabal build"
-    test -z "$STACK_SDIST" || die "Error: STACK_SDIST is meaningful only for cabal build"
+    init_default STACK_BUILD_OPTIONS \
+          "--test \
+          --haddock --no-haddock-deps"
+    STACK_BUILD_OPTIONS=$(cat << EOF
+      $STACK_BUILD_OPTIONS
+      $(test -n "${COVERAGE}" && echo --coverage)
+      $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
+EOF)
+  else
+    init_default CABAL_CONFIGURE_OPTIONS \
+                 "-v2 \
+                 --enable-tests \
+                 --enable-benchmarks"
+    CABAL_CONFIGURE_OPTIONS=$(cat << EOF
+      $CABAL_CONFIGURE_OPTIONS
+      $(test -n "$COVERAGE" && echo --enable-coverage)
+      $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
+EOF)
   fi
 
-  if test "$BUILD" = cabal -a -z "$STACK_SDIST"
+  # These variables are now combined with other options so clear them
+  COVERAGE=
+  GHC_OPTIONS=
+
+  if test "$BUILD" != cabal
   then
-    test -z "$RESOLVER" || die "Error: RESOLVER is not meaningful in this config"
-    test -z "$STACK_YAML" || die "Error: STACK_YAML is not meaningful in this config"
+    cabal_only_var CABALVER
+    cabal_only_var USE_STACK_SDIST
+    cabal_only_var CABAL_CONFIGURE_OPTIONS
+    cabal_only_var DESTRUCTIVE
+  fi
+
+  if test -z "$(need_stack)"
+  then
+    stack_only_var RESOLVER
+    stack_only_var STACK_YAML
+  fi
+
+  if test "$BUILD" != stack
+  then
+    stack_only_var STACK_BUILD_OPTIONS
   fi
 }
 
 #------------------------------------------------------------------------------
 # Stack fetch and install etc.
 #------------------------------------------------------------------------------
-
-need_stack() {
-  if test "$BUILD" = stack -o -n "$STACK_SDIST"
-  then
-    echo true
-  fi
-}
 
 fetch_stack_osx() {
   curl -skL https://www.stackage.org/stack/osx-x86_64 \
@@ -245,8 +301,7 @@ ensure_stack() {
   # Do not consider the resolver to install this, install the latest
   if test -z "$(which cabal)"
   then
-    echo "Installing cabal-install..."
-    $STACKCMD install cabal-install
+    run_verbose_errexit $STACKCMD install cabal-install
   fi
 
   if test -n "$RESOLVER"
@@ -298,7 +353,9 @@ ensure_ghc() {
 
 init_cabal_config() {
   mkdir -p $HOME/.cabal
-  cat > $HOME/.cabal/config <<EOF
+  local CABAL_CONFIG=$HOME/.cabal/config
+  echo "Overwriting [$CABAL_CONFIG] to add hackage.fpcomplete.com"
+  cat > $CABAL_CONFIG <<EOF
 remote-repo: hackage.haskell.org:http://hackage.fpcomplete.com/
 remote-repo-cache: $HOME/.cabal/packages
 jobs: \$ncpus
@@ -322,9 +379,8 @@ ensure_stack_yaml() {
   elif test ! -e stack.yaml
   then
     # solver seems to be broken with latest cabal
-    local SOLVER_CMD="$STACKCMD init --solver"
-    echo "Trying [$SOLVER_CMD] to generate a stack.yaml"
-    $SOLVER_CMD || die "Solver failed to generate a stack.yaml.\n\
+    echo "Trying to generate a stack.yaml"
+    run_verbose $STACKCMD init --solver || die "Solver failed to generate a stack.yaml.\n\
 Please provide a working stack.yaml or use cabal build."
     require_file stack.yaml
   fi
@@ -360,58 +416,52 @@ get_pkg_full_name() {
 
 remove_pkg_executables() {
   exes=$(cabal info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
-  echo "Removing [$exes] from [$HOME/.cabal/bin]"
+  echo "Remove installed binaries"
   for i in $exes
   do
-    rm -f $HOME/.cabal/bin/$i
+    run_verbose_errexit rm -f $HOME/.cabal/bin/$i
   done
 }
 
 cabal_configure() {
-    run_verbose_errexit cabal configure -v2 \
-           --enable-tests \
-           --enable-benchmarks \
-           $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
+    run_verbose_errexit cabal configure $CABAL_CONFIGURE_OPTIONS
 }
 
 # $1: package full name (name + ver)
 create_and_unpack_pkg_dist() {
   local pkgtar=${1}.tar.gz
-  local pvp
+  local opts
   local SDIST_DIR
   local SDIST_CMD
 
-  test -n "$PVP_BOUNDS" && pvp="--pvp-bounds $PVP_BOUNDS"
+  test -n "$SDIST_OPTIONS" && opts="$SDIST_OPTIONS"
 
   if test "$BUILD" = stack
   then
-    SDIST_CMD="$STACKCMD sdist $pvp"
+    SDIST_CMD="$STACKCMD sdist $opts"
     SDIST_DIR=$($STACKCMD path --dist-dir) || exit 1
-  elif test -n "$STACK_SDIST"
+  elif test -n "$USE_STACK_SDIST"
   then
-    SDIST_CMD="$STACKCMD --compiler=ghc-$GHCVER sdist $pvp"
+    SDIST_CMD="$STACKCMD --compiler=ghc-$GHCVER sdist $opts"
     SDIST_DIR=$($STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
   else
     cabal_configure
-    SDIST_CMD="cabal sdist"
+    SDIST_CMD="cabal sdist $opts"
     SDIST_DIR=dist
   fi
 
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
-  echo "Using [$SDIST_CMD] to create source distribution tarball for [$1]"
   run_verbose_errexit $SDIST_CMD
   if test ! -f $tarpath
   then
     echo "stack sdist did not create [$tarpath]"
     exit 1
   fi
-  echo "Unpacking the source distribution tarball..."
   run_verbose_errexit tar xzvf $tarpath
 }
 
 install_deps() {
-  echo "Installing dependencies..."
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD test --only-dependencies ;;
     cabal)
@@ -419,10 +469,6 @@ install_deps() {
       retry_cmd cabal update
       run_verbose_errexit cabal sandbox init
       run_verbose_errexit cabal install --only-dependencies \
-            --enable-tests \
-            --enable-benchmarks \
-            $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\") \
-            $(test -n "$COVERAGE" && echo --enable-coverage) \
             --force-reinstalls \
             --reorder-goals \
             --max-backjumps=-1 ;;
@@ -432,13 +478,8 @@ install_deps() {
 # $1 package dir (name + ver)
 # $2 package name
 build_and_test() {
-  echo "Building and testing [$1]"
   case "$BUILD" in
-    stack)
-      run_verbose_errexit $STACKCMD test \
-        $(test -n "$COVERAGE" && echo --coverage) \
-        $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\") \
-        --haddock --no-haddock-deps ;;
+    stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal)
       cabal_configure
       run_verbose_errexit cabal build
@@ -465,7 +506,7 @@ coveralls_io() {
       run_verbose_errexit cabal install hpc-coveralls
     fi
   fi
-  hpc-coveralls $COVERALLS_OPTIONS
+  run_verbose_errexit hpc-coveralls $COVERALLS_OPTIONS
 }
 
 #------------------------------------------------------------------------------
@@ -483,22 +524,36 @@ test $# -eq 0 || show_help
 required_envvar BUILD
 
 # ---------Show, process and verify the config------------
-show_build_config "----Requested build config----"
+show_step "Requested build config"
+show_build_config
 verify_build_config
 
 # ---------Install any tools needed--------
+show_step "Install tools needed for build"
 require_cmd /bin/bash
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
 test "$BUILD" = "cabal" && ensure_cabal
-show_build_config "----Using build config----"
+
+show_step "Effective build config"
+show_build_config
 
 # ---------Create dist, unpack, install deps, test--------
+show_step "Create source distribution and unpack it"
 PACKAGE_NAME=$(get_pkg_name) || exit 1
 PACKAGE_FULL_NAME=$(get_pkg_full_name) || exit 1
 test -n "$(need_stack)" && ensure_stack_yaml
 create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
+
+show_step "Install dependencies"
 cd $PACKAGE_FULL_NAME
 install_deps $PACKAGE_FULL_NAME
+
+show_step "Build and test"
 build_and_test $PACKAGE_FULL_NAME $PACKAGE_NAME
-test -n "$COVERALLS_OPTIONS" && coveralls_io
+
+if test -n "$COVERALLS_OPTIONS"
+then
+    show_step "Send coverage info to coveralls.io"
+    coveralls_io
+fi
