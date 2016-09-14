@@ -598,8 +598,7 @@ show_step "Install tools needed for build"
 
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
-
-test "$BUILD" = "cabal" && ensure_cabal
+ensure_cabal
 
 show_step "Effective build config"
 show_build_config
@@ -620,8 +619,11 @@ test -n "$(need_stack)" && ensure_stack_yaml
 create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 
 # Note the above functions leaves us in the .sanity-test dir
-show_step "Install dependencies"
 cd $PACKAGE_FULL_NAME
+show_step "Package info [sdist $SDIST_OPTIONS]"
+run_verbose cabal info .
+
+show_step "Install dependencies"
 install_deps $PACKAGE_FULL_NAME
 
 show_step "Build and test"
