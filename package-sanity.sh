@@ -322,7 +322,10 @@ use_stack_paths() {
 # $2: expected version
 check_version() {
   local real_ver=$($1 --numeric-version)
-  test "$2" = "$real_ver" || die "Wrong $1 version [$real_ver] expected [$2]"
+
+  # Match that the expected version is a prefix of real
+  test "${real_ver#$2}" != ${real_ver} || \
+    die "Wrong $1 version [$real_ver] expected [$2]"
 }
 
 ensure_ghc() {
