@@ -364,7 +364,15 @@ cabal_use_mirror() {
   local CABAL_CONFIG=$HOME/.cabal/config
   if test -f $CABAL_CONFIG
   then
-    sed --in-place -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
+    local inplace
+    if [ `uname` = "Darwin" ]
+    then
+      inplace="-i orig"
+    else
+      inplace="--in-place"
+    fi
+    echo "Adding hackage mirror [$1] to [$CABAL_CONFIG]"
+    sed $inplace -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
   else
     die "cabal config file [$CABAL_CONFIG] not found."
   fi
