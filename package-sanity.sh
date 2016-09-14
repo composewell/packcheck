@@ -300,13 +300,6 @@ ensure_stack() {
   STACKCMD="stack --no-terminal"
   $STACKCMD --version
 
-  # We need cabal to retrieve the package version as well as for the solver
-  # Do not consider the resolver to install this, install the latest
-  if test -z "$(which cabal)"
-  then
-    run_verbose_errexit $STACKCMD install cabal-install
-  fi
-
   if test -n "$RESOLVER"
   then
     STACKCMD="$STACKCMD --resolver $RESOLVER"
@@ -333,7 +326,8 @@ check_version() {
   local real_ver=$($1 --numeric-version)
 
   # Match that the expected version is a prefix of real
-  test "${real_ver#$2}" != ${real_ver} || \
+  # Do not check when the expected version is head
+  test "${real_ver#$2}" != ${real_ver} -o $2 = head || \
     die "Wrong $1 version [$real_ver] expected [$2]"
 }
 
@@ -552,6 +546,8 @@ test $# -eq 0 || show_help
 # create surprises.
 required_envvar BUILD
 
+bash --version
+
 # ---------Show, process and verify the config------------
 show_step "Requested build config and environment"
 show_build_config
@@ -581,6 +577,11 @@ show_step "Install tools needed for build"
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
 test "$BUILD" = "cabal" && ensure_cabal
+
+# We need cabal to retrieve the package version as well as for the solver
+# We install it everytime because resolver might change
+#if test -z "$(which cabal)"
+test "$BUILD" = stack && run_verbose_errexit $STACKCMD install cabal-install
 
 show_step "Effective build config"
 show_build_config
