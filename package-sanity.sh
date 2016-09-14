@@ -210,10 +210,13 @@ verify_build_config() {
 
   if test "$BUILD" = stack
   then
+    STACK_DEP_OPTIONS="--test --bench --only-dependencies --ghc-options=-O0"
+
     init_default STACK_BUILD_OPTIONS \
           "--test \
           --bench --no-run-benchmarks \
           --haddock --no-haddock-deps"
+
     STACK_BUILD_OPTIONS=$(cat << EOF
       $STACK_BUILD_OPTIONS
       $(test -n "${COVERAGE}" && echo --coverage)
@@ -221,6 +224,9 @@ verify_build_config() {
 EOF
 )
   else
+    CABAL_DEP_OPTIONS="--only-dependencies --force-reinstalls \
+        --reorder-goals --max-backjumps=-1 --ghc-options=-O0"
+
     init_default CABAL_CONFIGURE_OPTIONS \
                  "-v2 \
                  --enable-tests \
@@ -234,6 +240,7 @@ EOF
   fi
 
   # These variables are now combined with other options so clear them
+  # so that we do not show them in the effective config
   COVERAGE=
   GHC_OPTIONS=
 
@@ -368,6 +375,15 @@ ensure_cabal() {
   # User specified PATH takes precedence
   export PATH=$PATH:$HOME/.local/bin
 
+  # We can only do this after ghc is installed.
+  # We need cabal to retrieve the package version as well as for the solver
+  # Also when we are using stack for cabal builds use stack installed cabal
+  # We are assuming CI cache will be per resolver so we can cache the bin
+  if test -z "$(which cabal)" -a -n "$(need_stack)"
+  then
+      run_verbose_errexit $STACKCMD install cabal-install
+  fi
+
   require_cmd cabal
   run_verbose cabal --version
   test -n "$CABALVER" && check_version cabal $CABALVER
@@ -430,10 +446,7 @@ install_cabal_deps() {
   then
     run_verbose_errexit cabal sandbox init
   fi
-  run_verbose_errexit cabal install --only-dependencies \
-        --force-reinstalls \
-        --reorder-goals \
-        --max-backjumps=-1
+  run_verbose_errexit cabal install $CABAL_DEP_OPTIONS
 }
 
 cabal_configure() {
@@ -494,7 +507,7 @@ create_and_unpack_pkg_dist() {
 
 install_deps() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD test --bench --only-dependencies ;;
+    stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
     cabal) install_cabal_deps ;;
   esac
 }
@@ -577,18 +590,6 @@ show_step "Install tools needed for build"
 
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
-
-# We can only do this after ghc is installed.
-# We need cabal to retrieve the package version as well as for the solver
-# Also when we are using stack for cabal builds use stack installed cabal
-# We are assuming CI cache will be per resolver so we can cache the bin
-if test -z "$(which cabal)"
-then
-  if test "$BUILD" = stack -o -z "$CABALVER"
-  then
-    run_verbose_errexit $STACKCMD install cabal-install
-  fi
-fi
 
 test "$BUILD" = "cabal" && ensure_cabal
 
