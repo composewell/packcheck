@@ -224,7 +224,8 @@ verify_build_config() {
 EOF
 )
   else
-    CABAL_DEP_OPTIONS="--only-dependencies --force-reinstalls \
+    CABAL_DEP_OPTIONS="--only-dependencies \
+        --enable-tests --enable-benchmarks --force-reinstalls \
         --reorder-goals --max-backjumps=-1 --ghc-options=-O0"
 
     init_default CABAL_CONFIGURE_OPTIONS \
