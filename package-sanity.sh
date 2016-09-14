@@ -82,6 +82,7 @@ function run_verbose_errexit() {
 
 # $1: msg
 show_step() {
+  echo
   echo "------------------------------------------"
   echo "$1"
   echo "------------------------------------------"
@@ -100,36 +101,40 @@ add_path() {
 # $1: varname
 # $2: help text
 help_envvar() {
-  printf "%-23s: %s\n" "$1" "$2"
+  printf "%-24s: %s\n" "$1" "$2"
 }
 
 show_help() {
-  echo "The following environment variables can be passed."
-  echo
+  show_step "Commonly used env variables"
   help_envvar BUILD "[stack | cabal] The only mandatory option"
-  help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. pvp-bounds)"
-  help_envvar GHC_OPTIONS "Specify GHC options to use"
-  help_envvar GHCVER "[a.b.c] GHC version (may not be enforced when using stack)"
   help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
+  help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
+  help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
+  help_envvar GHC_OPTIONS "Specify GHC options to use"
+  help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. --pvp-bounds)"
   help_envvar PATH "Use an explicitly set PATH for predictable builds"
-  echo
+
+  show_step "Advanced stack build env variables"
   help_envvar STACK_YAML "Alternative stack config file to use"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
-  echo
-  help_envvar CABALVER "[a.b.c.d] Cabal version requested"
-  help_envvar USE_STACK_SDIST "[y] For cabal builds, use stack sdist to create dist to test"
-  # The non-destructive mode is a bit expensive because a sandbox is used and
-  # dependencies have to be installed twice in two separate sandboxes, once to
-  # create and sdist and once to build the sdist. For a CI DESTRUCTIVE mode
-  # makes more sense while for a local user machine if the cabal config matters
-  # then non-destructive will be safe.
-  help_envvar CABAL_DESTRUCTIVE "[y] Clobber cabal config, install bins, force install packages"
+
+  show_step "Advanced cabal build env variables"
+  help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
-  echo
+  # The sandbox mode is a bit expensive because a sandbox is used and
+  # dependencies have to be installed twice in two separate sandboxes, once to
+  # create and sdist and once to build the sdist. For a CI NO sandbox mode
+  # makes more sense as long as multiple builds running simultaneously will not
+  # try to install conflicting packages.
+  help_envvar CABAL_NO_SANDBOX "[y] Will clobber (force install) your global cabal ghc package db"
+  help_envvar CABAL_TEST_INSTALL "[y] Force install the package after building"
+  help_envvar CABAL_HACKAGE_MIRROR "[y] Specify an alternative mirror, will modify the cabal user config file."
+
+  show_step "Coverage related env variables"
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
   help_envvar COVERAGE "[y] Just generate coverage information"
-  echo
-  echo "Example usage:"
+
+  show_step "Example usage"
   echo "env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS=\"--pvp-bounds both\" $0"
   exit 1
 }
@@ -145,29 +150,31 @@ check_boolean_var() {
   if test -n "$var" -a "$var" != y
   then
     echo "Error: Boolean envvar [$1] can only be empty or 'y'"
-    echo
-    show_help
+    exit 1
   fi
 }
 
 show_build_config() {
-  check_boolean_var USE_STACK_SDIST
-  check_boolean_var CABAL_DESTRUCTIVE
+  check_boolean_var CABAL_USE_STACK_SDIST
+  check_boolean_var CABAL_NO_SANDBOX
+  check_boolean_var CABAL_TEST_INSTALL
   check_boolean_var COVERAGE
 
   show_nonempty_var BUILD
+  show_nonempty_var RESOLVER  # stack options
+  show_nonempty_var GHCVER
+  show_nonempty_var CABALVER
   show_nonempty_var GHC_OPTIONS
   show_nonempty_var SDIST_OPTIONS
 
-  show_nonempty_var RESOLVER  # stack options
   show_nonempty_var STACK_YAML # stack options
   show_nonempty_var STACK_BUILD_OPTIONS
 
-  show_nonempty_var GHCVER
-  show_nonempty_var CABALVER
-  show_nonempty_var USE_STACK_SDIST
-  show_nonempty_var CABAL_DESTRUCTIVE
+  show_nonempty_var CABAL_USE_STACK_SDIST
   show_nonempty_var CABAL_CONFIGURE_OPTIONS
+  show_nonempty_var CABAL_NO_SANDBOX
+  show_nonempty_var CABAL_TEST_INSTALL
+  show_nonempty_var CABAL_HACKAGE_MIRROR
 
   show_nonempty_var COVERAGE
   show_nonempty_var COVERALLS
@@ -180,7 +187,7 @@ show_build_env() {
 }
 
 need_stack() {
-  if test "$BUILD" = stack -o -n "$RESOLVER" -o -n "$USE_STACK_SDIST"
+  if test "$BUILD" = stack -o -n "$RESOLVER" -o -n "$CABAL_USE_STACK_SDIST"
   then
     echo true
   fi
@@ -236,9 +243,11 @@ EOF
   if test "$BUILD" != cabal
   then
     cabal_only_var CABALVER
-    cabal_only_var USE_STACK_SDIST
+    cabal_only_var CABAL_USE_STACK_SDIST
     cabal_only_var CABAL_CONFIGURE_OPTIONS
-    cabal_only_var CABAL_DESTRUCTIVE
+    cabal_only_var CABAL_NO_SANDBOX
+    cabal_only_var CABAL_TEST_INSTALL
+    cabal_only_var CABAL_HACKAGE_MIRROR
   else
     stack_only_var STACK_BUILD_OPTIONS
     if test -n "$GHCVER" -a -n "$RESOLVER"
@@ -344,20 +353,20 @@ ensure_ghc() {
     # Stack will still silently choose its own ghc if the ghc does not match
     # the snapshot.
     STACKCMD="$STACKCMD --system-ghc"
-  else
-    GHCVER=$(ghc --numeric-version) || exit 1
   fi
+  # Use the real version, the user might have specified a prefix
+  GHCVER=$(ghc --numeric-version) || exit 1
 }
 
-init_cabal_config() {
-  mkdir -p $HOME/.cabal
+# $1: mirror URL
+cabal_use_mirror() {
   local CABAL_CONFIG=$HOME/.cabal/config
-  echo "Overwriting [$CABAL_CONFIG] to add hackage.fpcomplete.com"
-  cat > $CABAL_CONFIG <<EOF
-remote-repo: hackage.haskell.org:http://hackage.fpcomplete.com/
-remote-repo-cache: $HOME/.cabal/packages
-jobs: \$ncpus
-EOF
+  if test -f $CABAL_CONFIG
+  then
+    sed --in-place -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
+  else
+    die "cabal config file [$CABAL_CONFIG] not found."
+  fi
 }
 
 ensure_cabal() {
@@ -368,9 +377,8 @@ ensure_cabal() {
   require_cmd cabal
   run_verbose cabal --version
   test -n "$CABALVER" && check_version cabal $CABALVER
-  test "$CABAL_DESTRUCTIVE" = y && init_cabal_config
-  # For set -e to work
-  true
+  # Set the real version of cabal
+  CABALVER=$(cabal --numeric-version) || exit 1
 }
 
 ensure_stack_yaml() {
@@ -424,7 +432,7 @@ remove_pkg_executables() {
 }
 
 install_cabal_deps() {
-  if test "$CABAL_DESTRUCTIVE" != "y"
+  if test "$CABAL_NO_SANDBOX" != "y"
   then
     run_verbose_errexit cabal sandbox init
   fi
@@ -457,7 +465,7 @@ create_and_unpack_pkg_dist() {
   then
     SDIST_CMD="$STACKCMD sdist $opts"
     SDIST_DIR=$($STACKCMD path --dist-dir) || exit 1
-  elif test -n "$USE_STACK_SDIST"
+  elif test -n "$CABAL_USE_STACK_SDIST"
   then
     SDIST_CMD="$STACKCMD --compiler=ghc-$GHCVER sdist $opts"
     SDIST_DIR=$($STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
@@ -509,7 +517,7 @@ build_and_test() {
       run_verbose_errexit cabal check
       run_verbose_errexit cabal sdist
 
-      if test "$CABAL_DESTRUCTIVE" = "y"
+      if test "$CABAL_TEST_INSTALL" = "y"
       then
         run_verbose_errexit cabal copy
         (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
@@ -584,6 +592,10 @@ echo "Package name: [$PACKAGE_NAME]"
 
 PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
 echo "Package name and version: [$PACKAGE_FULL_NAME]"
+
+# The cabal info command run as part of package name determination above would
+# have already created the cabal config, just change the mirror if needed.
+test -n "$CABAL_HACKAGE_MIRROR" && cabal_use_mirror $CABAL_HACKAGE_MIRROR
 
 test -n "$(need_stack)" && ensure_stack_yaml
 create_and_unpack_pkg_dist $PACKAGE_FULL_NAME

@@ -3,6 +3,33 @@
 Highly flexible and fully automated, CI or manual, Haskell package sanity
 testing for package maintainers or end users.
 
+## Usage
+
+Options are passed via environment variables.
+
+### Local Machine
+```
+$ cd package-dir
+$ env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS="--pvp-bounds both" package-sanity.sh
+$ env BUILD=cabal GHCVER=7.10.3 CABALVER=1.22.9.0 COVERALLS_OPTIONS="test1 test2" package-sanity.sh
+```
+
+### Travis CI
+
+Link to script
+Link to output
+
+### Clean environment
+
+It is recommended to use a clean environment so that any environment variables
+are explicit. Use an explicitly set minimal `PATH` environment variable to find
+the tools. For example:
+
+```
+$ cd package-dir
+$ env -i PATH=/bin:/usr/bin BUILD=stack package-sanity.sh
+```
+
 ## Features
 
 * Works on *Linux* and *OSX*
@@ -14,25 +41,6 @@ testing for package maintainers or end users.
 * Test with stack even if you do not have a stack.yaml (it creates one automatically)
 * Use stack installed GHC for cabal builds
 * Optionally, generates and sends *coverage* information to coveralls.io
-
-## Usage
-
-Options are passed via environment variables.
-
-```
-$ cd package-dir
-$ env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS="--pvp-bounds both" package-sanity.sh
-$ env BUILD=cabal GHCVER=7.10.3 CABALVER=1.22.9.0 COVERALLS_OPTIONS="test1 test2" package-sanity.sh
-```
-
-It is recommended to use a clean environment so that any environment variables
-are explicit. Use an explicitly set minimal `PATH` environment variable to find
-the tools. For example:
-
-```
-$ cd package-dir
-$ env -i PATH=/bin:/usr/bin BUILD=stack package-sanity.sh
-```
 
 ## Configurable options
 ```
@@ -60,6 +68,10 @@ COVERAGE               : [y] Just generate coverage information
 Example usage:
 env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS="--pvp-bounds both" ./package-sanity.sh
 ```
+
+## Special Notes
+
+Hackage mirror: hackage.haskell.org:http://hackage.fpcomplete.com/
 
 ## How it works, read before using on a local system
 
