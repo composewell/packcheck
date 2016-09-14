@@ -546,6 +546,7 @@ test $# -eq 0 || show_help
 # create surprises.
 required_envvar BUILD
 
+echo
 bash --version
 
 # ---------Show, process and verify the config------------
@@ -576,12 +577,20 @@ show_step "Install tools needed for build"
 
 test -n "$(need_stack)" && ensure_stack
 ensure_ghc
-test "$BUILD" = "cabal" && ensure_cabal
 
+# We can only do this after ghc is installed.
 # We need cabal to retrieve the package version as well as for the solver
-# We install it everytime because resolver might change
-#if test -z "$(which cabal)"
-test "$BUILD" = stack && run_verbose_errexit $STACKCMD install cabal-install
+# Also when we are using stack for cabal builds use stack installed cabal
+# We are assuming CI cache will be per resolver so we can cache the bin
+if test -z "$(which cabal)"
+then
+  if test "$BUILD" = stack -o -z "$CABALVER"
+  then
+    run_verbose_errexit $STACKCMD install cabal-install
+  fi
+fi
+
+test "$BUILD" = "cabal" && ensure_cabal
 
 show_step "Effective build config"
 show_build_config
