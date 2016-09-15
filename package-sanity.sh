@@ -98,9 +98,75 @@ add_path() {
 # Build config show and determine
 #------------------------------------------------------------------------------
 
+ENVVARS="\
+  BUILD \
+  RESOLVER \
+  GHCVER \
+  CABALVER \
+  GHC_OPTIONS \
+  SDIST_OPTIONS \
+  PATH \
+  STACK_YAML \
+  STACK_BUILD_OPTIONS \
+  CABAL_USE_STACK_SDIST \
+  CABAL_CONFIGURE_OPTIONS \
+  CABAL_NO_SANDBOX \
+  CABAL_TEST_INSTALL \
+  CABAL_HACKAGE_MIRROR \
+  COVERAGE \
+  COVERALLS_OPTIONS \
+  CHECK_ENV \
+"
+
+# $1: varname
+# $2: list of vars to find in
+find_var() {
+  for v in $2
+  do
+   test $v = "$1" && return 0
+  done
+  return 1
+}
+
+error_novar() {
+  find_var "$1" "$ENVVARS" || die "Unknown evnironment variable [$1]"
+}
+
+error_clean_env() {
+    echo "Error: Unknown evnironment variable [$1]."
+    die "Please check spelling mistakes and use a clean environment (e.g. env -i) with CHECK_ENV."
+}
+
+ALLOW_ENVVARS="STACK_ROOT PWD SHLVL _"
+
+check_clean_env() {
+  local vars=$(env | cut -f1 -d=)
+  for i in $vars
+  do
+    find_var $i "$ENVVARS $ALLOW_ENVVARS" || error_clean_env "$i"
+  done
+}
+
+required_envvar() {
+  local var=$(eval "echo \$$1")
+  test -n "$var" || show_help
+}
+
+# $1: envvar
+check_boolean_var() {
+  error_novar "$1"
+  local var=$(eval "echo \$$1")
+  if test -n "$var" -a "$var" != y
+  then
+    echo "Error: Boolean envvar [$1] can only be empty or 'y'"
+    exit 1
+  fi
+}
+
 # $1: varname
 # $2: help text
 help_envvar() {
+  error_novar $1
   printf "%-24s: %s\n" "$1" "$2"
 }
 
@@ -134,24 +200,14 @@ show_help() {
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
+  show_step "Diagnostics"
+  # To catch spelling mistakes in envvar names passed, otherwise they will be
+  # silently ignored and we will be wondering why the script is not working.
+  help_envvar CHECK_ENV "Treat unknown env variables as error, used with env -i"
+
   show_step "Example usage"
   echo "env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS=\"--pvp-bounds both\" $0"
   exit 1
-}
-
-required_envvar() {
-  local var=$(eval "echo \$$1")
-  test -n "$var" || show_help
-}
-
-# $1: envvar
-check_boolean_var() {
-  local var=$(eval "echo \$$1")
-  if test -n "$var" -a "$var" != y
-  then
-    echo "Error: Boolean envvar [$1] can only be empty or 'y'"
-    exit 1
-  fi
 }
 
 show_build_config() {
@@ -160,24 +216,10 @@ show_build_config() {
   check_boolean_var CABAL_TEST_INSTALL
   check_boolean_var COVERAGE
 
-  show_nonempty_var BUILD
-  show_nonempty_var RESOLVER  # stack options
-  show_nonempty_var GHCVER
-  show_nonempty_var CABALVER
-  show_nonempty_var GHC_OPTIONS
-  show_nonempty_var SDIST_OPTIONS
-
-  show_nonempty_var STACK_YAML # stack options
-  show_nonempty_var STACK_BUILD_OPTIONS
-
-  show_nonempty_var CABAL_USE_STACK_SDIST
-  show_nonempty_var CABAL_CONFIGURE_OPTIONS
-  show_nonempty_var CABAL_NO_SANDBOX
-  show_nonempty_var CABAL_TEST_INSTALL
-  show_nonempty_var CABAL_HACKAGE_MIRROR
-
-  show_nonempty_var COVERAGE
-  show_nonempty_var COVERALLS
+  for i in $ENVVARS
+  do
+    show_nonempty_var $i
+  done
 }
 
 show_build_env() {
@@ -195,12 +237,14 @@ need_stack() {
 
 # $1: varname
 cabal_only_var() {
+  error_novar $1
   local var=$(eval "echo \$$1")
   test -z "$var" || die "[$1] is meaningful only for cabal build"
 }
 
 # $1: varname
 stack_only_var() {
+  error_novar $1
   local var=$(eval "echo \$$1")
   test -z "$var" || die "[$1] is meaningful only when stack is used"
 }
@@ -562,6 +606,9 @@ coveralls_io() {
 set -e
 set -o pipefail
 
+test -n "$CHECK_ENV" && check_boolean_var CHECK_ENV
+test -n "$CHECK_ENV" && check_clean_env
+
 test $# -eq 0 || show_help
 
 # Require at least one param so that accidentally running the script does not
@@ -580,17 +627,10 @@ show_build_env
 # Determine home independent of the environment
 export HOME=$(echo ~)
 
+TOOLS="awk cat curl cut env mkdir printf rm sleep tar which"
 show_step "Check basic tools"
-require_cmd awk
 require_cmd /bin/bash
-require_cmd cat
-require_cmd curl
-require_cmd mkdir
-require_cmd printf
-require_cmd rm
-require_cmd sleep
-require_cmd tar
-require_cmd which
+for i in $TOOLS; do require_cmd $i; done
 
 verify_build_config
 
