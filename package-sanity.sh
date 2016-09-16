@@ -88,10 +88,14 @@ show_step() {
   echo "------------------------------------------"
 }
 
-# $1: var
-# $2: path
-add_path() {
-  eval "test -n \"\$$1\"" && PATH=$2:$PATH
+get_local_bin() {
+  local os=$(uname)
+  case "$os" in
+    Darwin) echo $HOME/.local/bin ;;
+    Linux)  echo $HOME/.local/bin ;;
+    MINGW*) echo $HOME/AppData/Roaming/local/bin ;;
+    *) die "Unknown OS [$os]" ;;
+  esac
 }
 
 #------------------------------------------------------------------------------
@@ -319,33 +323,41 @@ EOF
 #------------------------------------------------------------------------------
 
 fetch_stack_osx() {
-  curl -skL https://www.stackage.org/stack/osx-x86_64 \
-    | tar xz --strip-components=1 --include '*/stack' -C ~/.local/bin
+  curl -sSkL https://www.stackage.org/stack/osx-x86_64 \
+    | tar xz --strip-components=1 -C $1 --include '*/stack'
 }
 
 fetch_stack_linux() {
-  curl -sL https://www.stackage.org/stack/linux-x86_64 \
-    | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  curl -sSkL https://www.stackage.org/stack/linux-x86_64 \
+    | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
 }
 
+fetch_stack_windows() {
+  curl -sSkL http://www.stackage.org/stack/windows-i386 \
+    | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
+}
+
+# $1: directory to place stack executable in
 fetch_stack() {
-  mkdir -p ~/.local/bin
-  if [ `uname` = "Darwin" ]
-  then
-    retry_cmd fetch_stack_osx
-  else
-    retry_cmd fetch_stack_linux
-  fi
+  mkdir -p $1
+  local os=$(uname)
+  case "$os" in
+    Darwin) retry_cmd fetch_stack_osx $1 ;;
+    Linux)  retry_cmd fetch_stack_linux $1 ;;
+    MINGW*) retry_cmd fetch_stack_windows $1 ;;
+    *) die "Unknown OS [$os]" ;;
+  esac
 }
 
+# $1: directory to place stack executable in
 ensure_stack() {
   # User specified PATH takes precedence
-  export PATH=$PATH:$HOME/.local/bin
+  export PATH=$PATH:$HOME/$1
 
-  if test -z "$(type -t stack)"
+  if test -z "$(which stack)"
   then
-    echo "Downloading stack..."
-    fetch_stack
+    echo "Downloading stack to [$1]..."
+    fetch_stack $1
   fi
   require_cmd stack
   # stack upgrade
@@ -423,10 +435,11 @@ cabal_use_mirror() {
   fi
 }
 
+# $1: Directory to install cabal in
 ensure_cabal() {
   # If we have to install tools like hpc-coveralls
   # User specified PATH takes precedence
-  export PATH=$PATH:$HOME/.local/bin
+  export PATH=$PATH:$HOME/$1
 
   # We can only do this after ghc is installed.
   # We need cabal to retrieve the package version as well as for the solver
@@ -637,9 +650,9 @@ verify_build_config
 # ---------Install any tools needed--------
 show_step "Install tools needed for build"
 
-test -n "$(need_stack)" && ensure_stack
+test -n "$(need_stack)" && ensure_stack $(get_local_bin)
 ensure_ghc
-ensure_cabal
+ensure_cabal $(get_local_bin)
 
 show_step "Effective build config"
 show_build_config
