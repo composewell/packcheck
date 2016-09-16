@@ -60,13 +60,20 @@ retry_cmd() {
   $cmd || (sleep 2 && $cmd) || (sleep 10 && $cmd)
 }
 
+# MINGW 'which' does not seem to work when there are spaces in the
+# PATH.  Note that, type returns a cached path, so if something got
+# deleted we might still be returning a stale value (we can use hash -r
+# to clear the cache if needed).
+
+WHICH="type -P"
+
 require_cmd () {
-  if test -z "$(type -t $1)"
+  if test -z "$($WHICH $1)"
   then
     echo "Required command [$1] not found in PATH [$PATH]."
     exit 1
   else
-    echo "Using [$1] at [$(which $1)]"
+    echo "Using [$1] at [$($WHICH $1)]"
   fi
 }
 
@@ -354,7 +361,7 @@ ensure_stack() {
   # User specified PATH takes precedence
   export PATH=$PATH:$HOME/$1
 
-  if test -z "$(which stack)"
+  if test -z "$($WHICH stack)"
   then
     echo "Downloading stack to [$1]..."
     fetch_stack $1
@@ -372,12 +379,18 @@ ensure_stack() {
 }
 
 use_stack_paths() {
-  STACKPATH=`$STACKCMD path --bin-path`
-  if test -n "$STACKPATH"
+  local GHCPATH=`$STACKCMD path --compiler-bin`
+  # Convert the path to MINGW format from windows native format
+  if [[ `uname` = MINGW* ]]
   then
-    export PATH=$STACKPATH
+    local drive=$(echo $GHCPATH | cut -f1 -d':' | tr '[:upper:]' '[:lower:]')
+    local path=$(echo $GHCPATH | cut -f2 -d':')
+    GHCPATH=/$drive/${path//\\/\/}
   fi
-  unset STACKPATH
+  if test -n "$GHCPATH"
+  then
+    export PATH=$GHCPATH:$PATH
+  fi
 }
 
 #------------------------------------------------------------------------------
@@ -445,7 +458,7 @@ ensure_cabal() {
   # We need cabal to retrieve the package version as well as for the solver
   # Also when we are using stack for cabal builds use stack installed cabal
   # We are assuming CI cache will be per resolver so we can cache the bin
-  if test -z "$(which cabal)" -a -n "$(need_stack)"
+  if test -z "$($WHICH cabal)" -a -n "$(need_stack)"
   then
       run_verbose_errexit $STACKCMD install cabal-install
   fi
@@ -600,7 +613,7 @@ build_and_test() {
 }
 
 coveralls_io() {
-  if test -z "$(which hpc-coveralls)"
+  if test -z "$($WHICH hpc-coveralls)"
   then
     if test "$BUILD" = stack
     then
