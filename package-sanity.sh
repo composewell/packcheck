@@ -379,17 +379,16 @@ ensure_stack() {
 }
 
 use_stack_paths() {
-  local GHCPATH=`$STACKCMD path --compiler-bin`
+  # Need the bin path (not just compiler-path) on mingw to find gcc
+  local BINPATH=`$STACKCMD path --bin-path`
   # Convert the path to MINGW format from windows native format
   if [[ `uname` = MINGW* ]]
   then
-    local drive=$(echo $GHCPATH | cut -f1 -d':' | tr '[:upper:]' '[:lower:]')
-    local path=$(echo $GHCPATH | cut -f2 -d':')
-    GHCPATH=/$drive/${path//\\/\/}
+    BINPATH=$(cygpath -u -p $BINPATH)
   fi
-  if test -n "$GHCPATH"
+  if test -n "$BINPATH"
   then
-    export PATH=$GHCPATH:$PATH
+    export PATH=$BINPATH:$PATH
   fi
 }
 
@@ -654,6 +653,11 @@ show_build_env
 export HOME=$(echo ~)
 
 TOOLS="awk cat curl cut env mkdir printf rm sleep tar which"
+if [[ `uname` = MINGW* ]]
+then
+  TOOLS="$TOOLS cygpath"
+fi
+
 show_step "Check basic tools"
 require_cmd /bin/bash
 for i in $TOOLS; do require_cmd $i; done
