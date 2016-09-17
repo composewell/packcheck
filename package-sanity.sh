@@ -329,6 +329,20 @@ EOF
 # Stack fetch and install etc.
 #------------------------------------------------------------------------------
 
+ensure_msys_tools() {
+  if [[ `uname` = MINGW* ]]
+  then
+    # retry??
+    for i in "$1"
+    do
+      if test -z "$WHICH $i"
+      then
+        stack exec pacman -- -S --noconfirm $i
+      fi
+    done
+  fi
+}
+
 fetch_stack_osx() {
   curl -sSkL https://www.stackage.org/stack/osx-x86_64 \
     | tar xz --strip-components=1 -C $1 --include '*/stack'
@@ -380,6 +394,8 @@ ensure_stack() {
 
 use_stack_paths() {
   # Need the bin path (not just compiler-path) on mingw to find gcc
+  # some packages may have a configure script looking for gcc, so we need to
+  # use bin path so that on windows we will find the stack installed mingw gcc
   local BINPATH=`$STACKCMD path --bin-path`
   # Convert the path to MINGW format from windows native format
   if [[ `uname` = MINGW* ]]
@@ -652,10 +668,13 @@ show_build_env
 # Determine home independent of the environment
 export HOME=$(echo ~)
 
-TOOLS="awk cat curl cut env mkdir printf rm sleep tar which"
+TOOLS="awk cat curl cut env mkdir printf rm sleep which"
 if [[ `uname` = MINGW* ]]
 then
   TOOLS="$TOOLS cygpath"
+else
+  # For msys we install tar later
+  TOOLS="$TOOLS tar"
 fi
 
 show_step "Check basic tools"
@@ -668,6 +687,7 @@ verify_build_config
 show_step "Install tools needed for build"
 
 test -n "$(need_stack)" && ensure_stack $(get_local_bin)
+ensure_msys_tools "tar" && require_cmd tar
 ensure_ghc
 ensure_cabal $(get_local_bin)
 
