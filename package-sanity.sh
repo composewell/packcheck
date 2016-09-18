@@ -65,15 +65,17 @@ retry_cmd() {
 # deleted we might still be returning a stale value (we can use hash -r
 # to clear the cache if needed).
 
-WHICH="type -P"
+which_cmd() {
+  hash -r && type -P "$1"
+}
 
 require_cmd () {
-  if test -z "$($WHICH $1)"
+  if test -z "$(which_cmd $1)"
   then
     echo "Required command [$1] not found in PATH [$PATH]."
     exit 1
   else
-    echo "Using [$1] at [$($WHICH $1)]"
+    echo "Using [$1] at [$(which_cmd $1)]"
   fi
 }
 
@@ -360,7 +362,7 @@ ensure_msys_tools() {
     # retry??
     for i in "$1"
     do
-      if test -z "$WHICH $i"
+      if test -z "$(which_cmd $i)"
       then
         stack exec pacman -- -S --noconfirm $i
       fi
@@ -378,10 +380,9 @@ fetch_stack_linux() {
     | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
 }
 
-# XXX will not work when there is no working tar on windows
 fetch_stack_windows() {
   curl -sSkL http://www.stackage.org/stack/windows-i386 \
-    | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
+    | 7z x -si stack.exe
 }
 
 # $1: directory to place stack executable in
@@ -401,7 +402,7 @@ ensure_stack() {
   # User specified PATH takes precedence
   export PATH=$PATH:$1
 
-  if test -z "$($WHICH stack)"
+  if test -z "$(which_cmd stack)"
   then
     echo "Downloading stack to [$1]..."
     fetch_stack $1
@@ -507,7 +508,7 @@ ensure_cabal() {
   # We need cabal to retrieve the package version as well as for the solver
   # Also when we are using stack for cabal builds use stack installed cabal
   # We are assuming CI cache will be per resolver so we can cache the bin
-  if test -z "$($WHICH cabal)" -a -n "$(need_stack)"
+  if test -z "$(which_cmd cabal)" -a -n "$(need_stack)"
   then
       run_verbose_errexit $STACKCMD install cabal-install
   fi
@@ -672,7 +673,7 @@ build_and_test() {
 }
 
 coveralls_io() {
-  if test -z "$($WHICH hpc-coveralls)"
+  if test -z "$(which_cmd hpc-coveralls)"
   then
     if test "$BUILD" = stack
     then
