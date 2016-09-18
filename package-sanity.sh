@@ -98,8 +98,7 @@ show_step() {
 # $1: file to ungztar
 win_ungztar() {
   local output=$(basename ${1%.gz})
-  run_verbose_errexit rm -f $output
-  run_verbose_errexit 7z e $1 && run_verbose_errexit 7z x $output
+  run_verbose_errexit 7z e -y $1 && run_verbose_errexit 7z x -y $output
   run_verbose_errexit rm -f $output
 }
 
@@ -179,9 +178,10 @@ check_clean_env() {
   done
 }
 
+# $1: varname
 require_envvar() {
   local var=$(eval "echo \$$1")
-  test -n "$var" || die "Environment variable [$var] must be set."
+  test -n "$var" || die "Environment variable [$1] must be set."
 }
 
 # $1: envvar
@@ -623,6 +623,9 @@ create_and_unpack_pkg_dist() {
     SDIST_CMD="cabal sdist $opts"
     SDIST_DIR=dist
   fi
+
+  # stack commands return path in windows format
+  [[ `uname` = MINGW* ]] && SDIST_DIR=`cygpath ${SDIST_DIR}`
 
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
