@@ -95,12 +95,22 @@ show_step() {
   echo "------------------------------------------"
 }
 
-get_local_bin() {
+set_os_specific_vars() {
   local os=$(uname)
   case "$os" in
-    Darwin) echo $HOME/.local/bin ;;
-    Linux)  echo $HOME/.local/bin ;;
-    MINGW*) echo "$USERPROFILE"/AppData/Roaming/local/bin ;;
+    Darwin|Linux)
+      OS_HAS_TOOLS=tar
+      OS_LOCAL_DIR=.local
+      OS_CABAL_DIR=.cabal
+      OS_APP_HOME=$HOME ;;
+    MINGW*)
+      require_cmd cygpath
+      require_envvar USERPROFILE
+      USERPROFILE=`cygpath $USERPROFILE`
+      OS_HAS_TOOLS=cygpath
+      OS_LOCAL_DIR=local
+      OS_CABAL_DIR=cabal
+      OS_APP_HOME="$USERPROFILE"/AppData/Roaming ;;
     *) die "Unknown OS [$os]" ;;
   esac
 }
@@ -119,6 +129,7 @@ ENVVARS="\
   PATH \
   STACK_YAML \
   STACK_BUILD_OPTIONS \
+  CABAL_REINIT_CONFIG \
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
   CABAL_NO_SANDBOX \
@@ -148,7 +159,7 @@ error_clean_env() {
     die "Please check spelling mistakes and use a clean environment (e.g. env -i) with CHECK_ENV."
 }
 
-ALLOW_ENVVARS="STACK_ROOT PWD SHLVL _"
+ALLOW_ENVVARS="STACK_ROOT USERPROFILE PWD SHLVL _"
 
 check_clean_env() {
   local vars=$(env | cut -f1 -d=)
@@ -158,7 +169,7 @@ check_clean_env() {
   done
 }
 
-required_envvar() {
+require_envvar() {
   local var=$(eval "echo \$$1")
   test -n "$var" || die "Environment variable [$var] must be set."
 }
@@ -189,7 +200,7 @@ show_help() {
   help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. --pvp-bounds)"
-  help_envvar PATH "Use an explicitly set PATH for predictable builds"
+  help_envvar PATH "[path] Set PATH explicitly for predictable builds"
 
   show_step "Advanced stack build env variables"
   help_envvar STACK_YAML "Alternative stack config file to use"
@@ -198,14 +209,18 @@ show_help() {
   show_step "Advanced cabal build env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
+  # All of the following are recommended for a CI environment, should we use a
+  # CONTINUOUS_INTEGRATION env variables to set them as default automatically?
   # The sandbox mode is a bit expensive because a sandbox is used and
   # dependencies have to be installed twice in two separate sandboxes, once to
   # create and sdist and once to build the sdist. For a CI NO sandbox mode
   # makes more sense as long as multiple builds running simultaneously will not
   # try to install conflicting packages.
-  help_envvar CABAL_NO_SANDBOX "[y] Will clobber (force install) your global cabal ghc package db"
+  help_envvar CABAL_NO_SANDBOX "[y] Clobber (force install) your global cabal ghc package db"
   help_envvar CABAL_TEST_INSTALL "[y] Force install the package after building"
   help_envvar CABAL_HACKAGE_MIRROR "[y] Specify an alternative mirror, will modify the cabal user config file."
+  # XXX this is not really a cabal build specific var
+  help_envvar CABAL_REINIT_CONFIG "[y] Remove old cabal config to avoid any config incompatibility issues"
 
   show_step "Coverage related env variables"
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
@@ -223,6 +238,7 @@ show_help() {
 
 show_build_config() {
   check_boolean_var CABAL_USE_STACK_SDIST
+  check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_NO_SANDBOX
   check_boolean_var CABAL_TEST_INSTALL
   check_boolean_var COVERAGE
@@ -235,7 +251,7 @@ show_build_config() {
 
 show_build_env() {
   show_nonempty_var HOME
-  show_nonempty_var PATH
+  show_nonempty_var USERPROFILE
   show_nonempty_var STACK_ROOT
 }
 
@@ -373,7 +389,7 @@ fetch_stack() {
 # $1: directory to place stack executable in
 ensure_stack() {
   # User specified PATH takes precedence
-  export PATH=$PATH:$HOME/$1
+  export PATH=$PATH:$1
 
   if test -z "$($WHICH stack)"
   then
@@ -444,9 +460,10 @@ ensure_ghc() {
   GHCVER=$(ghc --numeric-version) || exit 1
 }
 
+# XXX/TODO this may not work for cabal 1.24 config
 # $1: mirror URL
 cabal_use_mirror() {
-  local CABAL_CONFIG=$HOME/.cabal/config
+  local CABAL_CONFIG=${OS_APP_HOME}/${OS_CABAL_DIR}/config
   if test -f $CABAL_CONFIG
   then
     local inplace
@@ -467,7 +484,7 @@ cabal_use_mirror() {
 ensure_cabal() {
   # If we have to install tools like hpc-coveralls
   # User specified PATH takes precedence
-  export PATH=$PATH:$HOME/$1
+  export PATH=$PATH:$1
 
   # We can only do this after ghc is installed.
   # We need cabal to retrieve the package version as well as for the solver
@@ -483,6 +500,13 @@ ensure_cabal() {
   test -n "$CABALVER" && check_version cabal $CABALVER
   # Set the real version of cabal
   CABALVER=$(cabal --numeric-version) || exit 1
+
+  if test "$CABAL_REINIT_CONFIG" = y
+  then
+    local cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+    echo "Removing old cabal config [$cfg]"
+    run_verbose_errexit rm -f "$cfg"
+  fi
 }
 
 ensure_stack_yaml() {
@@ -654,11 +678,7 @@ test $# -eq 0 || show_help
 
 # Require at least one param so that accidentally running the script does not
 # create surprises.
-required_envvar BUILD
-if [ `uname` = MINGW* ]
-then
-  required_envvar USERPROFILE
-fi
+require_envvar BUILD
 
 echo
 bash --version
@@ -671,15 +691,9 @@ show_build_env
 
 # Determine home independent of the environment
 export HOME=$(echo ~)
+set_os_specific_vars # depends on HOME
 
-TOOLS="awk cat curl cut env mkdir printf rm sleep which"
-if [[ `uname` = MINGW* ]]
-then
-  TOOLS="$TOOLS cygpath"
-else
-  # For msys we install tar later
-  TOOLS="$TOOLS tar"
-fi
+TOOLS="awk cat curl cut env mkdir printf rm sleep which $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
 require_cmd /bin/bash
@@ -690,10 +704,10 @@ verify_build_config
 # ---------Install any tools needed--------
 show_step "Install tools needed for build"
 
-test -n "$(need_stack)" && ensure_stack $(get_local_bin)
+test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 ensure_msys_tools "tar" && require_cmd tar
 ensure_ghc
-ensure_cabal $(get_local_bin)
+ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 
 show_step "Effective build config"
 show_build_config
