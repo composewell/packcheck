@@ -704,6 +704,10 @@ verify_build_config
 # ---------Install any tools needed--------
 show_step "Install tools needed for build"
 
+# if we are running from a stack environment remove GHC_PACKAGE_PATH so that
+# cabal does not complain
+unset GHC_PACKAGE_PATH
+
 test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 ensure_msys_tools "tar" && require_cmd tar
 ensure_ghc
