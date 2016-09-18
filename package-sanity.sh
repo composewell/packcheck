@@ -95,11 +95,20 @@ show_step() {
   echo "------------------------------------------"
 }
 
+# $1: file to ungztar
+win_ungztar() {
+  local output=$(basename ${1%.gz})
+  run_verbose_errexit rm -f $output
+  run_verbose_errexit 7z e $1 && run_verbose_errexit 7z x $output
+  run_verbose_errexit rm -f $output
+}
+
 set_os_specific_vars() {
   local os=$(uname)
   case "$os" in
     Darwin|Linux)
       OS_HAS_TOOLS=tar
+      OS_UNGZTAR_CMD="run_verbose_errexit tar xzvf"
       OS_LOCAL_DIR=.local
       OS_CABAL_DIR=.cabal
       OS_APP_HOME=$HOME ;;
@@ -108,6 +117,7 @@ set_os_specific_vars() {
       require_envvar USERPROFILE
       USERPROFILE=`cygpath $USERPROFILE`
       OS_HAS_TOOLS=cygpath
+      OS_UNGZTAR_CMD=win_ungztar
       OS_LOCAL_DIR=local
       OS_CABAL_DIR=cabal
       OS_APP_HOME="$USERPROFILE"/AppData/Roaming ;;
@@ -369,6 +379,7 @@ fetch_stack_linux() {
     | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
 }
 
+# XXX will not work when there is no working tar on windows
 fetch_stack_windows() {
   curl -sSkL http://www.stackage.org/stack/windows-i386 \
     | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
@@ -413,10 +424,17 @@ use_stack_paths() {
   # some packages may have a configure script looking for gcc, so we need to
   # use bin path so that on windows we will find the stack installed mingw gcc
   local BINPATH=`$STACKCMD path --bin-path`
-  # Convert the path to MINGW format from windows native format
   if [[ `uname` = MINGW* ]]
   then
+    # Need for 7z on windows
+    local GHCPATHS=`$STACKCMD path --programs`
+    # Convert the path to MINGW format from windows native format
     BINPATH=$(cygpath -u -p $BINPATH)
+    GHCPATHS=$(cygpath -u -p $GHCPATHS)
+    if test -n "$GHCPATHS"
+    then
+      export PATH=$GHCPATHS:$PATH
+    fi
   fi
   if test -n "$BINPATH"
   then
@@ -620,7 +638,7 @@ create_and_unpack_pkg_dist() {
   echo "cd .sanity-test"
   cd .sanity-test || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
-  run_verbose_errexit tar xzvf $tarpath
+  $OS_UNGZTAR_CMD $tarpath
 }
 
 install_deps() {
@@ -709,9 +727,16 @@ show_step "Install tools needed for build"
 unset GHC_PACKAGE_PATH
 
 test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
-ensure_msys_tools "tar" && require_cmd tar
+# The tar installed by pacman does not seem to work. Maybe we need to have it
+# packed with msys itself.
+# ensure_msys_tools "tar" && require_cmd tar
+
 ensure_ghc
 ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+
+# use the stack installed 7z instead. depends on ensure ghc where we setup
+# stack paths.
+[[ `uname` = MINGW* ]] && require_cmd 7z
 
 show_step "Effective build config"
 show_build_config
