@@ -113,13 +113,12 @@ set_os_specific_vars() {
       OS_APP_HOME=$HOME ;;
     MINGW*)
       require_cmd cygpath
-      require_envvar USERPROFILE
-      USERPROFILE=`cygpath $USERPROFILE`
+      require_envvar APPDATA
       OS_HAS_TOOLS=cygpath
       OS_UNGZTAR_CMD=win_ungztar
       OS_LOCAL_DIR=local
       OS_CABAL_DIR=cabal
-      OS_APP_HOME="$USERPROFILE"/AppData/Roaming ;;
+      OS_APP_HOME=`cygpath $APPDATA` ;;
     *) die "Unknown OS [$os]" ;;
   esac
 }
@@ -168,7 +167,7 @@ error_clean_env() {
     die "Please check spelling mistakes and use a clean environment (e.g. env -i) with CHECK_ENV."
 }
 
-ALLOW_ENVVARS="STACK_ROOT USERPROFILE PWD SHLVL _"
+ALLOW_ENVVARS="STACK_ROOT APPDATA PWD SHLVL _"
 
 check_clean_env() {
   local vars=$(env | cut -f1 -d=)
@@ -261,7 +260,7 @@ show_build_config() {
 
 show_build_env() {
   show_nonempty_var HOME
-  show_nonempty_var USERPROFILE
+  show_nonempty_var APPDATA
   show_nonempty_var STACK_ROOT
 }
 
