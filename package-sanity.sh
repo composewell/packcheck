@@ -100,7 +100,7 @@ get_local_bin() {
   case "$os" in
     Darwin) echo $HOME/.local/bin ;;
     Linux)  echo $HOME/.local/bin ;;
-    MINGW*) echo $HOME/AppData/Roaming/local/bin ;;
+    MINGW*) echo "$USERPROFILE"/AppData/Roaming/local/bin ;;
     *) die "Unknown OS [$os]" ;;
   esac
 }
@@ -160,7 +160,7 @@ check_clean_env() {
 
 required_envvar() {
   local var=$(eval "echo \$$1")
-  test -n "$var" || show_help
+  test -n "$var" || die "Environment variable [$var] must be set."
 }
 
 # $1: envvar
@@ -655,6 +655,10 @@ test $# -eq 0 || show_help
 # Require at least one param so that accidentally running the script does not
 # create surprises.
 required_envvar BUILD
+if [ `uname` = MINGW* ]
+then
+  required_envvar USERPROFILE
+fi
 
 echo
 bash --version
