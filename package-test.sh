@@ -140,6 +140,7 @@ ENVVARS="\
   STACK_YAML \
   STACK_BUILD_OPTIONS \
   CABAL_REINIT_CONFIG \
+  CABAL_CHECK_RELAX \
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
   CABAL_NO_SANDBOX \
@@ -232,6 +233,7 @@ show_help() {
   help_envvar CABAL_HACKAGE_MIRROR "[y] Specify an alternative mirror, will modify the cabal user config file."
   # XXX this is not really a cabal build specific var
   help_envvar CABAL_REINIT_CONFIG "[y] Remove old cabal config to avoid any config incompatibility issues"
+  help_envvar CABAL_CHECK_RELAX "[y] Do not fail is cabal check fails on the package."
 
   show_step "Coverage related env variables"
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
@@ -250,6 +252,7 @@ show_help() {
 show_build_config() {
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
+  check_boolean_var CABAL_CHECK_RELAX
   check_boolean_var CABAL_NO_SANDBOX
   check_boolean_var CABAL_TEST_INSTALL
   check_boolean_var COVERAGE
@@ -656,11 +659,11 @@ install_deps() {
 build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
+    # TODO : test stack install
     cabal)
       cabal_configure
       run_verbose_errexit cabal build
       run_verbose_errexit cabal test
-      run_verbose_errexit cabal check
       run_verbose_errexit cabal sdist
 
       if test "$CABAL_TEST_INSTALL" = "y"
@@ -670,6 +673,13 @@ build_and_test() {
         remove_pkg_executables
       fi ;;
   esac
+
+  if test "$CABAL_CHECK_RELAX" = y
+  then
+    run_verbose cabal check
+  else
+    run_verbose_errexit cabal check
+  fi
 }
 
 coveralls_io() {
