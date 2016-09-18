@@ -676,7 +676,7 @@ build_and_test() {
 
   if test "$CABAL_CHECK_RELAX" = y
   then
-    run_verbose cabal check
+    run_verbose cabal check || true
   else
     run_verbose_errexit cabal check
   fi
