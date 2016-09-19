@@ -136,6 +136,7 @@ ENVVARS="\
   CABALVER \
   GHC_OPTIONS \
   SDIST_OPTIONS \
+  TEST_INSTALL \
   PATH \
   STACK_YAML \
   STACK_BUILD_OPTIONS \
@@ -144,7 +145,6 @@ ENVVARS="\
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
   CABAL_NO_SANDBOX \
-  CABAL_TEST_INSTALL \
   CABAL_HACKAGE_MIRROR \
   COVERAGE \
   COVERALLS_OPTIONS \
@@ -212,6 +212,7 @@ show_help() {
   help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. --pvp-bounds)"
+  help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
 
   show_step "Advanced stack build env variables"
@@ -228,11 +229,10 @@ show_help() {
   # create and sdist and once to build the sdist. For a CI NO sandbox mode
   # makes more sense as long as multiple builds running simultaneously will not
   # try to install conflicting packages.
-  help_envvar CABAL_NO_SANDBOX "[y] Clobber (force install) your global cabal ghc package db"
-  help_envvar CABAL_TEST_INSTALL "[y] Force install the package after building"
-  help_envvar CABAL_HACKAGE_MIRROR "[y] Specify an alternative mirror, will modify the cabal user config file."
+  help_envvar CABAL_NO_SANDBOX "[y] DESTRUCTIVE! Clobber (force install) your global cabal ghc package db"
+  help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file."
   # XXX this is not really a cabal build specific var
-  help_envvar CABAL_REINIT_CONFIG "[y] Remove old cabal config to avoid any config incompatibility issues"
+  help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail is cabal check fails on the package."
 
   show_step "Coverage related env variables"
@@ -254,7 +254,7 @@ show_build_config() {
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
   check_boolean_var CABAL_NO_SANDBOX
-  check_boolean_var CABAL_TEST_INSTALL
+  check_boolean_var TEST_INSTALL
   check_boolean_var COVERAGE
 
   for i in $ENVVARS
@@ -337,9 +337,9 @@ EOF
   then
     cabal_only_var CABALVER
     cabal_only_var CABAL_USE_STACK_SDIST
+    cabal_only_var CABAL_CHECK_RELAX
     cabal_only_var CABAL_CONFIGURE_OPTIONS
     cabal_only_var CABAL_NO_SANDBOX
-    cabal_only_var CABAL_TEST_INSTALL
     cabal_only_var CABAL_HACKAGE_MIRROR
   else
     stack_only_var STACK_BUILD_OPTIONS
@@ -402,9 +402,6 @@ fetch_stack() {
 
 # $1: directory to place stack executable in
 ensure_stack() {
-  # User specified PATH takes precedence
-  export PATH=$PATH:$1
-
   if test -z "$(which_cmd stack)"
   then
     echo "Downloading stack to [$1]..."
@@ -503,10 +500,6 @@ cabal_use_mirror() {
 
 # $1: Directory to install cabal in
 ensure_cabal() {
-  # If we have to install tools like hpc-coveralls
-  # User specified PATH takes precedence
-  export PATH=$PATH:$1
-
   # We can only do this after ghc is installed.
   # We need cabal to retrieve the package version as well as for the solver
   # Also when we are using stack for cabal builds use stack installed cabal
@@ -571,12 +564,13 @@ get_pkg_full_name() {
   echo $full_name
 }
 
+# $1: dir where they are installed
 remove_pkg_executables() {
   exes=$(cabal info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
   echo "Remove installed binaries"
   for i in $exes
   do
-    run_verbose_errexit rm -f $HOME/.cabal/bin/$i
+    run_verbose_errexit rm "$1"/"$i"
   done
 }
 
@@ -659,27 +653,40 @@ install_deps() {
 build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
-    # TODO : test stack install
     cabal)
       cabal_configure
       run_verbose_errexit cabal build
-      run_verbose_errexit cabal test
-      run_verbose_errexit cabal sdist
+      run_verbose_errexit cabal test ;;
+  esac
+}
 
-      if test "$CABAL_TEST_INSTALL" = "y"
+# $1 package dir (name + ver)
+# $2 package name
+dist_checks() {
+  case "$BUILD" in
+    stack) run_verbose_errexit stack sdist ;;
+    cabal)
+      run_verbose_errexit cabal sdist
+      if test "$CABAL_CHECK_RELAX" = y
       then
-        run_verbose_errexit cabal copy
-        (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
-        remove_pkg_executables
+        run_verbose cabal check || true
+      else
+        run_verbose_errexit cabal check
       fi ;;
   esac
+}
 
-  if test "$CABAL_CHECK_RELAX" = y
-  then
-    run_verbose cabal check || true
-  else
-    run_verbose_errexit cabal check
-  fi
+install_test() {
+  case "$BUILD" in
+    stack)
+      stack install
+      # TODO test if the dist can be installed by cabal
+      remove_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
+    cabal)
+      run_verbose_errexit cabal copy
+      (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
+      remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
+  esac
 }
 
 coveralls_io() {
@@ -724,6 +731,15 @@ show_build_env
 export HOME=$(echo ~)
 set_os_specific_vars # depends on HOME
 
+# Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
+if test "$BUILD" = stack
+then
+  export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
+else
+  export PATH=$PATH:$OS_APP_HOME/$OS_CABAL_DIR/bin
+  export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
+fi
+
 TOOLS="awk cat curl cut env mkdir printf rm sleep which $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
@@ -737,6 +753,7 @@ show_step "Install tools needed for build"
 
 # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
 # cabal does not complain
+# XXX this should be done from outside via env
 unset GHC_PACKAGE_PATH
 
 test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
@@ -774,7 +791,7 @@ cd $PACKAGE_FULL_NAME
 show_step "Package info [sdist $SDIST_OPTIONS]"
 run_verbose cabal info .
 
-show_step "Install dependencies"
+show_step "Install package dependencies"
 install_deps $PACKAGE_FULL_NAME
 
 show_step "Build and test"
@@ -784,4 +801,13 @@ if test -n "$COVERALLS_OPTIONS"
 then
     show_step "Send coverage info to coveralls.io"
     coveralls_io
+fi
+
+show_step "Package distribution checks"
+dist_checks
+
+if test "$TEST_INSTALL" = y
+then
+  show_step "Package install test"
+  install_test
 fi
