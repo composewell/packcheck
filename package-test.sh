@@ -648,8 +648,6 @@ install_deps() {
   esac
 }
 
-# $1 package dir (name + ver)
-# $2 package name
 build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
@@ -660,8 +658,6 @@ build_and_test() {
   esac
 }
 
-# $1 package dir (name + ver)
-# $2 package name
 dist_checks() {
   case "$BUILD" in
     stack) run_verbose_errexit stack sdist ;;
@@ -676,12 +672,13 @@ dist_checks() {
   esac
 }
 
+# $1 package name + ver
 install_test() {
   case "$BUILD" in
     stack)
       stack install
       # TODO test if the dist can be installed by cabal
-      remove_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
+      remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
     cabal)
       run_verbose_errexit cabal copy
       (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
@@ -795,7 +792,7 @@ show_step "Install package dependencies"
 install_deps $PACKAGE_FULL_NAME
 
 show_step "Build and test"
-build_and_test $PACKAGE_FULL_NAME $PACKAGE_NAME
+build_and_test
 
 if test -n "$COVERALLS_OPTIONS"
 then
@@ -809,5 +806,5 @@ dist_checks
 if test "$TEST_INSTALL" = y
 then
   show_step "Package install test"
-  install_test
+  install_test $PACKAGE_FULL_NAME
 fi
