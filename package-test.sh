@@ -660,7 +660,7 @@ build_and_test() {
 
 dist_checks() {
   case "$BUILD" in
-    stack) run_verbose_errexit stack sdist ;;
+    stack) run_verbose_errexit $STACKCMD sdist ;;
     cabal)
       run_verbose_errexit cabal sdist
       if test "$CABAL_CHECK_RELAX" = y
@@ -676,7 +676,7 @@ dist_checks() {
 install_test() {
   case "$BUILD" in
     stack)
-      stack install
+      $STACKCMD install
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
     cabal)
@@ -691,7 +691,7 @@ coveralls_io() {
   then
     if test "$BUILD" = stack
     then
-      run_verbose_errexit stack install hpc-coveralls
+      run_verbose_errexit $STACKCMD install hpc-coveralls
     else
       run_verbose_errexit cabal install hpc-coveralls
     fi
