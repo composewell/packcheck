@@ -4,7 +4,7 @@
 # Skip to the end for main flow of script
 #------------------------------------------------------------------------------
 
-# See the Readme.md file for details on how it works and the user guide.
+# See the Readme.md file for details on how it works and for the user guide.
 
 #------------------------------------------------------------------------------
 # TODO
@@ -192,8 +192,7 @@ check_boolean_var() {
   local var=$(eval "echo \$$1")
   if test -n "$var" -a "$var" != y
   then
-    echo "Error: Boolean envvar [$1] can only be empty or 'y'"
-    exit 1
+    die "Boolean envvar [$1] can only be empty or 'y'"
   fi
 }
 
@@ -676,7 +675,7 @@ dist_checks() {
 install_test() {
   case "$BUILD" in
     stack)
-      $STACKCMD install
+      run_verbose_errexit $STACKCMD install
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
     cabal)
