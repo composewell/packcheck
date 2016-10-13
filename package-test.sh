@@ -228,11 +228,11 @@ show_help() {
   # create and sdist and once to build the sdist. For a CI NO sandbox mode
   # makes more sense as long as multiple builds running simultaneously will not
   # try to install conflicting packages.
-  help_envvar CABAL_NO_SANDBOX "[y] DESTRUCTIVE! Clobber (force install) your global cabal ghc package db"
+  help_envvar CABAL_NO_SANDBOX "[y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db"
   help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file."
   # XXX this is not really a cabal build specific var
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues"
-  help_envvar CABAL_CHECK_RELAX "[y] Do not fail is cabal check fails on the package."
+  help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
 
   show_step "Coverage related env variables"
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
