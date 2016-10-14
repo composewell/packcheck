@@ -41,6 +41,9 @@ $ env BUILD=cabal GHCVER=7.10.3 CABALVER=1.22.9.0 package-test.sh
 
 ### Travis or Appveyor CI
 
+You can embed this script in a travis or appveyor YAML config and pass
+options via environment variables. Here are some example CI scripts:
+
 * [Travis script for xls
   package](https://github.com/harendra-kumar/xls/blob/master/.travis.yml)
 * [Appveyor script for xls
@@ -69,6 +72,11 @@ $ env -i PATH=/bin:/usr/bin BUILD=stack package-test.sh
 ```
 
 ## All Configurable Options
+
+Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
+local machine sometimes it may not be desirable as it will change the
+state of your global config, so consider that before using these options.
+
 ```
 cueball $ package-test.sh --help
 ------------------------------------------
