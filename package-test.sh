@@ -137,6 +137,7 @@ ENVVARS="\
   GHC_OPTIONS \
   SDIST_OPTIONS \
   TEST_INSTALL \
+  DISABLE_BENCH \
   PATH \
   STACK_YAML \
   STACK_BUILD_OPTIONS \
@@ -204,6 +205,9 @@ help_envvar() {
 }
 
 show_help() {
+  show_step "Example usage"
+  echo "env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS=\"--pvp-bounds both\" $0"
+
   show_step "Commonly used env variables"
   help_envvar BUILD "[stack | cabal] The only mandatory option"
   help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
@@ -212,6 +216,7 @@ show_help() {
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. --pvp-bounds)"
   help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
+  help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
 
   show_step "Advanced stack build env variables"
@@ -242,9 +247,6 @@ show_help() {
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "Treat unknown env variables as error, used with env -i"
-
-  show_step "Example usage"
-  echo "env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS=\"--pvp-bounds both\" $0"
   exit 1
 }
 
@@ -254,6 +256,7 @@ show_build_config() {
   check_boolean_var CABAL_CHECK_RELAX
   check_boolean_var CABAL_NO_SANDBOX
   check_boolean_var TEST_INSTALL
+  check_boolean_var DISABLE_BENCH
   check_boolean_var COVERAGE
 
   for i in $ENVVARS
@@ -294,30 +297,33 @@ verify_build_config() {
 
   if test "$BUILD" = stack
   then
-    STACK_DEP_OPTIONS="--test --bench --only-dependencies --ghc-options=-O0"
+    STACK_DEP_OPTIONS="--test --only-dependencies --ghc-options=-O0"
+    test -z "$DISABLE_BENCH" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
     init_default STACK_BUILD_OPTIONS \
           "--test \
-          --bench --no-run-benchmarks \
           --haddock --no-haddock-deps"
 
     STACK_BUILD_OPTIONS=$(cat << EOF
       $STACK_BUILD_OPTIONS
+      $(test -z "$DISABLE_BENCH" && echo "--bench --no-run-benchmarks")
       $(test -n "${COVERAGE}" && echo --coverage)
       $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
 EOF
 )
   else
     CABAL_DEP_OPTIONS="--only-dependencies \
-        --enable-tests --enable-benchmarks --force-reinstalls \
+        --enable-tests --force-reinstalls \
         --reorder-goals --max-backjumps=-1 --ghc-options=-O0"
+    test -z "$DISABLE_BENCH" && \
+      CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
     init_default CABAL_CONFIGURE_OPTIONS \
                  "-v2 \
-                 --enable-tests \
-                 --enable-benchmarks"
+                 --enable-tests"
     CABAL_CONFIGURE_OPTIONS=$(cat << EOF
       $CABAL_CONFIGURE_OPTIONS
+      $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
       $(test -n "$COVERAGE" && echo --enable-coverage)
       $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
 EOF

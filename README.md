@@ -90,6 +90,7 @@ CABALVER                : [a.b.c.d] Cabal version prefix for cabal builds
 GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Argument to stack sdist (e.g. --pvp-bounds)
 TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (force install with cabal)
+DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 PATH                    : [path] Set PATH explicitly for predictable builds
 
 ------------------------------------------
