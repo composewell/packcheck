@@ -10,9 +10,10 @@ A convenient and versatile shell script to test your package:
 * installs required tools automatically
 * a lot more flexibility available
 
-It first creates a source distribution of the package, unpacks it and then
-tests rather than testing directly from the git repo to make sure that your
-package is ready to upload on Hackage without any further testing.
+It creates and tests the source distribution rather than testing
+directly from the git repo to make sure that your package is safe to
+upload on Hackage. Ability to test on local machine saves the time
+wasted in testing the CI script in production.
 
 ## Usage
 
