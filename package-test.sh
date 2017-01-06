@@ -140,6 +140,7 @@ ENVVARS="\
   DISABLE_BENCH \
   PATH \
   STACK_YAML \
+  STACK_OPTIONS \
   STACK_BUILD_OPTIONS \
   CABAL_REINIT_CONFIG \
   CABAL_CHECK_RELAX \
@@ -150,6 +151,8 @@ ENVVARS="\
   COVERAGE \
   COVERALLS_OPTIONS \
   CHECK_ENV \
+  LANG \
+  LC_ALL \
 "
 
 # $1: varname
@@ -221,6 +224,7 @@ show_help() {
 
   show_step "Advanced stack build env variables"
   help_envvar STACK_YAML "Alternative stack config file to use"
+  help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
 
   show_step "Advanced cabal build env variables"
@@ -347,6 +351,7 @@ EOF
     cabal_only_var CABAL_NO_SANDBOX
     cabal_only_var CABAL_HACKAGE_MIRROR
   else
+    stack_only_var STACK_OPTIONS
     stack_only_var STACK_BUILD_OPTIONS
     if test -n "$GHCVER" -a -n "$RESOLVER"
     then
@@ -414,7 +419,7 @@ ensure_stack() {
   fi
   require_cmd stack
   # stack upgrade
-  STACKCMD="stack --no-terminal"
+  STACKCMD="stack --no-terminal $STACK_OPTIONS"
   $STACKCMD --version
 
   if test -n "$RESOLVER"
