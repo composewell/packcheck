@@ -1,0 +1,58 @@
+# NOT YET SUPPORTED
+#
+#------------------------------------------------------------------------------
+# Sample config to generate travis/appveyor ci config for a package.
+#------------------------------------------------------------------------------
+#
+# If not specified, the tested-with field from cabal file will be used
+# can also be customized per ci
+test-with-ghc:
+  - ghc-7.10.3
+  - ghc-8.0.1
+
+# Specify resolvers, could be a compiler resolver for a specific compiler
+# can also be customized per ci
+test-with-stack:
+  - lts-6
+  - lts-7
+
+# Generates test matrix for Linux and OSX on travis
+# travis-options can be any travis.yml supported fields, will directly
+# override any travis.yaml fields
+test-providers:
+  - travis:
+    - travis-options:
+      - sudo: false # default is false
+
+  - appveyor:
+    - appveyor-options:
+      - platform: x64
+
+  # This will generate a script for local use
+  - local: []
+
+#------------------------------------------------------------------------------
+# Optional configuration
+#------------------------------------------------------------------------------
+#
+# These options perhaps should be script independent and removed in future
+# We can generate the script itself locally to be committed to the repo
+#
+# package-test repo snapshot to be used for testing
+# Use a specific commit to ensure reproducibility
+# can also be customized per ci
+# If not specified, use the latest
+package-test-repo: "https://raw.githubusercontent.com/harendra-kumar/package-test"
+package-test-version: "62db8f69afcb47428d1fb87ce4005b453f7f179c"
+
+# see package-test README for all available options
+# can also be customized per ci
+# TODO find the correct version of ghc from path. try the first ghc in path, if
+# version does not match remove that component from path and try again. That
+# way we can try multiple ghc in the path.
+# XXX we should instead have a hpc-coveralls section as a coverage provider
+package-test-options:
+  - PATH: "/usr/bin:/usr/local/bin"
+  - GHC_OPTIONS: "-O0 -Werror"
+    # change to HPC_COVERALLS_OPTIONS?
+  - COVERALLS_OPTIONS: "--coverage-mode=StrictlyFullLines test-suite-name"
