@@ -580,7 +580,9 @@ remove_pkg_executables() {
   echo "Remove installed binaries"
   for i in $exes
   do
-    run_verbose_errexit rm "$1"/"$i"
+    # The executables may be under a cabal flag and may not have been installed
+    # unless we used that flag. So just use "rm -f" to remove silently.
+    run_verbose_errexit rm -f "$1"/"$i"
   done
 }
 
