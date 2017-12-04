@@ -545,7 +545,11 @@ ensure_stack_yaml() {
 Please provide a working stack.yaml or use cabal build."
     require_file stack.yaml
   fi
-  test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
+  SDIST_STACKCMD=$STACKCMD
+  test -n "$STACK_YAML" && SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
+  # We run the stack command from .sanity-test/<package> dir after unpacking
+  # sdist
+  test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
   echo "Using stack command [$STACKCMD]"
 }
 
@@ -615,12 +619,12 @@ create_and_unpack_pkg_dist() {
 
   if test "$BUILD" = stack
   then
-    SDIST_CMD="$STACKCMD sdist $opts"
-    SDIST_DIR=$($STACKCMD path --dist-dir) || exit 1
+    SDIST_CMD="$SDIST_STACKCMD sdist $opts"
+    SDIST_DIR=$($SDIST_STACKCMD path --dist-dir) || exit 1
   elif test -n "$CABAL_USE_STACK_SDIST"
   then
-    SDIST_CMD="$STACKCMD --compiler=ghc-$GHCVER sdist $opts"
-    SDIST_DIR=$($STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
+    SDIST_CMD="$SDIST_STACKCMD --compiler=ghc-$GHCVER sdist $opts"
+    SDIST_DIR=$($SDIST_STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
   else
     # We need to configure to use sdist and we need to install
     # dependencies to configure. So to just create the sdist we will
@@ -764,6 +768,8 @@ show_step "Install tools needed for build"
 # cabal does not complain
 # XXX this should be done from outside via env
 unset GHC_PACKAGE_PATH
+# stack does not work well with empty STACK_YAML env var
+test -z "$STACK_YAML" && unset STACK_YAML
 
 test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 # The tar installed by pacman does not seem to work. Maybe we need to have it
