@@ -140,6 +140,7 @@ ENVVARS="\
   DISABLE_BENCH \
   PATH \
   STACK_YAML \
+  STACK_UPGRADE \
   STACK_OPTIONS \
   STACK_BUILD_OPTIONS \
   CABAL_REINIT_CONFIG \
@@ -224,6 +225,7 @@ show_help() {
 
   show_step "Advanced stack build env variables"
   help_envvar STACK_YAML "Alternative stack config file to use"
+  help_envvar STACK_UPGRADE "Upgrade stack to latest version"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
 
@@ -255,6 +257,7 @@ show_help() {
 }
 
 show_build_config() {
+  check_boolean_var STACK_UPGRADE
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
@@ -362,6 +365,7 @@ EOF
   if test -z "$(need_stack)"
   then
     stack_only_var STACK_YAML
+    #stack_only_var STACK_UPGRADE
   fi
 }
 
@@ -418,7 +422,7 @@ ensure_stack() {
     fetch_stack $1
   fi
   require_cmd stack
-  # stack upgrade
+  test -n "$STACK_UPGRADE" && stack upgrade
   STACKCMD="stack --no-terminal $STACK_OPTIONS"
   $STACKCMD --version
 
