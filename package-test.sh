@@ -222,7 +222,7 @@ show_help() {
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
-  help_envvar SDIST_OPTIONS "Argument to stack sdist (e.g. --pvp-bounds)"
+  help_envvar SDIST_OPTIONS "Arguments to stack sdist (e.g. --pvp-bounds)"
   help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
@@ -250,11 +250,11 @@ show_help() {
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
 
   show_step "Coverage related env variables"
-  help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
+  help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
   show_step "hlint related env variables"
-  help_envvar HLINT_OPTIONS "Specify hlint arguments and options"
+  help_envvar HLINT_OPTIONS "hlint arguments and options, usually just '.'"
   help_envvar HLINT "[y] Run hlint. Defaults to 'y' if HLINT_OPTIONS is set"
 
   show_step "Diagnostics"
@@ -561,7 +561,7 @@ Please provide a working stack.yaml or use cabal build."
   fi
   SDIST_STACKCMD=$STACKCMD
   test -n "$STACK_YAML" && SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
-  # We run the stack command from .sanity-test/<package> dir after unpacking
+  # We run the stack command from .package-test/<package> dir after unpacking
   # sdist
   test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
   echo "Using stack command [$STACKCMD]"
@@ -663,10 +663,10 @@ create_and_unpack_pkg_dist() {
     exit 1
   fi
 
-  # Unpack the tar inside .sanity-test directory
-  mkdir -p .sanity-test || exit 1
-  echo "cd .sanity-test"
-  cd .sanity-test || exit 1
+  # Unpack the tar inside .package-test directory
+  mkdir -p .package-test || exit 1
+  echo "cd .package-test"
+  cd .package-test || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
   $OS_UNGZTAR_CMD $tarpath
 }
@@ -785,7 +785,7 @@ build_compile () {
   test -n "$(need_stack)" && ensure_stack_yaml
   create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 
-  # Note the above functions leaves us in the .sanity-test dir
+  # Note the above functions leaves us in the .package-test dir
   cd $PACKAGE_FULL_NAME
   show_step "Package info [sdist $SDIST_OPTIONS]"
   run_verbose cabal info .
