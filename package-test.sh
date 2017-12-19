@@ -30,7 +30,7 @@ show_nonempty_var() {
   local var=$(eval "echo \$$1")
   if test -n "$var"
   then
-    echo "$1=$var"
+    printf "%q\n" "$1=$var"
   fi
 }
 
