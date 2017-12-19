@@ -129,26 +129,21 @@ set_os_specific_vars() {
 # Build config show and determine
 #------------------------------------------------------------------------------
 
-ENVVARS="\
+SAFE_ENVVARS="\
   BUILD \
   RESOLVER \
   GHCVER \
   CABALVER \
   GHC_OPTIONS \
   SDIST_OPTIONS \
-  TEST_INSTALL \
   DISABLE_BENCH \
   PATH \
   STACK_YAML \
-  STACK_UPGRADE \
   STACK_OPTIONS \
   STACK_BUILD_OPTIONS \
-  CABAL_REINIT_CONFIG \
   CABAL_CHECK_RELAX \
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
-  CABAL_NO_SANDBOX \
-  CABAL_HACKAGE_MIRROR \
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT \
@@ -157,6 +152,16 @@ ENVVARS="\
   LANG \
   LC_ALL \
 "
+
+UNSAFE_ENVVARS="\
+  TEST_INSTALL \
+  STACK_UPGRADE \
+  CABAL_REINIT_CONFIG \
+  CABAL_NO_SANDBOX \
+  CABAL_HACKAGE_MIRROR \
+"
+
+ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
 
 # $1: varname
 # $2: list of vars to find in
@@ -229,7 +234,7 @@ show_help() {
 
   show_step "Advanced stack build env variables"
   help_envvar STACK_YAML "Alternative stack config file to use"
-  help_envvar STACK_UPGRADE "Upgrade stack to latest version"
+  help_envvar STACK_UPGRADE "DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
 
@@ -264,7 +269,7 @@ show_help() {
   exit 1
 }
 
-show_build_config() {
+check_all_boolean_vars () {
   check_boolean_var STACK_UPGRADE
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
@@ -274,7 +279,46 @@ show_build_config() {
   check_boolean_var DISABLE_BENCH
   check_boolean_var COVERAGE
   check_boolean_var HLINT
+}
 
+show_build_command() {
+  check_all_boolean_vars
+  echo -n "env "
+  for i in $SAFE_ENVVARS
+  do
+    local val="$(show_nonempty_var $i)"
+    test -n "$val" && echo -n "$val "
+  done
+  echo "$0"
+
+  local unsafe
+  for i in $UNSAFE_ENVVARS
+  do
+    if test -n "$(show_nonempty_var $i)"
+    then
+      unsafe=y
+    fi
+  done
+
+  if test -n "$unsafe"
+  then
+    echo
+    echo "The above command has omitted the following unsafe options."
+    echo "If you know what you are doing, you can also add these to the"
+    echo "above command to reproduce this build more faithfully."
+    echo
+    echo "Unsafe environment options may modify your config and "
+    echo "are usually meant to be used in a CI setup:"
+    for i in $UNSAFE_ENVVARS
+    do
+      show_nonempty_var $i
+    done
+    echo
+  fi
+}
+
+show_build_config() {
+  check_all_boolean_vars
   for i in $ENVVARS
   do
     show_nonempty_var $i
@@ -832,10 +876,10 @@ echo
 bash --version
 
 # ---------Show, process and verify the config------------
-show_step "Requested build config and environment"
-show_build_config
-echo
+show_step "Build environment"
 show_build_env
+show_step "Build command"
+show_build_command
 
 # Determine home independent of the environment
 export HOME=$(echo ~)
