@@ -190,7 +190,7 @@ check_clean_env() {
 # $1: varname
 require_envvar() {
   local var=$(eval "echo \$$1")
-  test -n "$var" || die "Environment variable [$1] must be set."
+  test -n "$var" || die "Environment variable [$1] must be set. Try --help for usage."
 }
 
 # $1: envvar
@@ -212,7 +212,9 @@ help_envvar() {
 
 show_help() {
   show_step "Example usage"
-  echo "env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS=\"--pvp-bounds both\" $0"
+  echo "env BUILD=stack RESOLVER=lts-9 $0"
+  echo "env BUILD=cabal $0"
+  echo "env BUILD=stack HLINT_OPTIONS=. $0"
 
   show_step "Commonly used env variables"
   help_envvar BUILD "[stack | cabal] The only mandatory option"
