@@ -151,6 +151,8 @@ ENVVARS="\
   CABAL_HACKAGE_MIRROR \
   COVERAGE \
   COVERALLS_OPTIONS \
+  HLINT \
+  HLINT_OPTIONS \
   CHECK_ENV \
   LANG \
   LC_ALL \
@@ -249,6 +251,10 @@ show_help() {
   help_envvar COVERALLS_OPTIONS "[test suite names] Send coverage to coveralls.io"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
+  show_step "hlint related env variables"
+  help_envvar HLINT_OPTIONS "Specify hlint arguments and options"
+  help_envvar HLINT "[y] Run hlint. Defaults to 'y' if HLINT_OPTIONS is set"
+
   show_step "Diagnostics"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
@@ -265,6 +271,7 @@ show_build_config() {
   check_boolean_var TEST_INSTALL
   check_boolean_var DISABLE_BENCH
   check_boolean_var COVERAGE
+  check_boolean_var HLINT
 
   for i in $ENVVARS
   do
@@ -301,6 +308,7 @@ stack_only_var() {
 
 verify_build_config() {
   test -n "$COVERALLS_OPTIONS" && COVERAGE=y
+  test -n "$HLINT_OPTIONS" && HLINT=y
 
   if test "$BUILD" = stack
   then
@@ -706,6 +714,27 @@ install_test() {
   esac
 }
 
+build_hlint() {
+  if test -z "$(which_cmd hlint)"
+  then
+    show_step "Installing hlint..."
+    if test -n "$(need_stack)"
+    then
+      ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+      ensure_ghc
+      run_verbose_errexit $STACKCMD install hlint
+    else
+      ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+      ensure_ghc
+      run_verbose_errexit cabal install hlint
+    fi
+  fi
+  show_step "Running hlint..."
+  run_verbose_errexit hlint $HLINT_OPTIONS
+}
+
+# We run it only after a stack or cabal build so we are sure that stack or
+# cabal are already installed.
 coveralls_io() {
   if test -z "$(which_cmd hpc-coveralls)"
   then
@@ -717,6 +746,68 @@ coveralls_io() {
     fi
   fi
   run_verbose_errexit hpc-coveralls $COVERALLS_OPTIONS
+}
+
+# stack or cabal build (i.e. not hlint)
+build_compile () {
+  # ---------Install any tools needed--------
+  show_step "Install tools needed for build"
+
+  test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+  # The tar installed by pacman does not seem to work. Maybe we need to have it
+  # packed with msys itself.
+  # ensure_msys_tools "tar" && require_cmd tar
+
+  ensure_ghc
+  ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+
+  # use the stack installed 7z instead. depends on ensure ghc where we setup
+  # stack paths.
+  [[ `uname` = MINGW* ]] && require_cmd 7z
+
+  show_step "Effective build config"
+  show_build_config
+
+  # ---------Create dist, unpack, install deps, test--------
+  show_step "Create source distribution and unpack it"
+  PACKAGE_NAME=$(get_pkg_name) || die "PACKAGE_NAME"
+  echo "Package name: [$PACKAGE_NAME]"
+
+  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
+  echo "Package name and version: [$PACKAGE_FULL_NAME]"
+
+  # The cabal info command run as part of package name determination above would
+  # have already created the cabal config, just change the mirror if needed.
+  test -n "$CABAL_HACKAGE_MIRROR" && cabal_use_mirror $CABAL_HACKAGE_MIRROR
+
+  test -n "$(need_stack)" && ensure_stack_yaml
+  create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
+
+  # Note the above functions leaves us in the .sanity-test dir
+  cd $PACKAGE_FULL_NAME
+  show_step "Package info [sdist $SDIST_OPTIONS]"
+  run_verbose cabal info .
+
+  show_step "Install package dependencies"
+  install_deps $PACKAGE_FULL_NAME
+
+  show_step "Build and test"
+  build_and_test
+
+  if test -n "$COVERALLS_OPTIONS"
+  then
+      show_step "Send coverage info to coveralls.io"
+      coveralls_io
+  fi
+
+  show_step "Package distribution checks"
+  dist_checks
+
+  if test "$TEST_INSTALL" = y
+  then
+    show_step "Package install test"
+    install_test $PACKAGE_FULL_NAME
+  fi
 }
 
 #------------------------------------------------------------------------------
@@ -749,13 +840,11 @@ export HOME=$(echo ~)
 set_os_specific_vars # depends on HOME
 
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
-if test "$BUILD" = stack
+if test "$BUILD" = cabal
 then
-  export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
-else
   export PATH=$PATH:$OS_APP_HOME/$OS_CABAL_DIR/bin
-  export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
 fi
+export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
 
 TOOLS="awk cat curl cut env mkdir printf rm sleep which $OS_HAS_TOOLS"
 
@@ -765,9 +854,6 @@ for i in $TOOLS; do require_cmd $i; done
 
 verify_build_config
 
-# ---------Install any tools needed--------
-show_step "Install tools needed for build"
-
 # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
 # cabal does not complain
 # XXX this should be done from outside via env
@@ -775,58 +861,9 @@ unset GHC_PACKAGE_PATH
 # stack does not work well with empty STACK_YAML env var
 test -z "$STACK_YAML" && unset STACK_YAML
 
-test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
-# The tar installed by pacman does not seem to work. Maybe we need to have it
-# packed with msys itself.
-# ensure_msys_tools "tar" && require_cmd tar
-
-ensure_ghc
-ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
-
-# use the stack installed 7z instead. depends on ensure ghc where we setup
-# stack paths.
-[[ `uname` = MINGW* ]] && require_cmd 7z
-
-show_step "Effective build config"
-show_build_config
-
-# ---------Create dist, unpack, install deps, test--------
-show_step "Create source distribution and unpack it"
-PACKAGE_NAME=$(get_pkg_name) || die "PACKAGE_NAME"
-echo "Package name: [$PACKAGE_NAME]"
-
-PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
-echo "Package name and version: [$PACKAGE_FULL_NAME]"
-
-# The cabal info command run as part of package name determination above would
-# have already created the cabal config, just change the mirror if needed.
-test -n "$CABAL_HACKAGE_MIRROR" && cabal_use_mirror $CABAL_HACKAGE_MIRROR
-
-test -n "$(need_stack)" && ensure_stack_yaml
-create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
-
-# Note the above functions leaves us in the .sanity-test dir
-cd $PACKAGE_FULL_NAME
-show_step "Package info [sdist $SDIST_OPTIONS]"
-run_verbose cabal info .
-
-show_step "Install package dependencies"
-install_deps $PACKAGE_FULL_NAME
-
-show_step "Build and test"
-build_and_test
-
-if test -n "$COVERALLS_OPTIONS"
+if test -n "$HLINT"
 then
-    show_step "Send coverage info to coveralls.io"
-    coveralls_io
-fi
-
-show_step "Package distribution checks"
-dist_checks
-
-if test "$TEST_INSTALL" = y
-then
-  show_step "Package install test"
-  install_test $PACKAGE_FULL_NAME
+  build_hlint
+else
+  build_compile
 fi
