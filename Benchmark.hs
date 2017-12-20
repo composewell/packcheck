@@ -1,0 +1,3 @@
+import Hello
+
+main = hello
