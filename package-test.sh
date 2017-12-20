@@ -380,8 +380,7 @@ EOF
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
     init_default CABAL_CONFIGURE_OPTIONS \
-                 "-v2 \
-                 --enable-tests"
+                 "--enable-tests"
     CABAL_CONFIGURE_OPTIONS=$(cat << EOF
       $CABAL_CONFIGURE_OPTIONS
       $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
@@ -484,7 +483,6 @@ ensure_stack() {
   then
     STACKCMD="$STACKCMD --resolver $RESOLVER"
   fi
-
 }
 
 use_stack_paths() {
@@ -531,6 +529,7 @@ ensure_ghc() {
     # Use stack supplied ghc
     retry_cmd $STACKCMD setup
     use_stack_paths
+    echo
   fi
   require_cmd ghc && \
     echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
@@ -542,7 +541,8 @@ ensure_ghc() {
     # the snapshot.
     STACKCMD="$STACKCMD --system-ghc"
   fi
-  # Use the real version, the user might have specified a prefix
+  # Use the real version, the user might have specified a version prefix in
+  # GHCVER
   GHCVER=$(ghc --numeric-version) || exit 1
 }
 
@@ -651,12 +651,15 @@ remove_pkg_executables() {
 install_cabal_deps() {
   if test "$CABAL_NO_SANDBOX" != "y"
   then
+    echo
     run_verbose_errexit cabal sandbox init
   fi
+  echo
   run_verbose_errexit cabal install $CABAL_DEP_OPTIONS
 }
 
 cabal_configure() {
+    echo
     run_verbose_errexit cabal configure $CABAL_CONFIGURE_OPTIONS
 }
 
@@ -669,6 +672,7 @@ create_and_unpack_pkg_dist() {
 
   if test "$BUILD" = cabal
   then
+    echo
     echo "cabal update"
     retry_cmd cabal update
   fi
@@ -700,6 +704,7 @@ create_and_unpack_pkg_dist() {
 
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
+  echo
   run_verbose_errexit $SDIST_CMD
   if test ! -f $tarpath
   then
@@ -709,6 +714,7 @@ create_and_unpack_pkg_dist() {
 
   # Unpack the tar inside .package-test directory
   mkdir -p .package-test || exit 1
+  echo
   echo "cd .package-test"
   cd .package-test || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
@@ -727,7 +733,11 @@ build_and_test() {
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal)
       cabal_configure
+      echo
       run_verbose_errexit cabal build
+      echo
+      run_verbose_errexit cabal haddock
+      echo
       run_verbose_errexit cabal test ;;
   esac
 }
@@ -737,6 +747,7 @@ dist_checks() {
     stack) run_verbose_errexit $STACKCMD sdist ;;
     cabal)
       run_verbose_errexit cabal sdist
+      echo
       if test "$CABAL_CHECK_RELAX" = y
       then
         run_verbose cabal check || true
@@ -797,14 +808,16 @@ coveralls_io() {
 # stack or cabal build (i.e. not hlint)
 build_compile () {
   # ---------Install any tools needed--------
-  show_step "Install tools needed for build"
+  show_step "Check and install build tools"
 
-  test -n "$(need_stack)" && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+  test -n "$(need_stack)" \
+    && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin \
+    && echo
   # The tar installed by pacman does not seem to work. Maybe we need to have it
   # packed with msys itself.
   # ensure_msys_tools "tar" && require_cmd tar
 
-  ensure_ghc
+  ensure_ghc && echo
   ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 
   # use the stack installed 7z instead. depends on ensure ghc where we setup
