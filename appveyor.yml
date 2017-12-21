@@ -3,8 +3,8 @@ environment:
     RESOLVER: "lts-10.0"
     GHC_OPTIONS: "-O0 -Werror"
     PACKCHECK: ./packcheck.sh
-    # The commit id of packcheck to use from harendra-kumar/packcheck on github
-    PACKCHECK_COMMIT: "7ae9d7ced3b3b2bc6905ed98a453144089a8e467"
+    # The commit id of packcheck.sh to use from harendra-kumar/packcheck on github
+    PACKCHECK_COMMIT: "c028c2425a372487e74157569d0a6cd4d745575d"
 
     # ------------------------------------------------------------------------
     # Normally you do not need to customize hereafter
