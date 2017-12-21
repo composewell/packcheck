@@ -899,6 +899,20 @@ eval_env() {
   done
 }
 
+# $1: prompt
+get_confirmation()
+{
+  echo -n "$1"
+  read -p "(y/n) :" ANSWER
+  echo
+
+  if test $ANSWER != "y"
+  then
+    echo "Aborted."
+    exit
+  fi
+}
+
 #------------------------------------------------------------------------------
 # Main flow of script starts here
 #------------------------------------------------------------------------------
@@ -913,7 +927,17 @@ do
     cabal) shift; eval_env "$@"; BUILD=cabal; break;;
     stack) shift; eval_env "$@"; BUILD=stack; break;;
     clean) rm -rf .packcheck; exit;;
-    cleanall) rm -rf .packcheck .stack-work .cabal-sandbox; exit;;
+    cleanall)
+      rm -rf .packcheck .stack-work
+      if test -e cabal.sandbox.config
+      then
+        get_confirmation "Remove the cabal sandbox config? "
+        rm -rf .cabal-sandbox
+        rm -f cabal.sandbox.config
+      else
+        rm -rf .cabal-sandbox
+      fi
+      exit;;
     *) show_help;;
   esac
 done
