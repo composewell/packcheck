@@ -6,8 +6,12 @@ env:
   - GHC_OPTIONS="-O0 -Werror"
   - PACKCHECK="./packcheck.sh"
   # The commit id of packcheck.sh to use from harendra-kumar/packcheck on github
-  - PACKCHECK_COMMIT="c028c2425a372487e74157569d0a6cd4d745575d"
+  - PACKCHECK_COMMIT="6be708c5b34b5a2a7b553cf9ebe99f1f5764a79a"
 
+# This matrix has total 11 builds enabled, 4 builds each (3 last major compiler
+# versions and head) for stack and cabal, 2 OSX builds (stack and cabal for
+# latest compiler version), and one hlint build. You may want to comment out
+# some of the builds to be lighter on the CI infrastructure.
 matrix:
   include:
 
@@ -47,6 +51,9 @@ matrix:
   - env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0
     addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
+  - env: BUILD=cabal GHCVER=head CABALVER=head
+    addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
+
   # --------------------------------------------------------------------------
   # OS X builds
   # --------------------------------------------------------------------------
@@ -80,6 +87,7 @@ matrix:
 
   allow_failures:
   - env: BUILD=stack RESOLVER=nightly
+  - env: BUILD=cabal GHCVER=head CABALVER=head
   - env: BUILD=stack RESOLVER=lts-10.0 HLINT_OPTIONS="."
 
 # ------------------------------------------------------------------------
