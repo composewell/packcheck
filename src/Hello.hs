@@ -2,4 +2,4 @@ module Hello
     (hello)
 where
 
-hello = print "hello"
+hello = print "Hello world!"
