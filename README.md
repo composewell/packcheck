@@ -1,47 +1,75 @@
-## Universal Haskell Package Build and Test
+## TL; DR
 
-In any Haskell package on any machine (your local Linux/OSX/Windows or
-Travis/AppVeyor) just type a simple CLI command and viola, it builds and
-comprehensively tests the package automagically.  You can choose `stack` or
-`cabal` build type and myriad other options whatever you like. Simply:
+### What is it?
+
+A high level universally portable super build script; a short and sweet command
+to uniformly, consistently, comprehensively build and sanity test a Haskell
+package across build tools (stack/cabal) and all platforms to ensure that all
+is well with the package.  You do not need to be familiar with any of the build
+tools to use it.
+
+## What all does it do?
+
+Build source, build benchmarks, build docs, run tests, create source
+distribution, ***build from source distribution***, test install after build,
+perform distribution checks, generate coverage report, optionally send coverage
+report to coveralls.io. Everything can be controlled by the user.
+
+### Where can I use it?
+
+Everywhere, the same build steps can be consistently performed on or using:
+* Linux/OSX/Windows
+* Travis/Appveyor/Local Host
+* stack/cabal
+
+### What else can I use it for?
+
+This package is a minimal yet complete "hello world" Haskell package with all
+the metadata, tests/benchmarks, and travis/appveyor CI setup fully working,
+ready to be shipped to hackage. It can be used as a starting point to develop a
+new package. It can also be used by beginners to learn about haskell package
+metadata and builds.
+
+### How do I use it?
+
+To use it in your package, for CI, simply copy the travis/appveyor config file
+from this package to your package and that's it. It should work without
+modification, edit to customize. For local machine use, copy the
+`package-test.sh` script as well. To run locally:
 
 ```
 $ env BUILD=stack package-test.sh
 $ env BUILD=cabal package-test.sh
 ```
 
-If you are familiar with one build tool (stack vs cabal) but not the other,
-this script can simply let you comprehensively build and test with that without
-knowing anything about it.
+## Salient Features
 
-Salient features:
-
-* ***specifically designed for use with CI*** or pre-release testing, that's
-why it takes options as environment variables.
+* ***runs everywhere, for all build types***
+* ***specifically designed for use with CI*** or pre-release testing
 * ***installs all the required tools automatically*** (including stack) or lets
 you know what it needs so you can install/use your own. It never overwrites
 an existing tool during install.
 * ***tests the source distribution of the package*** so you can rest assured
 that what you release on hackage is exactly what you tested. Also performs
 distribution checks and whether the package installs successfully.
-* ***tests if documents (haddock) are built successfully***.
 * ***reproduces a failed CI on local machine***.  You can just cut
 and paste the same command on your local machine and run it there for easy
 debugging.
 * ***can send coverage information to coveralls.io*** with a simple option.
+* ***tests everything needed to ship to hacakge***
 
 ## Usage Examples
 
-You can run these commands on your local machine or they can be used in a CI
-script as well.
+You can run these commands on your local machine as well as inside a CI script.
 
-Make sure you are in the package directory. You can try these commands in the
-`package-test` package itself:
+Make sure you are in the package directory. You can try these commands in this
+package itself:
 ```
 $ cd package-test
 ```
 
-Stack build (installs stack automatically if not found):
+Stack build (installs stack automatically if not found, creates a `stack.yaml`
+if not found):
 ```
 $ env BUILD=stack RESOLVER=lts-6 ./package-test.sh
 ```
@@ -85,17 +113,6 @@ environment:
 $ env -i PATH=/bin:/usr/bin BUILD=stack ./package-test.sh
 ```
 
-## Using with Travis or Appveyor CI
-Just copy `.travis.yml` and `appveyor.yml` files from this package to your
-package and you should be good to go unless your package has some special
-requirements, external dependencies etc. If needed you can tweak the CI config
-files to your taste.
-
-You can also copy the `package-test.sh` and commit it to your repo. This will
-allow you to conveniently run exactly the same build and test on your local
-machine that you would run on a CI host. Of course, if you don't commit it to
-your repo you you can also run it from somewhere else when needed.
-
 ## Full Reference
 
 Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
@@ -104,7 +121,8 @@ state of your global cabal config, so consider that before using these options.
 
 By default it uses cabal sandbox builds. It creates any temporary files or
 build artifacts inside `.package-test` directory. You can remove that directory
-after the build to release the space if needed.
+after the build to release the space if needed. For full cleanup or build from
+scratch you can also remove `.stack-work` and `.cabal-sandbox`.
 
 stack is automatically installed and can be used to do cabal builds as well. If
 you specify `BUILD=cabal` and `RESOLVER` at the same time then the cabal build
