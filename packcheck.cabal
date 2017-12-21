@@ -1,17 +1,17 @@
 name:               packcheck
 version:            0.1.0
-synopsis:           Universal build and sanity testing for Haskell packages
+synopsis:           Universal build and CI testing for Haskell packages
 description:
   A high level universally portable super build script; a short and sweet
   command to uniformly, consistently, comprehensively build and sanity test a
-  Haskell package across build tools (stack/cabal) and all platforms to ensure
-  that all is well with the package.  You do not need to be familiar with any
-  of the build tools to use it.
+  Haskell package across build tools (stack or cabal) and all platforms to
+  ensure that all is well with the package.  You do not need to be familiar
+  with any of the build tools to use it.
   .
   To use for CI, simply copy the travis/appveyor config file from this package
   to your package and that's it. It should work without modification, edit to
-  customize. For use on local host, copy the `packcheck.sh` script.
-  To run locally, assuming packcheck.sh in package directory:
+  customize. To build and test locally, copy over the `packcheck.sh` script.
+  Assuming packcheck.sh in package directory:
   .
   > $ env BUILD=stack ./packcheck.sh
   > $ env BUILD=cabal ./packcheck.sh
@@ -19,9 +19,8 @@ description:
   .
   This package is a minimal yet complete model ("hello world") Haskell package
   with all the metadata, tests/benchmarks, and travis/appveyor CI setup fully
-  working, ready to be shipped to hackage. It can be used as a starting point
-  to develop a new package. It can also be used by beginners to learn about
-  haskell package metadata and builds.
+  working. It can be used as a starting point to develop a new package. It can
+  also be used by beginners to learn about haskell package metadata and builds.
 
 homepage:            https://github.com/harendra-kumar/packcheck
 bug-reports:         https://github.com/harendra-kumar/packcheck/issues
