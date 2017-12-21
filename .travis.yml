@@ -95,7 +95,7 @@ cache:
 script:
   - |
     # Where to find the packcheck.sh script
-    PKG_TEST_URL=https://raw.githubusercontent.com/harendra-kumar/packcheck/${PACKCHECK_COMMIT}/packcheck.sh
+    PACKCHECK_URL=https://raw.githubusercontent.com/harendra-kumar/packcheck/${PACKCHECK_COMMIT}/packcheck.sh
 
     # When GHCVER or CABALVER env variables are specified, modify the path to
     # find the binaries installed from hvr-ghc repo
@@ -111,6 +111,7 @@ script:
 
     # If a custom stack-yaml is specified, replace the default with that
     if test -e "$STACK_YAML"; then rm -f stack.yaml && ln -sv $STACK_YAML stack.yaml; else true; fi
+    if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
 
     # We start with a clean environment (env -i) and specify all the
     # environment variables explicitly. TRAVIS vars are needed by
@@ -119,8 +120,7 @@ script:
       LC_ALL=C.UTF-8
       TRAVIS=$TRAVIS
       TRAVIS_JOB_ID=$TRAVIS_JOB_ID
-      PATH=$PATH
-      BUILD=$BUILD
+      PATH="$PATH"
       RESOLVER=$RESOLVER
       STACK_UPGRADE=y
       STACK_BUILD_OPTIONS="$STACK_BUILD_OPTIONS"
@@ -134,7 +134,7 @@ script:
       $(cabal_env CABAL_NO_SANDBOX=y)
       $(cabal_env CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com)
       HLINT_OPTIONS="$HLINT_OPTIONS"
-      bash -c "if test -e \"$PACKCHECK\"; then \"$PACKCHECK\"; else /bin/bash <($CURL -sL $PACKCHECK_URL); fi;"
+      bash -c "$PACKCHECK $BUILD"
 
 install: true
 language: c

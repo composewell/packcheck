@@ -1,6 +1,5 @@
 environment:
   global:
-    BUILD: "stack"
     RESOLVER: "lts-10.0"
     GHC_OPTIONS: "-O0 -Werror"
     PACKCHECK: packcheck.sh
@@ -37,4 +36,4 @@ before_test:
 
 test_script:
 - stack setup > nul
-- chcp 65001 && stack exec bash %PACKCHECK%
+- chcp 65001 && stack exec bash -c "%PACKCHECK% stack"

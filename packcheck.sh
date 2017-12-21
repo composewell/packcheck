@@ -92,9 +92,9 @@ function run_verbose_errexit() {
 # $1: msg
 show_step() {
   echo
-  echo "------------------------------------------"
+  echo "--------------------------------------------------"
   echo "$1"
-  echo "------------------------------------------"
+  echo "--------------------------------------------------"
 }
 
 # $1: file to ungztar
@@ -130,7 +130,6 @@ set_os_specific_vars() {
 #------------------------------------------------------------------------------
 
 SAFE_ENVVARS="\
-  BUILD \
   RESOLVER \
   GHCVER \
   CABALVER \
@@ -174,11 +173,11 @@ find_var() {
 }
 
 error_novar() {
-  find_var "$1" "$ENVVARS" || die "Unknown evnironment variable [$1]"
+  find_var "$1" "$ENVVARS" || die "Unknown parameter or environment variable [$1]"
 }
 
 error_clean_env() {
-    echo "Error: Unknown evnironment variable [$1]."
+    echo "Error: Unknown parameter or environment variable [$1]."
     die "Please check spelling mistakes and use a clean environment (e.g. env -i) with CHECK_ENV."
 }
 
@@ -195,7 +194,7 @@ check_clean_env() {
 # $1: varname
 require_envvar() {
   local var=$(eval "echo \$$1")
-  test -n "$var" || die "Environment variable [$1] must be set. Try --help for usage."
+  test -n "$var" || die "Parameter or environment variable [$1] must be set. Try --help for usage."
 }
 
 # $1: envvar
@@ -204,8 +203,14 @@ check_boolean_var() {
   local var=$(eval "echo \$$1")
   if test -n "$var" -a "$var" != y
   then
-    die "Boolean envvar [$1] can only be empty or 'y'"
+    die "Boolean parameter or environment variable [$1] can only be empty or 'y'"
   fi
+}
+
+# $1: cmdname
+# $2: help text
+help_cmd() {
+  printf "%-24s: %s\n" "$1" "$2"
 }
 
 # $1: varname
@@ -216,13 +221,21 @@ help_envvar() {
 }
 
 show_help() {
-  show_step "Example usage"
-  echo "env BUILD=stack RESOLVER=lts-9 $0"
-  echo "env BUILD=cabal $0"
-  echo "env BUILD=stack HLINT_OPTIONS=. $0"
+  show_step "Usage"
+  echo "$0 COMMAND [PARAMETER=VALUE ...]"
+  echo "$0 stack RESOLVER=lts-10.0 GHC_OPTIONS=\"-O0 -Werror\""
+  echo
+  echo "Control parameters can either be passed on command line or as"
+  echo "exported environment variables."
 
-  show_step "Commonly used env variables"
-  help_envvar BUILD "[stack | cabal] The only mandatory option"
+  show_step "Commands"
+  help_cmd stack "build using stack"
+  help_cmd cabal "build using cabal"
+  help_cmd clean "remove the .packcheck directory"
+  help_cmd cleanall "remove .packcheck, .stack-work, .cabal-sandbox directories"
+  help_cmd help "show this help message"
+
+  show_step "Commonly used parameters or env variables"
   help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
@@ -232,13 +245,13 @@ show_help() {
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
 
-  show_step "Advanced stack build env variables"
+  show_step "Advanced stack build parameters or env variables"
   help_envvar STACK_YAML "Alternative stack config file to use"
   help_envvar STACK_UPGRADE "DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
 
-  show_step "Advanced cabal build env variables"
+  show_step "Advanced cabal build parameters or env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
   # All of the following are recommended for a CI environment, should we use a
@@ -254,15 +267,15 @@ show_help() {
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
 
-  show_step "Coverage related env variables"
+  show_step "Coverage related parameters or env variables"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
-  show_step "hlint related env variables"
+  show_step "hlint related parameters or env variables"
   help_envvar HLINT_OPTIONS "hlint arguments and options, usually just '.'"
   help_envvar HLINT "[y] Run hlint. Defaults to 'y' if HLINT_OPTIONS is set"
 
-  show_step "Diagnostics"
+  show_step "Diagnostics parameters or rnv variables"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "Treat unknown env variables as error, used with env -i"
@@ -869,6 +882,23 @@ build_compile () {
   fi
 }
 
+eval_env() {
+  while test -n "$1"
+  do
+    case "$1" in
+      (*=*)
+        key=${1%%=*}
+        val=${1#*=}
+        eval "$key=\"$val\""
+        ;;
+      (*)
+        die "Expecting key=value pair, got [$1]"
+        ;;
+    esac
+    shift
+  done
+}
+
 #------------------------------------------------------------------------------
 # Main flow of script starts here
 #------------------------------------------------------------------------------
@@ -876,14 +906,20 @@ build_compile () {
 set -e
 set -o pipefail
 
+test -n "$1" || show_help
+while test -n "$1"
+do
+  case $1 in
+    cabal) shift; eval_env "$@"; BUILD=cabal; break;;
+    stack) shift; eval_env "$@"; BUILD=stack; break;;
+    clean) rm -rf .packcheck; break;;
+    cleanall) rm -rf .packcheck .stack-work .cabal-sandbox; break;;
+    *) show_help;;
+  esac
+done
+
 test -n "$CHECK_ENV" && check_boolean_var CHECK_ENV
 test -n "$CHECK_ENV" && check_clean_env
-
-test $# -eq 0 || show_help
-
-# Require at least one param so that accidentally running the script does not
-# create surprises.
-require_envvar BUILD
 
 echo
 bash --version
