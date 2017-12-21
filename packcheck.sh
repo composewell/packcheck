@@ -220,13 +220,19 @@ help_envvar() {
   printf "%-24s: %s\n" "$1" "$2"
 }
 
-show_help() {
+short_help() {
   show_step "Usage"
   echo "$0 COMMAND [PARAMETER=VALUE ...]"
+  echo
+  echo "For example:"
   echo "$0 stack RESOLVER=lts-10.0 GHC_OPTIONS=\"-O0 -Werror\""
   echo
-  echo "Control parameters can either be passed on command line or as"
-  echo "exported environment variables."
+  echo "Control parameters can either be passed on command line or"
+  echo "exported as environment variables."
+}
+
+show_help() {
+  short_help
 
   show_step "Commands"
   help_cmd stack "build using stack"
@@ -279,7 +285,6 @@ show_help() {
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "Treat unknown env variables as error, used with env -i"
-  exit 1
 }
 
 check_all_boolean_vars () {
@@ -920,7 +925,8 @@ get_confirmation()
 set -e
 set -o pipefail
 
-test -n "$1" || show_help
+test -n "$1" \
+    || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
 while test -n "$1"
 do
   case $1 in
@@ -938,7 +944,8 @@ do
         rm -rf .cabal-sandbox
       fi
       exit;;
-    *) show_help;;
+    -h | --help | help) show_help; exit;;
+    *) short_help; exit 1 ;;
   esac
 done
 
