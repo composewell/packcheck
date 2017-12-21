@@ -6,7 +6,7 @@ env:
   - GHC_OPTIONS="-O0 -Werror"
   - PACKCHECK="./packcheck.sh"
   # The commit id of packcheck to use from harendra-kumar/packcheck on github
-  - PACKCHECK_COMMIT="bfd61f148513eccac3b538cd688dd502b8679305"
+  - PACKCHECK_COMMIT="7ae9d7ced3b3b2bc6905ed98a453144089a8e467"
 
 matrix:
   include:
