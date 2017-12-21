@@ -5,7 +5,8 @@ env:
   global:
   - GHC_OPTIONS="-O0 -Werror"
   - PACKCHECK="./packcheck.sh"
-  - PACKCHECK_COMMIT="1a4de26422ee296f0811e032bec922123f019963"
+  # The commit id of packcheck to use from harendra-kumar/packcheck on github
+  - PACKCHECK_COMMIT="bfd61f148513eccac3b538cd688dd502b8679305"
 
 matrix:
   include:
@@ -112,6 +113,7 @@ script:
     # If a custom stack-yaml is specified, replace the default with that
     if test -e "$STACK_YAML"; then rm -f stack.yaml && ln -sv $STACK_YAML stack.yaml; else true; fi
     if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
+    chmod +x $PACKCHECK
 
     # We start with a clean environment (env -i) and specify all the
     # environment variables explicitly. TRAVIS vars are needed by

@@ -2,10 +2,9 @@ environment:
   global:
     RESOLVER: "lts-10.0"
     GHC_OPTIONS: "-O0 -Werror"
-    PACKCHECK: packcheck.sh
-    # Use the test script without committing it to the repo
-    # Specify the commit id in the harendra-kumar/packcheck github repo
-    PACKCHECK_COMMIT: "1a4de26422ee296f0811e032bec922123f019963"
+    PACKCHECK: ./packcheck.sh
+    # The commit id of packcheck to use from harendra-kumar/packcheck on github
+    PACKCHECK_COMMIT: "bfd61f148513eccac3b538cd688dd502b8679305"
 
     # ------------------------------------------------------------------------
     # Normally you do not need to customize hereafter
@@ -36,4 +35,4 @@ before_test:
 
 test_script:
 - stack setup > nul
-- chcp 65001 && stack exec bash -c "%PACKCHECK% stack"
+- chcp 65001 && stack exec bash -- -c "chmod +x %PACKCHECK%; %PACKCHECK% stack"

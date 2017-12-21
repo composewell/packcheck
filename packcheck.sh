@@ -296,13 +296,13 @@ check_all_boolean_vars () {
 
 show_build_command() {
   check_all_boolean_vars
-  echo -n "env "
+  echo -n "$0 $BUILD "
   for i in $SAFE_ENVVARS
   do
     local val="$(show_nonempty_var $i)"
     test -n "$val" && echo -n "$val "
   done
-  echo "$0"
+  echo
 
   local unsafe
   for i in $UNSAFE_ENVVARS
@@ -320,7 +320,7 @@ show_build_command() {
     echo "If you know what you are doing, you can also add these to the"
     echo "above command to reproduce this build more faithfully."
     echo
-    echo "Unsafe environment options may modify your config and "
+    echo "Unsafe options may modify your config and "
     echo "are usually meant to be used in a CI setup:"
     for i in $UNSAFE_ENVVARS
     do
