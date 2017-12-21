@@ -912,8 +912,8 @@ do
   case $1 in
     cabal) shift; eval_env "$@"; BUILD=cabal; break;;
     stack) shift; eval_env "$@"; BUILD=stack; break;;
-    clean) rm -rf .packcheck; break;;
-    cleanall) rm -rf .packcheck .stack-work .cabal-sandbox; break;;
+    clean) rm -rf .packcheck; exit;;
+    cleanall) rm -rf .packcheck .stack-work .cabal-sandbox; exit;;
     *) show_help;;
   esac
 done
