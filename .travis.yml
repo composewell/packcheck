@@ -28,7 +28,7 @@ matrix:
   - env: BUILD=stack RESOLVER=nightly
 
   # Using a custom stack-yaml config file.
-  - env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
+  #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
 
   # You can customize the build even without a custom stack-yaml
   # using STACK_OPTIONS, STACK_BUILD_OPTIONS, GHC_OPTIONS etc.
@@ -70,8 +70,9 @@ matrix:
   # --------------------------------------------------------------------------
 
   # Note COVERALLS (hpc-coveralls) works only with cabal build.
-  - env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
-    addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
+  # For this to succeed you have to add your porject to coveralls.io first
+  #- env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
+  #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # Builds that are allowed to fail
