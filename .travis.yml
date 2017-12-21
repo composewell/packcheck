@@ -4,13 +4,8 @@ notifications:
 env:
   global:
   - GHC_OPTIONS="-O0 -Werror"
-  # Specify the path of the test script if located in the package repo
-  # If committed locally you can use it to reproduce the CI tests on your
-  # local machine as well.
-  - PACKAGE_TEST="./package-test.sh"
-  # Use the test script without committing it to the repo
-  # Specify the commit id in the harendra-kumar/package-test github repo
-  #- PACKAGE_TEST_VER="1a4de26422ee296f0811e032bec922123f019963"
+  - PACKCHECK="./packcheck.sh"
+  - PACKCHECK_COMMIT="1a4de26422ee296f0811e032bec922123f019963"
 
 matrix:
   include:
@@ -36,7 +31,7 @@ matrix:
 
   # You can customize the build even without a custom stack-yaml
   # using STACK_OPTIONS, STACK_BUILD_OPTIONS, GHC_OPTIONS etc.
-  #- env: BUILD=stack RESOLVER=lts-10.0 STACK_BUILD_OPTIONS="--flag package-test:dev"
+  #- env: BUILD=stack RESOLVER=lts-10.0 STACK_BUILD_OPTIONS="--flag packcheck:dev"
 
   # --------------------------------------------------------------------------
   # (Linux) cabal builds require pre-installed cabal-install and ghc
@@ -99,8 +94,8 @@ cache:
 
 script:
   - |
-    # Where to find the package-test.sh script
-    PKG_TEST_URL=https://raw.githubusercontent.com/harendra-kumar/package-test/${PACKAGE_TEST_VER}/package-test.sh
+    # Where to find the packcheck.sh script
+    PKG_TEST_URL=https://raw.githubusercontent.com/harendra-kumar/packcheck/${PACKCHECK_COMMIT}/packcheck.sh
 
     # When GHCVER or CABALVER env variables are specified, modify the path to
     # find the binaries installed from hvr-ghc repo
@@ -139,7 +134,7 @@ script:
       $(cabal_env CABAL_NO_SANDBOX=y)
       $(cabal_env CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com)
       HLINT_OPTIONS="$HLINT_OPTIONS"
-      bash -c "if test -e \"$PACKAGE_TEST\"; then \"$PACKAGE_TEST\"; else /bin/bash <($CURL -sL $PACKAGE_TEST_URL); fi;"
+      bash -c "if test -e \"$PACKCHECK\"; then \"$PACKCHECK\"; else /bin/bash <($CURL -sL $PACKCHECK_URL); fi;"
 
 install: true
 language: c

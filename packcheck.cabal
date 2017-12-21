@@ -1,0 +1,70 @@
+name:               packcheck
+version:            0.1.0
+synopsis:           Universal build and sanity testing for Haskell packages
+description:
+  A high level universally portable super build script; a short and sweet
+  command to uniformly, consistently, comprehensively build and sanity test a
+  Haskell package across build tools (stack/cabal) and all platforms to ensure
+  that all is well with the package.  You do not need to be familiar with any
+  of the build tools to use it.
+  .
+  To use for CI, simply copy the travis/appveyor config file from this package
+  to your package and that's it. It should work without modification, edit to
+  customize. For use on local host, copy the `packcheck.sh` script.
+  To run locally, assuming packcheck.sh in package directory:
+  .
+  > $ env BUILD=stack ./packcheck.sh
+  > $ env BUILD=cabal ./packcheck.sh
+  > $ stack exec env BUILD=cabal ./packcheck.sh
+  .
+  This package is a minimal yet complete model ("hello world") Haskell package
+  with all the metadata, tests/benchmarks, and travis/appveyor CI setup fully
+  working, ready to be shipped to hackage. It can be used as a starting point
+  to develop a new package. It can also be used by beginners to learn about
+  haskell package metadata and builds.
+
+homepage:            https://github.com/harendra-kumar/packcheck
+bug-reports:         https://github.com/harendra-kumar/packcheck/issues
+license:             BSD3
+license-file:        LICENSE
+tested-with:         GHC==7.10.3, GHC==8.0.2, GHC==8.2.2
+author:              Harendra Kumar
+maintainer:          harendra.kumar@gmail.com
+copyright:           2017 Harendra Kumar
+category:            Testing, CI
+stability:           Experimental
+build-type:          Simple
+cabal-version:       >= 1.10
+
+extra-source-files:
+    Changelog.md
+    README.md
+    stack.yaml
+
+source-repository head
+    type: git
+    location: https://github.com/harendra-kumar/packcheck
+
+library
+    hs-source-dirs:    src
+    exposed-modules:   Hello
+    default-language: Haskell2010
+    build-depends: base >= 4.8   && < 5
+
+test-suite test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
+  build-depends:
+      packcheck
+    , base >= 4.8   && < 5
+  default-language: Haskell2010
+
+benchmark bench
+  type: exitcode-stdio-1.0
+  hs-source-dirs: bench
+  main-is: Main.hs
+  build-depends:
+      packcheck
+    , base >= 4.8   && < 5
+  default-language: Haskell2010

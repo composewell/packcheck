@@ -605,7 +605,7 @@ Please provide a working stack.yaml or use cabal build."
   fi
   SDIST_STACKCMD=$STACKCMD
   test -n "$STACK_YAML" && SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
-  # We run the stack command from .package-test/<package> dir after unpacking
+  # We run the stack command from .packcheck/<package> dir after unpacking
   # sdist
   test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
   echo "Using stack command [$STACKCMD]"
@@ -712,11 +712,11 @@ create_and_unpack_pkg_dist() {
     exit 1
   fi
 
-  # Unpack the tar inside .package-test directory
-  mkdir -p .package-test || exit 1
+  # Unpack the tar inside .packcheck directory
+  mkdir -p .packcheck || exit 1
   echo
-  echo "cd .package-test"
-  cd .package-test || exit 1
+  echo "cd .packcheck"
+  cd .packcheck || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
   $OS_UNGZTAR_CMD $tarpath
 }
@@ -842,7 +842,7 @@ build_compile () {
   test -n "$(need_stack)" && ensure_stack_yaml
   create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 
-  # Note the above functions leaves us in the .package-test dir
+  # Note the above functions leaves us in the .packcheck dir
   cd $PACKAGE_FULL_NAME
   show_step "Package info [sdist $SDIST_OPTIONS]"
   run_verbose cabal info .

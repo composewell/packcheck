@@ -32,14 +32,14 @@ metadata and builds.
 
 ### How do I use it?
 
-To use it in your package, for CI, simply copy the travis/appveyor config file
+To use it for CI, simply copy the travis/appveyor config file
 from this package to your package and that's it. It should work without
-modification, edit to customize. For local machine use, copy the
-`package-test.sh` script as well. To run locally:
+modification, edit to customize. For use on local host, copy the
+`packcheck.sh` script as well. To run locally:
 
 ```
-$ env BUILD=stack package-test.sh
-$ env BUILD=cabal package-test.sh
+$ env BUILD=stack packcheck.sh
+$ env BUILD=cabal packcheck.sh
 ```
 
 ## Salient Features
@@ -65,52 +65,52 @@ You can run these commands on your local machine as well as inside a CI script.
 Make sure you are in the package directory. You can try these commands in this
 package itself:
 ```
-$ cd package-test
+$ cd packcheck
 ```
 
 Stack build (installs stack automatically if not found, creates a `stack.yaml`
 if not found):
 ```
-$ env BUILD=stack RESOLVER=lts-6 ./package-test.sh
+$ env BUILD=stack RESOLVER=lts-6 ./packcheck.sh
 ```
 
 Set pvp-bounds before the test:
 ```
-$ env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS="--pvp-bounds both" ./package-test.sh
+$ env BUILD=stack RESOLVER=lts-6 SDIST_OPTIONS="--pvp-bounds both" ./packcheck.sh
 ```
 
 Stack build with system installed GHC, when GHCVER is specified it looks for
 the specified GHC version in PATH:
 ```
-$ env BUILD=stack GHCVER=7.10.3 ./package-test.sh
+$ env BUILD=stack GHCVER=7.10.3 ./packcheck.sh
 ```
 
 Stack build with a specific `stack.yaml` config file and specified build flags,
 and requiring a specific cabal version:
 ```
-$ env BUILD=stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24 ./package-test.sh
+$ env BUILD=stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24 ./packcheck.sh
 ```
 
 Cabal build using stack installed ghc:
 ```
-$ stack exec env BUILD=cabal RESOLVER=lts-6 ./package-test.sh
+$ stack exec env BUILD=cabal RESOLVER=lts-6 ./packcheck.sh
 ```
 
 Cabal build using system installed ghc and cabal on PATH:
 ```
-$ env BUILD=cabal GHCVER=7.10.3 CABALVER=1.22.9.0 ./package-test.sh
+$ env BUILD=cabal GHCVER=7.10.3 CABALVER=1.22.9.0 ./packcheck.sh
 ```
 
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.  Note that this currently works only with a cabal build:
 ```
-$ env BUILD=cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2" ./package-test.sh
+$ env BUILD=cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2" ./packcheck.sh
 ```
 
 Use clean environment, makes sure there is no interference from existing
 environment:
 ```
-$ env -i PATH=/bin:/usr/bin BUILD=stack ./package-test.sh
+$ env -i PATH=/bin:/usr/bin BUILD=stack ./packcheck.sh
 ```
 
 ## Full Reference
@@ -120,7 +120,7 @@ local machine sometimes it may not be desirable as it will change the
 state of your global cabal config, so consider that before using these options.
 
 By default it uses cabal sandbox builds. It creates any temporary files or
-build artifacts inside `.package-test` directory. You can remove that directory
+build artifacts inside `.packcheck` directory. You can remove that directory
 after the build to release the space if needed. For full cleanup or build from
 scratch you can also remove `.stack-work` and `.cabal-sandbox`.
 
@@ -133,13 +133,13 @@ For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not specified,
 `cabal` and `ghc` must be pre-installed.
 
 ```
-cueball $ package-test.sh --help
+cueball $ packcheck.sh --help
 ------------------------------------------
 Example usage
 ------------------------------------------
-env BUILD=stack RESOLVER=lts-9 ./package-test.sh
-env BUILD=cabal ./package-test.sh
-env BUILD=stack HLINT_OPTIONS=. ./package-test.sh
+env BUILD=stack RESOLVER=lts-9 ./packcheck.sh
+env BUILD=cabal ./packcheck.sh
+env BUILD=stack HLINT_OPTIONS=. ./packcheck.sh
 
 ------------------------------------------
 Commonly used env variables

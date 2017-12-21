@@ -3,10 +3,10 @@ environment:
     BUILD: "stack"
     RESOLVER: "lts-10.0"
     GHC_OPTIONS: "-O0 -Werror"
-    PACKAGE_TEST: package-test.sh
+    PACKCHECK: packcheck.sh
     # Use the test script without committing it to the repo
-    # Specify the commit id in the harendra-kumar/package-test github repo
-    PACKAGE_TEST_VER: "1a4de26422ee296f0811e032bec922123f019963"
+    # Specify the commit id in the harendra-kumar/packcheck github repo
+    PACKCHECK_COMMIT: "1a4de26422ee296f0811e032bec922123f019963"
 
     # ------------------------------------------------------------------------
     # Normally you do not need to customize hereafter
@@ -29,7 +29,7 @@ clone_folder: "c:\\pkg"
 build: off
 
 before_test:
-- if not exist %PACKAGE_TEST% curl -sSkL -o%PACKAGE_TEST% https://raw.githubusercontent.com/harendra-kumar/package-test/%PACKAGE_TEST_VER%/package-test.sh
+- if not exist %PACKCHECK% curl -sSkL -o%PACKCHECK% https://raw.githubusercontent.com/harendra-kumar/packcheck/%PACKCHECK_COMMIT%/packcheck.sh
 - if not exist %LOCAL_BIN% mkdir %LOCAL_BIN%
 - where stack.exe || curl -sSkL -ostack.zip http://www.stackage.org/stack/windows-x86_64 && 7z x stack.zip stack.exe && move stack.exe %LOCAL_BIN%
 - stack upgrade
@@ -37,4 +37,4 @@ before_test:
 
 test_script:
 - stack setup > nul
-- chcp 65001 && stack exec bash %PACKAGE_TEST%
+- chcp 65001 && stack exec bash %PACKCHECK%
