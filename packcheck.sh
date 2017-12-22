@@ -135,6 +135,7 @@ SAFE_ENVVARS="\
   CABALVER \
   GHC_OPTIONS \
   SDIST_OPTIONS \
+  DISABLE_SDIST_BUILD \
   DISABLE_BENCH \
   PATH \
   STACK_YAML \
@@ -247,6 +248,7 @@ show_help() {
   help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack sdist (e.g. --pvp-bounds)"
+  help_envvar DISABLE_SDIST_BUILD "Do not build from source distribution"
   help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
@@ -289,6 +291,7 @@ show_help() {
 
 check_all_boolean_vars () {
   check_boolean_var STACK_UPGRADE
+  check_boolean_var DISABLE_SDIST_BUILD
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
@@ -548,6 +551,7 @@ ensure_ghc() {
   if test -n "$(need_stack)" -a -z "$GHCVER"
   then
     # Use stack supplied ghc
+    echo "$STACKCMD setup"
     retry_cmd $STACKCMD setup
     use_stack_paths
     echo
@@ -599,7 +603,7 @@ ensure_cabal() {
   fi
 
   require_cmd cabal
-  run_verbose cabal --version
+  cabal --version
   test -n "$CABALVER" && check_version cabal $CABALVER
   # Set the real version of cabal
   CABALVER=$(cabal --numeric-version) || exit 1
@@ -637,11 +641,6 @@ Please provide a working stack.yaml or use cabal build."
 #------------------------------------------------------------------------------
 
 get_pkg_name() {
-  if test -f "package.yaml" -a -n "$STACKCMD"
-  then
-    # Generate cabal file from package.yaml
-    $STACKCMD query > /dev/null 2>&1
-  fi
   local name=$(echo *.cabal)
   test -f "$name" || die "One and only one .cabal file is required in the current directory."
   name=${name%.cabal}
@@ -660,6 +659,32 @@ get_pkg_full_name() {
     die "Inconsistent package name [$pkgname] and package full name [$full_name]"
   fi
   echo $full_name
+}
+
+ensure_cabal_config() {
+  run_verbose cabal user-config init || true
+
+  if test "$BUILD" = cabal
+  then
+    if test -n "$CABAL_HACKAGE_MIRROR"
+    then
+      cabal_use_mirror $CABAL_HACKAGE_MIRROR
+    fi
+
+    echo
+    echo "cabal update"
+    retry_cmd cabal update
+  fi
+
+  if test -f "package.yaml" -a -n "$STACKCMD"
+  then
+    echo "Generating cabal file from package.yaml"
+    # Generate cabal file from package.yaml
+    $STACKCMD query > /dev/null 2>&1
+  fi
+
+  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
+  echo "Package name and version: [$PACKAGE_FULL_NAME]"
 }
 
 # $1: dir where they are installed
@@ -695,13 +720,6 @@ create_and_unpack_pkg_dist() {
   local opts
   local SDIST_DIR
   local SDIST_CMD
-
-  if test "$BUILD" = cabal
-  then
-    echo
-    echo "cabal update"
-    retry_cmd cabal update
-  fi
 
   test -n "$SDIST_OPTIONS" && opts="$SDIST_OPTIONS"
 
@@ -750,6 +768,10 @@ create_and_unpack_pkg_dist() {
   cd .packcheck || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
   $OS_UNGZTAR_CMD $tarpath
+
+  cd ${1}
+  show_step "Package info [sdist $SDIST_OPTIONS]"
+  run_verbose cabal info .
 }
 
 install_deps() {
@@ -859,27 +881,19 @@ build_compile () {
   show_build_config
 
   # ---------Create dist, unpack, install deps, test--------
-  show_step "Create source distribution and unpack it"
-  PACKAGE_NAME=$(get_pkg_name) || die "PACKAGE_NAME"
-  echo "Package name: [$PACKAGE_NAME]"
-
-  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
-  echo "Package name and version: [$PACKAGE_FULL_NAME]"
-
-  # The cabal info command run as part of package name determination above would
-  # have already created the cabal config, just change the mirror if needed.
-  test -n "$CABAL_HACKAGE_MIRROR" && cabal_use_mirror $CABAL_HACKAGE_MIRROR
-
+  show_step "Build tools: package level and global configuration"
+  ensure_cabal_config
   test -n "$(need_stack)" && ensure_stack_yaml
-  create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
 
-  # Note the above functions leaves us in the .packcheck dir
-  cd $PACKAGE_FULL_NAME
-  show_step "Package info [sdist $SDIST_OPTIONS]"
-  run_verbose cabal info .
+  if test -z "$DISABLE_SDIST_BUILD"
+  then
+    # Note this function leaves us in the package dir unpacked from sdist
+    show_step "Prepare to build from source distribution"
+    create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
+  fi
 
   show_step "Install package dependencies"
-  install_deps $PACKAGE_FULL_NAME
+  install_deps
 
   show_step "Build and test"
   build_and_test
