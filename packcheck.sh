@@ -417,27 +417,33 @@ EOF
   test "$BUILD" = stack -o "$BUILD" = cabal || \
     die "build can only be 'stack' or 'cabal'"
 
-  if test "$BUILD" != cabal
+  if test "$BUILD" = cabal
   then
-    cabal_only_var CABALVER
-    cabal_only_var CABAL_USE_STACK_SDIST
-    cabal_only_var CABAL_CHECK_RELAX
-    cabal_only_var CABAL_CONFIGURE_OPTIONS
-    cabal_only_var CABAL_NO_SANDBOX
-    cabal_only_var CABAL_HACKAGE_MIRROR
-  else
-    stack_only_var STACK_OPTIONS
-    stack_only_var STACK_BUILD_OPTIONS
     if test -n "$GHCVER" -a -n "$RESOLVER"
     then
       die "GHCVER and RESOLVER cannot be used together in cabal build."
     fi
   fi
 
-  if test -z "$(need_stack)"
+  if test -n "$CHECK_ENV"
   then
-    stack_only_var STACK_YAML
-    #stack_only_var STACK_UPGRADE
+    if test "$BUILD" != cabal
+    then
+      cabal_only_var CABALVER
+      cabal_only_var CABAL_USE_STACK_SDIST
+      cabal_only_var CABAL_CHECK_RELAX
+      cabal_only_var CABAL_CONFIGURE_OPTIONS
+      cabal_only_var CABAL_NO_SANDBOX
+      cabal_only_var CABAL_HACKAGE_MIRROR
+    fi
+
+    if test -z "$(need_stack)"
+    then
+      stack_only_var STACK_YAML
+      stack_only_var STACK_UPGRADE
+      stack_only_var STACK_OPTIONS
+      stack_only_var STACK_BUILD_OPTIONS
+    fi
   fi
 }
 
