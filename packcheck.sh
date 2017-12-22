@@ -228,8 +228,9 @@ short_help() {
   echo "For example:"
   echo "$0 stack RESOLVER=lts-10.0 GHC_OPTIONS=\"-O0 -Werror\""
   echo
-  echo "Control parameters can either be passed on command line or"
-  echo "exported as environment variables."
+  echo "Control parameters can either be passed on command line or exported"
+  echo "as environment variables. Parameters marked DESTRUCTIVE may modify"
+  echo "your global user config or state."
 }
 
 show_help() {
@@ -248,42 +249,40 @@ show_help() {
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
-  help_envvar SDIST_OPTIONS "Arguments to stack sdist (e.g. --pvp-bounds)"
+  help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command (e.g. --pvp-bounds)"
   help_envvar DISABLE_SDIST_BUILD "Do not build from source distribution"
-  help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
+  help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
 
   show_step "Advanced stack build parameters or env variables"
   help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
-  help_envvar STACK_UPGRADE "DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
+  help_envvar STACK_UPGRADE "DESTRUCTIVE! Upgrades stack to latest version"
 
   show_step "Advanced cabal build parameters or env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
-  # All of the following are recommended for a CI environment, should we use a
-  # CONTINUOUS_INTEGRATION env variables to set them as default automatically?
+  help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
   # dependencies have to be installed twice in two separate sandboxes, once to
-  # create and sdist and once to build the sdist. For a CI NO sandbox mode
+  # create an sdist and once to build the sdist. For a CI NO sandbox mode
   # makes more sense as long as multiple builds running simultaneously will not
   # try to install conflicting packages.
   help_envvar CABAL_NO_SANDBOX "[y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db"
   help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file."
   # XXX this is not really a cabal build specific var
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues"
-  help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
 
   show_step "Coverage related parameters or env variables"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
   show_step "hlint related parameters or env variables"
-  help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint src; hlint test'"
+  help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
 
-  show_step "Diagnostics parameters or rnv variables"
+  show_step "Diagnostics parameters or env variables"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "Treat unknown env variables as error, used with env -i"
@@ -726,7 +725,6 @@ remove_pkg_executables() {
 install_cabal_deps() {
   if test "$CABAL_NO_SANDBOX" != "y"
   then
-    echo
     run_verbose_errexit cabal sandbox init
   fi
   echo
@@ -747,7 +745,6 @@ create_and_unpack_pkg_dist() {
 
   test -n "$SDIST_OPTIONS" && opts="$SDIST_OPTIONS"
 
-  echo
   if test "$BUILD" = stack
   then
     # When custom setup is used we need to configure before we can use sdist.
@@ -781,7 +778,7 @@ create_and_unpack_pkg_dist() {
   run_verbose_errexit $SDIST_CMD
   if test ! -f $tarpath
   then
-    echo "stack sdist did not create [$tarpath]"
+    echo "$BUILD sdist did not create [$tarpath]"
     exit 1
   fi
 
