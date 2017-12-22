@@ -109,16 +109,28 @@ Cabal build using system installed ghc and cabal on PATH:
 $ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
 ```
 
+Run hlint commands on the directories `src` and `test`:
+```
+$ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
+```
+
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.  Note that this currently works only with a cabal build:
 ```
 $ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
 
-Use clean environment, makes sure there is no interference from existing
-environment:
+## Diagnostics
+
+There may be issues due to some environment variables unknowingly set or some
+command line parameters or env variables being misspelled and therefore
+silently ignored. To avoid any such issues the cleanest way to invoke the
+script is to use a clean environment using `env -i` and `CHECK_ENV=y`
+parameter. When this parameter is set unwanted variables are detected and
+reported.
+
 ```
-$ env -i PATH=/bin:/usr/bin ./packcheck.sh stack
+$ env -i CHECK_ENV=y ./packcheck.sh stack
 ```
 
 ## Full Reference
@@ -146,10 +158,13 @@ cueball $ packcheck.sh --help
 Usage
 --------------------------------------------------
 ./packcheck.sh COMMAND [PARAMETER=VALUE ...]
+
+For example:
 ./packcheck.sh stack RESOLVER=lts-10.0 GHC_OPTIONS="-O0 -Werror"
 
-Control parameters can either be passed on command line or as
-exported environment variables.
+Control parameters can either be passed on command line or exported
+as environment variables. Parameters marked DESTRUCTIVE may modify
+your global user config or state.
 
 --------------------------------------------------
 Commands
@@ -165,30 +180,32 @@ Commonly used parameters or env variables
 --------------------------------------------------
 RESOLVER                : Stack resolver to use for stack or cabal builds
 GHCVER                  : [a.b.c] GHC version prefix (may not be enforced when using stack)
-CABALVER                : [a.b.c.d] Cabal version prefix for cabal builds
+CABALVER                : [a.b.c.d] Cabal version (prefix) to use
+STACKVER                : [a.b.c.d] Stack version (prefix) to use
 GHC_OPTIONS             : Specify GHC options to use
-SDIST_OPTIONS           : Arguments to stack sdist (e.g. --pvp-bounds)
-TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (force install with cabal)
+SDIST_OPTIONS           : Arguments to stack/cabal sdist command (e.g. --pvp-bounds)
+DISABLE_SDIST_BUILD     : Do not build from source distribution
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 PATH                    : [path] Set PATH explicitly for predictable builds
+TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (force install with cabal)
 
 --------------------------------------------------
 Advanced stack build parameters or env variables
 --------------------------------------------------
-STACK_YAML              : Alternative stack config file to use
-STACK_UPGRADE           : DESTRUCTIVE! Upgrades stack to latest version
+STACK_YAML              : Alternative stack config, cannot be a path, just the file name
 STACK_OPTIONS           : Provide additional stack global options (e.g. -v)
 STACK_BUILD_OPTIONS     : Override the default stack build command options
+STACK_UPGRADE           : DESTRUCTIVE! Upgrades stack to latest version
 
 --------------------------------------------------
 Advanced cabal build parameters or env variables
 --------------------------------------------------
 CABAL_USE_STACK_SDIST   : [y] Use stack sdist (to use --pvp-bounds)
 CABAL_CONFIGURE_OPTIONS : Override the default cabal configure options
+CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
 CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file.
 CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues
-CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 
 --------------------------------------------------
 Coverage related parameters or env variables
@@ -199,10 +216,9 @@ COVERAGE                : [y] Just generate coverage information
 --------------------------------------------------
 hlint related parameters or env variables
 --------------------------------------------------
-HLINT_OPTIONS           : hlint arguments and options, usually just '.'
-HLINT                   : [y] Run hlint. Defaults to 'y' if HLINT_OPTIONS is set
+HLINT_COMMANDS          : hlint commands e.g.'hlint lint src; hlint lint test'
 
 --------------------------------------------------
-Diagnostics parameters or rnv variables
+Diagnostics parameters or env variables
 --------------------------------------------------
 CHECK_ENV               : Treat unknown env variables as error, used with env -i
