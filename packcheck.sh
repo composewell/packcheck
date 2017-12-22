@@ -252,7 +252,7 @@ show_help() {
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
 
   show_step "Advanced stack build parameters or env variables"
-  help_envvar STACK_YAML "Alternative stack config file to use"
+  help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
   help_envvar STACK_UPGRADE "DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
@@ -705,16 +705,21 @@ create_and_unpack_pkg_dist() {
 
   test -n "$SDIST_OPTIONS" && opts="$SDIST_OPTIONS"
 
+  echo
   if test "$BUILD" = stack
   then
+    # When custom setup is used we need to configure before we can use sdist.
+    run_verbose_errexit $SDIST_STACKCMD build --only-configure
     SDIST_CMD="$SDIST_STACKCMD sdist $opts"
     SDIST_DIR=$($SDIST_STACKCMD path --dist-dir) || exit 1
   elif test -n "$CABAL_USE_STACK_SDIST"
   then
+    # When custom setup is used we need to configure before we can use sdist.
+    run_verbose_errexit $SDIST_STACKCMD --compiler=ghc-$GHCVER build --only-configure
     SDIST_CMD="$SDIST_STACKCMD --compiler=ghc-$GHCVER sdist $opts"
     SDIST_DIR=$($SDIST_STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
   else
-    # We need to configure to use sdist and we need to install
+    # XXX We need to configure to use sdist and we need to install
     # dependencies to configure. So to just create the sdist we will
     # have to go through the whole process once and then again after
     # unpacking the sdist and to build it. If we use a sandbox then
