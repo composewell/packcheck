@@ -487,13 +487,16 @@ fetch_stack() {
 
 # $1: directory to place stack executable in
 ensure_stack() {
-  if test -z "$(which_cmd stack)"
+  # 'stack upgrade' falls back to source upgrade if the github API to fetch
+  # release information for binaries fails. Source upgrade can timeout the CI
+  # build.  We just fetch it if upgrade is desired.
+  if test -z "$(which_cmd stack)" -o -n "$STACK_UPGRADE"
   then
     echo "Downloading stack to [$1]..."
     fetch_stack $1
   fi
   require_cmd stack
-  test -n "$STACK_UPGRADE" && stack upgrade
+  #test -n "$STACK_UPGRADE" && stack upgrade
   STACKCMD="stack --no-terminal $STACK_OPTIONS"
   $STACKCMD --version
 
