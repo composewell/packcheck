@@ -1,12 +1,28 @@
-notifications:
-  email: false
-
+# See https://github.com/harendra-kumar/packcheck for all parameters and their
+# explanation.
 env:
   global:
-  - GHC_OPTIONS="-O0 -Werror"
   - PACKCHECK="./packcheck.sh"
-  # The commit id of packcheck.sh to use from harendra-kumar/packcheck on github
-  - PACKCHECK_COMMIT="182d8767120600dee57432ea85d8c847e2a86d09"
+  # The commit id of packcheck.sh to use from
+  # https://github.com/harendra-kumar/packcheck.  Used only when the script
+  # does not exist in the package repo at the path specified by "PACKCHECK"
+  - PACKCHECK_COMMIT="06f976521e971e011e4aa6cb98adb8416571d3b1"
+  - GHC_OPTIONS="-Werror"
+  - STACKVER=1.6.1
+  - STACK_UPGRADE=y
+  # ------------------------------------------------------------------------
+  # Normally you would not need to customize hereafter
+  # ------------------------------------------------------------------------
+  - CABAL_REINIT_CONFIG=y
+  - CABAL_CHECK_RELAX=y
+  - CABAL_NO_SANDBOX=y
+  - CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com
+  - TEST_INSTALL=y
+  - PATH=/bin:/usr/bin
+  - LC_ALL=C.UTF-8
+
+notifications:
+  email: false
 
 # This matrix has total 11 builds enabled, 4 builds each (3 last major compiler
 # versions and head) for stack and cabal, 2 OSX builds (stack and cabal for
@@ -100,6 +116,7 @@ matrix:
 #  Settings beyond this point are advanced and normally not tweaked
 # ------------------------------------------------------------------------
 
+language: c
 sudo: false
 cache:
   directories:
@@ -107,12 +124,10 @@ cache:
   - $HOME/.ghc
   - $HOME/.local
   - $HOME/.stack
+install: true
 
 script:
   - |
-    # Where to find the packcheck.sh script
-    PACKCHECK_URL=https://raw.githubusercontent.com/harendra-kumar/packcheck/${PACKCHECK_COMMIT}/packcheck.sh
-
     # When GHCVER or CABALVER env variables are specified, modify the path to
     # find the binaries installed from hvr-ghc repo
     add_path()  { eval "test -n \"\$$1\"" && eval "PATH=/opt/$2/\"\$$1\"/bin:$PATH"; true; }
@@ -120,38 +135,18 @@ script:
     # Emit the value of the var specified as arg only when the build is cabal
     cabal_env() { test "$BUILD" = cabal && echo $1; }
 
-    CURL=$(which curl)
-    PATH=/bin:/usr/bin
-    add_path GHCVER   ghc
-    add_path CABALVER cabal
-
     # If a custom stack-yaml is specified, replace the default with that
     if test -e "$STACK_YAML"; then rm -f stack.yaml && ln -sv $STACK_YAML stack.yaml; else true; fi
+
+    # Get packcheck if needed
+    CURL=$(which curl)
+    PACKCHECK_URL=https://raw.githubusercontent.com/harendra-kumar/packcheck/${PACKCHECK_COMMIT}/packcheck.sh
     if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
     chmod +x $PACKCHECK
 
-    # We start with a clean environment (env -i) and specify all the
-    # environment variables explicitly. TRAVIS vars are needed by
-    # hpc-coveralls.
-    # STACK_UPGRADE=y
-  - env -i
-      LC_ALL=C.UTF-8
-      TRAVIS=$TRAVIS
-      TRAVIS_JOB_ID=$TRAVIS_JOB_ID
-      PATH="$PATH"
-      RESOLVER=$RESOLVER
-      STACK_BUILD_OPTIONS="$STACK_BUILD_OPTIONS"
-      GHCVER=$GHCVER
-      GHC_OPTIONS="$GHC_OPTIONS"
-      COVERALLS_OPTIONS="$COVERALLS_OPTIONS"
-      CABAL_REINIT_CONFIG=y
-      TEST_INSTALL=y
-      $(cabal_env CABALVER=$CABALVER)
-      $(cabal_env CABAL_CHECK_RELAX=y)
-      $(cabal_env CABAL_NO_SANDBOX=y)
-      $(cabal_env CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com)
-      HLINT_COMMANDS="$HLINT_COMMANDS"
-      bash -c "$PACKCHECK $BUILD"
+    add_path GHCVER   ghc
+    add_path CABALVER cabal
 
-install: true
-language: c
+    # In addition to PACKCHECK envvars hpc-coveralls needs TRAVIS,
+    # TRAVIS_JOB_ID variables set by the travis CI environment.
+  - bash -c "$PACKCHECK $BUILD"
