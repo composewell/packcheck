@@ -625,13 +625,6 @@ ensure_cabal() {
   test -n "$CABALVER" && check_version cabal $CABALVER
   # Set the real version of cabal
   CABALVER=$(cabal --numeric-version) || exit 1
-
-  if test "$CABAL_REINIT_CONFIG" = y
-  then
-    local cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
-    echo "Removing old cabal config [$cfg]"
-    run_verbose_errexit rm -f "$cfg"
-  fi
 }
 
 ensure_stack_yaml() {
@@ -680,6 +673,15 @@ get_pkg_full_name() {
 }
 
 ensure_cabal_config() {
+  # When cabal versions change across builds on a CI host its safer to remove
+  # the old config so that the build does not error out.
+  if test "$CABAL_REINIT_CONFIG" = y
+  then
+    local cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+    echo "Removing old cabal config [$cfg]"
+    run_verbose_errexit rm -f "$cfg"
+  fi
+
   run_verbose cabal user-config init || true
 
   if test "$BUILD" = cabal
@@ -853,6 +855,7 @@ build_hlint() {
       run_verbose_errexit $STACKCMD install hlint
     else
       ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+      ensure_cabal_config
       ensure_ghc
       run_verbose_errexit cabal install hlint
     fi
