@@ -684,7 +684,19 @@ ensure_cabal_config() {
     run_verbose_errexit rm -f "$cfg"
   fi
 
-  run_verbose cabal user-config init || true
+  if test -f "package.yaml" -a -n "$STACKCMD"
+  then
+    echo "Generating cabal file from package.yaml"
+    # Generate cabal file from package.yaml
+    $STACKCMD query > /dev/null 2>&1
+  fi
+
+  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
+  echo "Package name and version: [$PACKAGE_FULL_NAME]"
+
+  # cabal 1.22 and earlier do not support this command
+  # We rely on the cabal info command to create the config above.
+  #run_verbose cabal user-config init || true
 
   if test "$BUILD" = cabal
   then
@@ -697,16 +709,6 @@ ensure_cabal_config() {
     echo "cabal update"
     retry_cmd cabal update
   fi
-
-  if test -f "package.yaml" -a -n "$STACKCMD"
-  then
-    echo "Generating cabal file from package.yaml"
-    # Generate cabal file from package.yaml
-    $STACKCMD query > /dev/null 2>&1
-  fi
-
-  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
-  echo "Package name and version: [$PACKAGE_FULL_NAME]"
 }
 
 # $1: dir where they are installed
