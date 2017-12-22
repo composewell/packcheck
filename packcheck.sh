@@ -683,11 +683,16 @@ ensure_cabal_config() {
     run_verbose_errexit rm -f "$cfg"
   fi
 
-  if test -f "package.yaml" -a -n "$STACKCMD"
+  local name=$(echo *.cabal)
+  if test ! -f "$name"
   then
-    echo "Generating cabal file from package.yaml"
-    # Generate cabal file from package.yaml
-    $STACKCMD query > /dev/null 2>&1
+    echo "No cabal file found in the package directory"
+    if test -f "package.yaml" -a -n "$STACKCMD"
+    then
+      echo "Generating cabal file from package.yaml"
+      # Generate cabal file from package.yaml
+      run_verbose "$STACKCMD query > /dev/null 2>&1"
+    fi
   fi
 
   PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
