@@ -4,7 +4,7 @@ environment:
     GHC_OPTIONS: "-O0 -Werror"
     PACKCHECK: ./packcheck.sh
     # The commit id of packcheck.sh to use from harendra-kumar/packcheck on github
-    PACKCHECK_COMMIT: "6be708c5b34b5a2a7b553cf9ebe99f1f5764a79a"
+    PACKCHECK_COMMIT: "182d8767120600dee57432ea85d8c847e2a86d09"
 
     # ------------------------------------------------------------------------
     # Normally you do not need to customize hereafter

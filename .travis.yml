@@ -6,12 +6,15 @@ env:
   - GHC_OPTIONS="-O0 -Werror"
   - PACKCHECK="./packcheck.sh"
   # The commit id of packcheck.sh to use from harendra-kumar/packcheck on github
-  - PACKCHECK_COMMIT="6be708c5b34b5a2a7b553cf9ebe99f1f5764a79a"
+  - PACKCHECK_COMMIT="182d8767120600dee57432ea85d8c847e2a86d09"
 
 # This matrix has total 11 builds enabled, 4 builds each (3 last major compiler
 # versions and head) for stack and cabal, 2 OSX builds (stack and cabal for
 # latest compiler version), and one hlint build. You may want to comment out
 # some of the builds to be lighter on the CI infrastructure.
+#
+# We pre-install the cabal-install package to not incur the penalty of building
+# it the first time in cached builds or every time in uncached builds.
 matrix:
   include:
 
@@ -21,12 +24,15 @@ matrix:
 
   # GHC 7.10.3
   - env: BUILD=stack RESOLVER=lts-6.35
+    addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
 
   # GHC 8.0.2
   - env: BUILD=stack RESOLVER=lts-9.20
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   # GHC 8.2.2
   - env: BUILD=stack RESOLVER=lts-10.0
+    addons: {apt: {packages: [cabal-install-2.0], sources: [hvr-ghc]}}
 
   # Nightly
   - env: BUILD=stack RESOLVER=nightly
@@ -127,13 +133,13 @@ script:
     # We start with a clean environment (env -i) and specify all the
     # environment variables explicitly. TRAVIS vars are needed by
     # hpc-coveralls.
+    # STACK_UPGRADE=y
   - env -i
       LC_ALL=C.UTF-8
       TRAVIS=$TRAVIS
       TRAVIS_JOB_ID=$TRAVIS_JOB_ID
       PATH="$PATH"
       RESOLVER=$RESOLVER
-      STACK_UPGRADE=y
       STACK_BUILD_OPTIONS="$STACK_BUILD_OPTIONS"
       GHCVER=$GHCVER
       GHC_OPTIONS="$GHC_OPTIONS"
