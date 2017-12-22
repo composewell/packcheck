@@ -637,6 +637,11 @@ Please provide a working stack.yaml or use cabal build."
 #------------------------------------------------------------------------------
 
 get_pkg_name() {
+  if test -f "package.yaml" -a -n "$STACKCMD"
+  then
+    # Generate cabal file from package.yaml
+    $STACKCMD query > /dev/null 2>&1
+  fi
   local name=$(echo *.cabal)
   test -f "$name" || die "One and only one .cabal file is required in the current directory."
   name=${name%.cabal}
