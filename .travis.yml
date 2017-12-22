@@ -76,7 +76,7 @@ matrix:
   # Lint
   # --------------------------------------------------------------------------
 
-  - env: BUILD=stack RESOLVER=lts-10.0 HLINT_OPTIONS="."
+  - env: BUILD=stack RESOLVER=lts-10.0 HLINT_COMMANDS="hlint lint ."
 
   # --------------------------------------------------------------------------
   # Build and send coverage report to coveralls.io using hpc-coveralls
@@ -94,7 +94,7 @@ matrix:
   allow_failures:
   - env: BUILD=stack RESOLVER=nightly
   - env: BUILD=cabal GHCVER=head CABALVER=head
-  - env: BUILD=stack RESOLVER=lts-10.0 HLINT_OPTIONS="."
+  - env: BUILD=stack RESOLVER=lts-10.0 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------
 #  Settings beyond this point are advanced and normally not tweaked
@@ -150,7 +150,7 @@ script:
       $(cabal_env CABAL_CHECK_RELAX=y)
       $(cabal_env CABAL_NO_SANDBOX=y)
       $(cabal_env CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com)
-      HLINT_OPTIONS="$HLINT_OPTIONS"
+      HLINT_COMMANDS="$HLINT_COMMANDS"
       bash -c "$PACKCHECK $BUILD"
 
 install: true

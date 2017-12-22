@@ -147,8 +147,7 @@ SAFE_ENVVARS="\
   CABAL_CONFIGURE_OPTIONS \
   COVERAGE \
   COVERALLS_OPTIONS \
-  HLINT \
-  HLINT_OPTIONS \
+  HLINT_COMMANDS \
   CHECK_ENV \
   LANG \
   LC_ALL \
@@ -282,8 +281,7 @@ show_help() {
   help_envvar COVERAGE "[y] Just generate coverage information"
 
   show_step "hlint related parameters or env variables"
-  help_envvar HLINT_OPTIONS "hlint arguments and options, usually just '.'"
-  help_envvar HLINT "[y] Run hlint. Defaults to 'y' if HLINT_OPTIONS is set"
+  help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint src; hlint test'"
 
   show_step "Diagnostics parameters or rnv variables"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
@@ -301,7 +299,6 @@ check_all_boolean_vars () {
   check_boolean_var TEST_INSTALL
   check_boolean_var DISABLE_BENCH
   check_boolean_var COVERAGE
-  check_boolean_var HLINT
 }
 
 show_build_command() {
@@ -377,7 +374,6 @@ stack_only_var() {
 
 verify_build_config() {
   test -n "$COVERALLS_OPTIONS" && COVERAGE=y
-  test -n "$HLINT_OPTIONS" && HLINT=y
 
   if test "$BUILD" = stack
   then
@@ -860,8 +856,8 @@ build_hlint() {
       run_verbose_errexit cabal install hlint
     fi
   fi
-  show_step "Running hlint..."
-  run_verbose_errexit hlint $HLINT_OPTIONS
+  show_step "Running hlint commands..."
+  run_verbose_errexit "$HLINT_COMMANDS"
 }
 
 # We run it only after a stack or cabal build so we are sure that stack or
@@ -1035,7 +1031,7 @@ unset GHC_PACKAGE_PATH
 # stack does not work well with empty STACK_YAML env var
 test -z "$STACK_YAML" && unset STACK_YAML
 
-if test -n "$HLINT"
+if test -n "$HLINT_COMMANDS"
 then
   build_hlint
 else
