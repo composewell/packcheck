@@ -138,6 +138,7 @@ SAFE_ENVVARS="\
   DISABLE_SDIST_BUILD \
   DISABLE_BENCH \
   PATH \
+  STACKVER \
   STACK_YAML \
   STACK_OPTIONS \
   STACK_BUILD_OPTIONS \
@@ -245,7 +246,8 @@ show_help() {
   show_step "Commonly used parameters or env variables"
   help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
-  help_envvar CABALVER "[a.b.c.d] Cabal version prefix for cabal builds"
+  help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
+  help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack sdist (e.g. --pvp-bounds)"
   help_envvar DISABLE_SDIST_BUILD "Do not build from source distribution"
@@ -490,16 +492,32 @@ fetch_stack() {
 
 # $1: directory to place stack executable in
 ensure_stack() {
-  # 'stack upgrade' falls back to source upgrade if the github API to fetch
-  # release information for binaries fails. Source upgrade can timeout the CI
-  # build.  We just fetch it if upgrade is desired.
-  if test -z "$(which_cmd stack)" -o -n "$STACK_UPGRADE"
+  if test -z "$(which_cmd stack)"
   then
     echo "Downloading stack to [$1]..."
     fetch_stack $1
   fi
   require_cmd stack
-  #test -n "$STACK_UPGRADE" && stack upgrade
+
+  if test -n "$STACK_UPGRADE"
+  then
+    echo "Upgrading stack to the required version"
+    if test -n "$STACKVER"
+    then
+      local curver=$(stack --numeric-version)
+      if test "${curver#$STACKVER}" = ${curver}
+      then
+        run_verbose stack --no-terminal upgrade --binary-only --binary-version $STACKVER
+      fi
+    else
+      run_verbose stack --no-terminal upgrade --binary-only || fetch_stack $1
+    fi
+  fi
+
+  test -n "$STACKVER" && check_version stack $STACKVER
+  # Set the real version of stack
+  STACKVER=$(stack --numeric-version) || exit 1
+
   STACKCMD="stack --no-terminal $STACK_OPTIONS"
   $STACKCMD --version
 
@@ -536,7 +554,7 @@ use_stack_paths() {
 # Ensure ghc, cabal are available and the right versions when requested
 #------------------------------------------------------------------------------
 
-# $1: tool name (used only for ghc and cabal)
+# $1: tool name (used only for ghc, cabal and stack)
 # $2: expected version
 check_version() {
   local real_ver=$($1 --numeric-version)
@@ -552,7 +570,7 @@ ensure_ghc() {
   then
     # Use stack supplied ghc
     echo "$STACKCMD setup"
-    retry_cmd $STACKCMD setup
+    retry_cmd $STACKCMD setup || die "stack setup falied"
     use_stack_paths
     echo
   fi
