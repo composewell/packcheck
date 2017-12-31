@@ -250,7 +250,7 @@ show_help() {
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command (e.g. --pvp-bounds)"
-  help_envvar DISABLE_SDIST_BUILD "Do not build from source distribution"
+  help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
   help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
@@ -259,7 +259,7 @@ show_help() {
   help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
-  help_envvar STACK_UPGRADE "DESTRUCTIVE! Upgrades stack to latest version"
+  help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
 
   show_step "Advanced cabal build parameters or env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
@@ -285,7 +285,7 @@ show_help() {
   show_step "Diagnostics parameters or env variables"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
-  help_envvar CHECK_ENV "Treat unknown env variables as error, used with env -i"
+  help_envvar CHECK_ENV "[y] Treat unknown env variables as error, used with env -i"
 }
 
 check_all_boolean_vars () {
@@ -616,9 +616,11 @@ ensure_cabal() {
   # We need cabal to retrieve the package version as well as for the solver
   # Also when we are using stack for cabal builds use stack installed cabal
   # We are assuming CI cache will be per resolver so we can cache the bin
+  # We need to ignore the project's stack.yaml when installing
+  # cabal-install, otherwise it may fail due to dependency conflict.
   if test -z "$(which_cmd cabal)" -a -n "$(need_stack)"
   then
-      run_verbose_errexit $STACKCMD install cabal-install
+    (cd /; unset STACK_YAML; run_verbose_errexit $STACKCMD install cabal-install)
   fi
 
   require_cmd cabal
@@ -858,7 +860,7 @@ build_hlint() {
     then
       ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
       ensure_ghc
-      run_verbose_errexit $STACKCMD install hlint
+      (cd /; unset STACK_YAML; run_verbose_errexit $STACKCMD install hlint)
     else
       ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
       ensure_cabal_config
