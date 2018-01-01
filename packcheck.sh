@@ -93,7 +93,7 @@ function run_verbose_errexit() {
 show_step() {
   echo
   echo "--------------------------------------------------"
-  echo "$1"
+  echo "[`get_rel_time` sec] $1"
   echo "--------------------------------------------------"
 }
 
@@ -181,6 +181,7 @@ SAFE_ENVVARS="\
   CHECK_ENV \
   LANG \
   LC_ALL \
+  BASE_TIME \
 "
 
 UNSAFE_ENVVARS="\
@@ -316,6 +317,7 @@ show_help() {
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "[y] Treat unknown env variables as error, used with env -i"
+  help_envvar BASE_TIME "System time to be used as base for timeline reporting"
 }
 
 check_all_boolean_vars () {
@@ -1004,6 +1006,21 @@ get_confirmation()
   fi
 }
 
+get_sys_time() {
+  local os=$(uname)
+  case "$os" in
+    Linux | MINGW*) date +%s.%N ;;
+    Darwin) date +%s ;;
+    *) die "Unknown OS [$os]" ;;
+  esac
+}
+
+get_rel_time() {
+  local curtime
+  curtime=$(echo "print `get_sys_time` - ${BASE_TIME}" | bc)
+  printf "%1.1f" "${curtime}"
+}
+
 #------------------------------------------------------------------------------
 # Main flow of script starts here
 #------------------------------------------------------------------------------
@@ -1036,6 +1053,8 @@ esac
 test -n "$CHECK_ENV" && check_boolean_var CHECK_ENV
 test -n "$CHECK_ENV" && check_clean_env
 
+test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
+
 echo
 bash --version
 
@@ -1059,7 +1078,7 @@ then
 fi
 export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
 
-TOOLS="awk cat curl cut env mkdir printf rm sleep which $OS_HAS_TOOLS"
+TOOLS="awk bc cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
 require_cmd /bin/bash
@@ -1080,3 +1099,5 @@ then
 else
   build_compile
 fi
+
+echo "Done. Took `get_rel_time` seconds."
