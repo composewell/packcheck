@@ -682,6 +682,7 @@ ensure_stack_yaml() {
     require_file $STACK_YAML
   elif test ! -e stack.yaml
   then
+    ensure_cabal
     # solver seems to be broken with latest cabal
     echo "Trying to generate a stack.yaml"
     run_verbose $STACKCMD init --solver --ignore-subdirs || die "Solver failed to generate a stack.yaml.\n\
