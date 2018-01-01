@@ -91,9 +91,14 @@ function run_verbose_errexit() {
 
 # $1: msg
 show_step() {
+  local reltime
+  if test -n "$BASE_TIME"
+  then
+    reltime="[`get_rel_time` sec] "
+  fi
   echo
   echo "--------------------------------------------------"
-  echo "[`get_rel_time` sec] $1"
+  echo "$reltime $1"
   echo "--------------------------------------------------"
 }
 
@@ -384,6 +389,13 @@ show_build_env() {
 
 need_stack() {
   if test "$BUILD" = stack -o -n "$RESOLVER" -o -n "$CABAL_USE_STACK_SDIST"
+  then
+    echo true
+  fi
+}
+
+need_cabal() {
+  if test "$BUILD" = cabal -o -z "$DISABLE_SDIST_BUILD"
   then
     echo true
   fi
@@ -932,7 +944,8 @@ build_compile () {
   # ensure_msys_tools "tar" && require_cmd tar
 
   ensure_ghc && echo
-  ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+  test -n "$(need_cabal)" \
+    && ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 
   # use the stack installed 7z instead. depends on ensure ghc where we setup
   # stack paths.
@@ -943,7 +956,7 @@ build_compile () {
 
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
-  ensure_cabal_config
+  test -n "$(need_cabal)" && ensure_cabal_config
   test -n "$(need_stack)" && ensure_stack_yaml
 
   if test -z "$DISABLE_SDIST_BUILD"
@@ -1053,10 +1066,19 @@ esac
 test -n "$CHECK_ENV" && check_boolean_var CHECK_ENV
 test -n "$CHECK_ENV" && check_clean_env
 
-test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
-
 echo
 bash --version
+
+show_step "Build command"
+show_build_command
+
+TOOLS="awk bc cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
+
+show_step "Check basic tools"
+require_cmd /bin/bash
+for i in $TOOLS; do require_cmd $i; done
+
+test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 show_step "Build host machine information"
 show_machine_info
@@ -1064,8 +1086,6 @@ show_machine_info
 # ---------Show, process and verify the config------------
 show_step "Build environment"
 show_build_env
-show_step "Build command"
-show_build_command
 
 # Determine home independent of the environment
 export HOME=$(echo ~)
@@ -1077,12 +1097,6 @@ then
   export PATH=$PATH:$OS_APP_HOME/$OS_CABAL_DIR/bin
 fi
 export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
-
-TOOLS="awk bc cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
-
-show_step "Check basic tools"
-require_cmd /bin/bash
-for i in $TOOLS; do require_cmd $i; done
 
 verify_build_config
 
