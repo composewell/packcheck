@@ -61,7 +61,7 @@ retry_cmd() {
 }
 
 # MINGW 'which' does not seem to work when there are spaces in the
-# PATH.  Note that, type returns a cached path, so if something got
+# PATH.  Note that "type" returns a cached path, so if something got
 # deleted we might still be returning a stale value (we can use hash -r
 # to clear the cache if needed).
 
@@ -92,13 +92,15 @@ function run_verbose_errexit() {
 # $1: msg
 show_step() {
   local reltime
-  if test -n "$BASE_TIME"
+  local disptime
+  reltime=$(get_rel_time)
+  if test -n "$reltime"
   then
-    reltime="[`get_rel_time` sec] "
+    disptime="[$reltime sec]"
   fi
   echo
   echo "--------------------------------------------------"
-  echo "$reltime $1"
+  echo "$disptime $1"
   echo "--------------------------------------------------"
 }
 
@@ -1029,9 +1031,12 @@ get_sys_time() {
 }
 
 get_rel_time() {
-  local curtime
-  curtime=$(echo "print `get_sys_time` - ${BASE_TIME}" | bc)
-  printf "%1.1f" "${curtime}"
+  if test -n "$(which_cmd bc)" -a -n "$BASE_TIME"
+  then
+    local curtime
+    curtime=$(echo "print `get_sys_time` - ${BASE_TIME}" | bc)
+    printf "%1.1f" "${curtime}"
+  fi
 }
 
 #------------------------------------------------------------------------------
@@ -1072,7 +1077,7 @@ bash --version
 show_step "Build command"
 show_build_command
 
-TOOLS="awk bc cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
+TOOLS="awk cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
 require_cmd /bin/bash
@@ -1114,4 +1119,10 @@ else
   build_compile
 fi
 
-echo "Done. Took `get_rel_time` seconds."
+echo "Done."
+
+total_time=$(get_rel_time)
+if test -n "$total_time"
+then
+  echo "Took $total_time seconds."
+fi
