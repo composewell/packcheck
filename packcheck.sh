@@ -125,6 +125,36 @@ set_os_specific_vars() {
   esac
 }
 
+show_machine_info() {
+  local os=$(uname)
+  case "$os" in
+    Linux)
+      echo "OS: Linux"
+      lscpu | grep "^Archi\|^CPU\|^Bogo\|^Hyper\|^Virtualiz"
+
+      echo "Memory:"
+      run_verbose free -h
+
+      show_step "Container/cgroup information"
+      # See https://stackoverflow.com/questions/20010199/determining-if-a-process-runs-inside-lxc-docker
+      # For comprehensive detection see container-detect.conf in ubuntu
+      #if test -f /.dockerenv
+      #then
+      #  echo "Running inside Docker (found /.dockerenv)";
+      #fi
+      #run_verbose head -n 1 /proc/1/cgroup
+      sudo cat /proc/1/environ | tr '\0' '\n' | grep "^container=" || true
+      run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_period_us || true
+      run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us || true
+      run_verbose cat /sys/fs/cgroup/memory/memory.limit_in_bytes || true ;;
+    Darwin)
+      echo "OS: MacOS" ;;
+    MINGW*)
+      echo "OS: Windows (MINGW)" ;;
+    *) die "OS: Unknown OS [$os]" ;;
+  esac
+}
+
 #------------------------------------------------------------------------------
 # Build config show and determine
 #------------------------------------------------------------------------------
@@ -983,33 +1013,34 @@ set -o pipefail
 
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
-while test -n "$1"
-do
-  case $1 in
-    cabal) shift; eval_env "$@"; BUILD=cabal; break;;
-    stack) shift; eval_env "$@"; BUILD=stack; break;;
-    clean) rm -rf .packcheck; exit;;
-    cleanall)
-      rm -rf .packcheck .stack-work
-      if test -e cabal.sandbox.config
-      then
-        get_confirmation "Remove the cabal sandbox config? "
-        rm -rf .cabal-sandbox
-        rm -f cabal.sandbox.config
-      else
-        rm -rf .cabal-sandbox
-      fi
-      exit;;
-    -h | --help | help) show_help; exit;;
-    *) short_help; exit 1 ;;
-  esac
-done
+
+case $1 in
+  cabal) shift; eval_env "$@"; BUILD=cabal;;
+  stack) shift; eval_env "$@"; BUILD=stack;;
+  clean) rm -rf .packcheck; exit;;
+  cleanall)
+    rm -rf .packcheck .stack-work
+    if test -e cabal.sandbox.config
+    then
+      get_confirmation "Remove the cabal sandbox config? "
+      rm -rf .cabal-sandbox
+      rm -f cabal.sandbox.config
+    else
+      rm -rf .cabal-sandbox
+    fi
+    exit;;
+  -h | --help | help) show_help; exit;;
+  *) short_help; exit 1 ;;
+esac
 
 test -n "$CHECK_ENV" && check_boolean_var CHECK_ENV
 test -n "$CHECK_ENV" && check_clean_env
 
 echo
 bash --version
+
+show_step "Build host machine information"
+show_machine_info
 
 # ---------Show, process and verify the config------------
 show_step "Build environment"
