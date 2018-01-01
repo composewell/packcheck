@@ -765,6 +765,8 @@ ensure_cabal_config() {
 
 # $1: dir where they are installed
 remove_pkg_executables() {
+  test -n "$(which_cmd cabal)" || return 0
+
   exes=$(cabal info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
   echo "Remove installed binaries"
   for i in $exes
