@@ -7,13 +7,13 @@ environment:
     # https://github.com/harendra-kumar/packcheck.  Used only when the script
     # does not exist in the package repo at the path specified by "PACKCHECK"
     PACKCHECK_COMMIT: "1908b7070ab5bd074c475b42b554f5a44650cc1f"
+    STACKVER: "1.6.3"
+    STACK_UPGRADE: "y"
     RESOLVER: "lts-10.0"
     GHC_OPTIONS: "-Werror"
     # ------------------------------------------------------------------------
     # Normally you would not need to customize these params
     # ------------------------------------------------------------------------
-    #STACKVER: "1.6.1"
-    #STACK_UPGRADE: "y"
     CABAL_REINIT_CONFIG: "y"
     CABAL_CHECK_RELAX: "y"
     CABAL_NO_SANDBOX: "y"

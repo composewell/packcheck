@@ -9,7 +9,12 @@ env:
   - PACKCHECK_COMMIT="1908b7070ab5bd074c475b42b554f5a44650cc1f"
   - GHC_OPTIONS="-Werror"
   # ------------------------------------------------------------------------
-  # Normally you would not need to customize these params
+  # Builds that need stack
+  # ------------------------------------------------------------------------
+  - STACKVER="1.6.3"
+  - STACK_UPGRADE="y"
+  # ------------------------------------------------------------------------
+  # Common parameters: Normally you would not need to customize these params
   # ------------------------------------------------------------------------
   - CABAL_REINIT_CONFIG=y
   - CABAL_CHECK_RELAX=y
@@ -36,13 +41,13 @@ matrix:
   # (Linux) stack builds
   # --------------------------------------------------------------------------
 
-  - env: BUILD=stack GHCVER=7.10.3
+  - env: BUILD=stack GHCVER=7.10.3 RESOLVER=lts-6
     addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack GHCVER=8.0.2
+  - env: BUILD=stack GHCVER=8.0.2 RESOLVER=lts-9
     addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack GHCVER=8.2.2
+  - env: BUILD=stack GHCVER=8.2.2 RESOLVER=lts-10
     addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   # Nightly
@@ -59,16 +64,16 @@ matrix:
   # (Linux) cabal builds require pre-installed cabal-install and ghc
   # --------------------------------------------------------------------------
 
-  - env: BUILD=cabal GHCVER=7.10.3
+  - env: BUILD=cabal CABALVER=1.22 GHCVER=7.10.3
     addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.0.2
+  - env: BUILD=cabal CABALVER=1.24 GHCVER=8.0.2
     addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.2.2
+  - env: BUILD=cabal CABALVER=2.0 GHCVER=8.2.2
     addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=head
+  - env: BUILD=cabal CABALVER=head GHCVER=head
     addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
@@ -76,18 +81,18 @@ matrix:
   # --------------------------------------------------------------------------
 
   # GHC 8.2.2/cabal build via stack
-  - env: BUILD=cabal RESOLVER=lts-10.0
+  - env: BUILD=cabal RESOLVER=lts-10
     os: osx
 
   # GHC 8.2.2/stack
-  - env: BUILD=stack RESOLVER=lts-10.0
+  - env: BUILD=stack RESOLVER=lts-10
     os: osx
 
   # --------------------------------------------------------------------------
   # Lint
   # --------------------------------------------------------------------------
 
-  - env: BUILD=stack RESOLVER=lts-10.0 HLINT_COMMANDS="hlint lint ."
+  - env: BUILD=stack RESOLVER=lts-10 HLINT_COMMANDS="hlint lint ."
 
   # --------------------------------------------------------------------------
   # Build and send coverage report to coveralls.io using hpc-coveralls
@@ -95,7 +100,7 @@ matrix:
 
   # Note COVERALLS (hpc-coveralls) works only with cabal build.
   # For this to succeed you have to add your porject to coveralls.io first
-  #- env: BUILD=cabal GHCVER=8.2.2 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
+  #- env: BUILD=cabal CABALVER=2.0 GHCVER=8.2.2 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
   #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
@@ -104,8 +109,8 @@ matrix:
 
   allow_failures:
   - env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=cabal GHCVER=head
-  - env: BUILD=stack RESOLVER=lts-10.0 HLINT_COMMANDS="hlint lint ."
+  - env: BUILD=cabal CABALVER=head GHCVER=head
+  - env: BUILD=stack RESOLVER=lts-10 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------
 #  Settings beyond this point are advanced and normally not tweaked
@@ -132,6 +137,7 @@ script:
 
     # If a custom stack-yaml is specified, replace the default with that
     if test -e "$STACK_YAML"; then rm -f stack.yaml && ln -sv $STACK_YAML stack.yaml; else true; fi
+    unset STACK_YAML
 
     # Get packcheck if needed
     CURL=$(which curl)
