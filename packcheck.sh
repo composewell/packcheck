@@ -1034,12 +1034,9 @@ get_sys_time() {
 }
 
 get_rel_time() {
-  if test -n "$(which_cmd bc)" -a -n "$BASE_TIME"
-  then
-    local curtime
-    curtime=$(echo "print `get_sys_time` - ${BASE_TIME}" | bc)
-    printf "%1.1f" "${curtime}"
-  fi
+  local curtime
+  curtime=$((`get_sys_time` - ${BASE_TIME}))
+  printf "%1.1f" "${curtime}"
 }
 
 #------------------------------------------------------------------------------
@@ -1077,6 +1074,8 @@ test -n "$CHECK_ENV" && check_clean_env
 echo
 bash --version
 
+test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
+
 show_step "Build command"
 show_build_command
 
@@ -1085,8 +1084,6 @@ TOOLS="awk cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOO
 show_step "Check basic tools"
 require_cmd /bin/bash
 for i in $TOOLS; do require_cmd $i; done
-
-test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 show_step "Build host machine information"
 show_machine_info
