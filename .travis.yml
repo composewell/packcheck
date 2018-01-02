@@ -6,10 +6,8 @@ env:
   # The commit id of packcheck.sh to use from
   # https://github.com/harendra-kumar/packcheck.  Used only when the script
   # does not exist in the package repo at the path specified by "PACKCHECK"
-  - PACKCHECK_COMMIT="c9d670c0e173080a6589c685e8c84e87435f688e"
+  - PACKCHECK_COMMIT="21f5d889e1a0b032f98e4c920faa54bde20da8fa"
   - GHC_OPTIONS="-Werror"
-  - STACKVER=1.6.1
-  - STACK_UPGRADE=y
   # ------------------------------------------------------------------------
   # Normally you would not need to customize these params
   # ------------------------------------------------------------------------
@@ -38,17 +36,14 @@ matrix:
   # (Linux) stack builds
   # --------------------------------------------------------------------------
 
-  # GHC 7.10.3
-  - env: BUILD=stack RESOLVER=lts-6.35
-    addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
+  - env: BUILD=stack GHCVER=7.10.3
+    addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
 
-  # GHC 8.0.2
-  - env: BUILD=stack RESOLVER=lts-9.20
-    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+  - env: BUILD=stack GHCVER=8.0.2
+    addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
-  # GHC 8.2.2
-  - env: BUILD=stack RESOLVER=lts-10.0
-    addons: {apt: {packages: [cabal-install-2.0], sources: [hvr-ghc]}}
+  - env: BUILD=stack GHCVER=8.2.2
+    addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   # Nightly
   - env: BUILD=stack RESOLVER=nightly
@@ -56,7 +51,7 @@ matrix:
   # Using a custom stack-yaml config file.
   #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
 
-  # You can customize the build even without a custom stack-yaml
+  # You can customize a stack build even without a custom stack-yaml
   # using STACK_OPTIONS, STACK_BUILD_OPTIONS, GHC_OPTIONS etc.
   #- env: BUILD=stack RESOLVER=lts-10.0 STACK_BUILD_OPTIONS="--flag packcheck:dev"
 
@@ -64,16 +59,16 @@ matrix:
   # (Linux) cabal builds require pre-installed cabal-install and ghc
   # --------------------------------------------------------------------------
 
-  - env: BUILD=cabal GHCVER=7.10.3 CABALVER=1.22
+  - env: BUILD=cabal GHCVER=7.10.3
     addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.0.2 CABALVER=1.24
+  - env: BUILD=cabal GHCVER=8.0.2
     addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0
+  - env: BUILD=cabal GHCVER=8.2.2
     addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal GHCVER=head CABALVER=head
+  - env: BUILD=cabal GHCVER=head
     addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
@@ -100,7 +95,7 @@ matrix:
 
   # Note COVERALLS (hpc-coveralls) works only with cabal build.
   # For this to succeed you have to add your porject to coveralls.io first
-  #- env: BUILD=cabal GHCVER=8.2.2 CABALVER=2.0 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
+  #- env: BUILD=cabal GHCVER=8.2.2 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
   #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
@@ -109,7 +104,7 @@ matrix:
 
   allow_failures:
   - env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=cabal GHCVER=head CABALVER=head
+  - env: BUILD=cabal GHCVER=head
   - env: BUILD=stack RESOLVER=lts-10.0 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------

@@ -6,14 +6,14 @@ environment:
     # The commit id of packcheck.sh to use from
     # https://github.com/harendra-kumar/packcheck.  Used only when the script
     # does not exist in the package repo at the path specified by "PACKCHECK"
-    PACKCHECK_COMMIT: "c9d670c0e173080a6589c685e8c84e87435f688e"
-    GHC_OPTIONS: "-Werror"
-    STACKVER: "1.6.1"
-    STACK_UPGRADE: "y"
+    PACKCHECK_COMMIT: "21f5d889e1a0b032f98e4c920faa54bde20da8fa"
     RESOLVER: "lts-10.0"
+    GHC_OPTIONS: "-Werror"
     # ------------------------------------------------------------------------
     # Normally you would not need to customize these params
     # ------------------------------------------------------------------------
+    #STACKVER: "1.6.1"
+    #STACK_UPGRADE: "y"
     CABAL_REINIT_CONFIG: "y"
     CABAL_CHECK_RELAX: "y"
     CABAL_NO_SANDBOX: "y"
