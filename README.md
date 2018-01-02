@@ -9,11 +9,21 @@
 
 ### What is it?
 
-A high level universally portable super build script; a short and sweet command
-to uniformly, consistently, comprehensively build and sanity test a Haskell
-package across build tools (stack/cabal) and across all platforms to ensure
-that all is well with the package.  You do not need to be familiar with any of
-the build tools to use it.
+`packcheck` is a minimal yet complete "hello world" Haskell package with model
+`travis` and `appveyor` config files that can be used unmodified in any Haskell
+package. The CI configs can be modified **declaratively** to adapt to **any**
+kind of build scenario you can imagine.
+
+The package includes `packcheck.sh`, a high level universal super build script;
+a short and sweet command to uniformly, consistently build and comprehensively
+sanity test a Haskell package across build tools (stack/cabal) and across all
+platforms to ensure that all is well with the package.  You do not need to be
+familiar with any of the build tools to use it.
+
+This is also a minimal yet complete model package (with tests, benchmarks,
+Linux/MacOS/Windows CI already working) that can be used as a starting point to
+develop a new package. Beginners can use it to learn about haskell package
+metadata and builds.
 
 ## What all does it do?
 
@@ -25,30 +35,27 @@ report to coveralls.io. Everything can be controlled by the user.
 
 ### Where can I use it?
 
-Everywhere, the same build steps can be consistently performed on or using:
+Everywhere. The same build steps can be consistently performed on or using:
 * Linux/OSX/Windows
 * Travis/Appveyor/Local Host
 * stack/cabal
 
 ### How do I use it?
 
-To use it for CI, simply copy the travis/appveyor config file
-from this package to your package and that's it. It should work without
-modification, edit to customize. For use on local host, copy the
-`packcheck.sh` script and run it in the package directory:
+To use it for CI, simply copy the
+[travis](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml),
+[appveyor](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
+config files from this package to your package and that's it. It should work
+without modification, of course you can edit them to customize. For use on
+local host, just copy over the
+[packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
+script and put it in your `PATH`. Run the script from the package
+directory of the package you want to build.
 
 ```
 $ packcheck.sh stack
 $ packcheck.sh cabal
 ```
-
-### What else can I use it for?
-
-This package is a minimal yet complete "hello world" Haskell package with all
-the metadata, tests/benchmarks, and travis/appveyor CI setup fully working,
-ready to be shipped to hackage. It can be used as a starting point to develop a
-new package. It can also be used by beginners to learn about haskell package
-metadata and builds.
 
 ## Salient Features
 
@@ -126,12 +133,15 @@ There may be issues due to some environment variables unknowingly set or some
 command line parameters or env variables being misspelled and therefore
 silently ignored. To avoid any such issues the cleanest way to invoke the
 script is to use a clean environment using `env -i` and `CHECK_ENV=y`
-parameter. When this parameter is set unwanted variables are detected and
-reported.
+parameter. When this parameter is set unwanted/misspelled variables are
+detected and reported.
 
 ```
 $ env -i CHECK_ENV=y ./packcheck.sh stack
 ```
+
+For performance diagnostics the script prints the time elapsed from the
+beginning at each build step performed.
 
 ## Full Reference
 
@@ -139,18 +149,17 @@ Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
 local machine sometimes it may not be desirable as it will change the
 state of your global cabal config, so consider that before using these options.
 
-By default it uses cabal sandbox builds. It creates any temporary files or
-build artifacts inside `.packcheck` directory. You can remove that directory
-after the build to release the space if needed. For full cleanup or build from
-scratch you can also remove `.stack-work` and `.cabal-sandbox`.
+By default cabal builds are done using sandboxes. It creates any temporary
+files or build artifacts inside `.packcheck` directory. See the `clean` and
+`cleanall` commands to release the temporary space.
 
-stack is automatically installed and can be used to do cabal builds as well. If
-you specify `BUILD=cabal` and `RESOLVER` at the same time then the cabal build
-uses stack installed `cabal` and `ghc`, both are installed automatically when
-needed.
+`stack` is automatically installed and can be used to do cabal builds as well.
+If you specify `BUILD=cabal` and `RESOLVER` at the same time then the cabal
+build uses stack installed `cabal` and `ghc`, both are installed automatically
+when needed.
 
 For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not specified,
-`cabal` and `ghc` must be pre-installed.
+`cabal` and `ghc` must be pre-installed on the system before building.
 
 ```
 cueball $ packcheck.sh --help
