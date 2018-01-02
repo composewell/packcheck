@@ -2,25 +2,32 @@ name:               packcheck
 version:            0.1.0
 synopsis:           Universal build and CI testing for Haskell packages
 description:
-  A high level universally portable super build script; a short and sweet
-  command to uniformly, consistently, comprehensively build and sanity test a
-  Haskell package across build tools (stack or cabal) and all platforms to
-  ensure that all is well with the package.  You do not need to be familiar
-  with any of the build tools to use it.
+  `packcheck` is a minimal yet complete "hello world" Haskell package with model
+  `travis` and `appveyor` config files that can be used unmodified in any Haskell
+  package. The CI configs can be modified `declaratively` to adapt to `any`
+  kind of build scenario you can imagine.
   .
-  To use for CI, simply copy the travis/appveyor config file from this package
-  to your package and that's it. It should work without modification, edit to
-  customize. To build and test locally, copy over the `packcheck.sh` script.
-  Assuming packcheck.sh in package directory:
+  The package includes @packcheck.sh@, a high level universal super build script
+  to uniformly, consistently build and comprehensively sanity test a Haskell
+  package across build tools (stack/cabal) and across all platforms
+  (Linux\/MacOS\/Windows).  You do not need to be familiar with any of the build
+  tools to use it.
   .
-  > $ env BUILD=stack ./packcheck.sh
-  > $ env BUILD=cabal ./packcheck.sh
-  > $ stack exec env BUILD=cabal ./packcheck.sh
+  To use it for CI, simply copy the @.travis.yml@, @appveyor.yml@ config files from this
+  package to your package and that's it. It should work without modification,
+  of course you can edit them to customize. For use on local host, just copy
+  over the @packcheck.sh@ script and put it in your `PATH`. Run the script from
+  the package directory of the package you want to build.
   .
-  This package is a minimal yet complete model ("hello world") Haskell package
-  with all the metadata, tests/benchmarks, and travis/appveyor CI setup fully
-  working. It can be used as a starting point to develop a new package. It can
-  also be used by beginners to learn about haskell package metadata and builds.
+  > $ packcheck.sh stack
+  > $ packcheck.sh cabal
+  .
+  This is also a minimal yet complete model package (with tests, benchmarks,
+  Linux\/MacOS\/Windows CI already working) that can be used as a starting point to
+  develop a new package. Beginners can use it to learn about haskell package
+  metadata structure.
+  .
+  See the README for comprehensive documentation.
 
 homepage:            https://github.com/harendra-kumar/packcheck
 bug-reports:         https://github.com/harendra-kumar/packcheck/issues

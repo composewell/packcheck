@@ -14,16 +14,16 @@
 package. The CI configs can be modified **declaratively** to adapt to **any**
 kind of build scenario you can imagine.
 
-The package includes `packcheck.sh`, a high level universal super build script;
-a short and sweet command to uniformly, consistently build and comprehensively
-sanity test a Haskell package across build tools (stack/cabal) and across all
-platforms to ensure that all is well with the package.  You do not need to be
-familiar with any of the build tools to use it.
+The package includes `packcheck.sh`, a high level universal super build script
+to uniformly, consistently build and comprehensively sanity test a Haskell
+package across build tools (stack/cabal) and across all platforms
+(Linux/MacOS/Windows).  You do not need to be familiar with any of the build
+tools to use it.
 
 This is also a minimal yet complete model package (with tests, benchmarks,
 Linux/MacOS/Windows CI already working) that can be used as a starting point to
 develop a new package. Beginners can use it to learn about haskell package
-metadata and builds.
+metadata structure.
 
 ## What all does it do?
 
