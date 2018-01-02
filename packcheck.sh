@@ -1122,10 +1122,4 @@ else
   build_compile
 fi
 
-echo "Done."
-
-total_time=$(get_rel_time)
-if test -n "$total_time"
-then
-  echo "Took $total_time seconds."
-fi
+show_step "Done"
