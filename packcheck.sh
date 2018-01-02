@@ -90,6 +90,14 @@ function run_verbose_errexit() {
 }
 
 # $1: msg
+show_step1() {
+  echo
+  echo "--------------------------------------------------"
+  echo "$1"
+  echo "--------------------------------------------------"
+}
+
+# $1: msg
 show_step() {
   local reltime
   local disptime
@@ -98,10 +106,7 @@ show_step() {
   then
     disptime="[$reltime sec]"
   fi
-  echo
-  echo "--------------------------------------------------"
-  echo "$disptime $1"
-  echo "--------------------------------------------------"
+  show_step1 "$disptime $1"
 }
 
 # $1: file to ungztar
@@ -260,7 +265,6 @@ help_envvar() {
 }
 
 short_help() {
-  show_step "Usage"
   echo "$0 COMMAND [PARAMETER=VALUE ...]"
   echo
   echo "For example:"
@@ -272,16 +276,17 @@ short_help() {
 }
 
 show_help() {
+  show_step1 "Usage"
   short_help
 
-  show_step "Commands"
+  show_step1 "Commands"
   help_cmd stack "build using stack"
   help_cmd cabal "build using cabal"
   help_cmd clean "remove the .packcheck directory"
   help_cmd cleanall "remove .packcheck, .stack-work, .cabal-sandbox directories"
   help_cmd help "show this help message"
 
-  show_step "Commonly used parameters or env variables"
+  show_step1 "Commonly used parameters or env variables"
   help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
@@ -293,13 +298,13 @@ show_help() {
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
   help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
 
-  show_step "Advanced stack build parameters or env variables"
+  show_step1 "Advanced stack build parameters or env variables"
   help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
   help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
   help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
 
-  show_step "Advanced cabal build parameters or env variables"
+  show_step1 "Advanced cabal build parameters or env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
@@ -313,14 +318,14 @@ show_help() {
   # XXX this is not really a cabal build specific var
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues"
 
-  show_step "Coverage related parameters or env variables"
+  show_step1 "Coverage related parameters or env variables"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
-  show_step "hlint related parameters or env variables"
+  show_step1 "hlint related parameters or env variables"
   help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
 
-  show_step "Diagnostics parameters or env variables"
+  show_step1 "Diagnostics parameters or env variables"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "[y] Treat unknown env variables as error, used with env -i"
@@ -1046,6 +1051,7 @@ get_rel_time() {
 
 set -e
 set -o pipefail
+test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
@@ -1074,8 +1080,6 @@ test -n "$CHECK_ENV" && check_clean_env
 
 echo
 bash --version
-
-test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 show_step "Build command"
 show_build_command
