@@ -116,7 +116,7 @@ matrix:
 #  Settings beyond this point are advanced and normally not tweaked
 # ------------------------------------------------------------------------
 
-language: c
+language: generic
 sudo: false
 cache:
   directories:
