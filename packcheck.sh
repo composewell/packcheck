@@ -1027,16 +1027,17 @@ get_confirmation()
 get_sys_time() {
   local os=$(uname)
   case "$os" in
-    Linux | MINGW*) date +%s.%N ;;
+    # Do not use floating point values so that we can avoid using bc for
+    # computations.
+    #Linux | MINGW*) date +%s.%N ;;
+    Linux | MINGW*) date +%s ;;
     Darwin) date +%s ;;
     *) die "Unknown OS [$os]" ;;
   esac
 }
 
 get_rel_time() {
-  local curtime
-  curtime=$((`get_sys_time` - ${BASE_TIME}))
-  printf "%1.1f" "${curtime}"
+  echo $((`get_sys_time` - ${BASE_TIME}))
 }
 
 #------------------------------------------------------------------------------
