@@ -82,7 +82,7 @@ require_cmd () {
 # $1: command
 function run_verbose() {
   echo "$*"
-  /bin/bash -c "$*"
+  bash -c "$*"
 }
 
 function run_verbose_errexit() {
@@ -1087,7 +1087,7 @@ show_build_command
 TOOLS="awk cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
-require_cmd /bin/bash
+require_cmd bash
 for i in $TOOLS; do require_cmd $i; done
 
 show_step "Build host machine information"
