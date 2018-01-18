@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #------------------------------------------------------------------------------
 # Skip to the end for main flow of script
