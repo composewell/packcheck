@@ -6,7 +6,7 @@ environment:
     # The commit id of packcheck.sh to use from
     # https://github.com/harendra-kumar/packcheck.  Used only when the script
     # does not exist in the package repo at the path specified by "PACKCHECK"
-    PACKCHECK_COMMIT: "e90061743c0a074029eaffa13073a61942267b57"
+    PACKCHECK_COMMIT: "da9d6da3d18d6250c06617817f0879324c75c224"
     STACKVER: "1.6.3"
     STACK_UPGRADE: "y"
     RESOLVER: "lts-10.0"

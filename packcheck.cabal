@@ -1,5 +1,5 @@
 name:               packcheck
-version:            0.1.0
+version:            0.1.1
 synopsis:           Universal build and CI testing for Haskell packages
 description:
   `packcheck` is a minimal yet complete "hello world" Haskell package with model
