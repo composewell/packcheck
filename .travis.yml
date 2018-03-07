@@ -1,20 +1,18 @@
-# See https://github.com/harendra-kumar/packcheck for all parameters and their
+# See https://github.com/harendra-kumar/packcheck for all options and their
 # explanation.
 env:
   global:
-  - PACKCHECK="./packcheck.sh"
-  # The commit id of packcheck.sh to use from
-  # https://github.com/harendra-kumar/packcheck.  Used only when the script
-  # does not exist in the package repo at the path specified by "PACKCHECK"
-  - PACKCHECK_COMMIT="da9d6da3d18d6250c06617817f0879324c75c224"
+  # ------------------------------------------------------------------------
+  # Global options used for all CI tests
+  # ------------------------------------------------------------------------
   - GHC_OPTIONS="-Werror"
   # ------------------------------------------------------------------------
-  # Builds that need stack
+  # Options for builds that need stack
   # ------------------------------------------------------------------------
   - STACKVER="1.6.3"
   - STACK_UPGRADE="y"
   # ------------------------------------------------------------------------
-  # Common parameters: Normally you would not need to customize these params
+  # Other options: Normally you would not need to customize these
   # ------------------------------------------------------------------------
   - CABAL_REINIT_CONFIG=y
   - CABAL_CHECK_RELAX=y
@@ -23,6 +21,18 @@ env:
   - TEST_INSTALL=y
   - PATH=/bin:/usr/bin
   - LC_ALL=C.UTF-8
+  # ------------------------------------------------------------------------
+  # Location of packcheck.sh (the shell script invoked to perform CI tests ).
+  # ------------------------------------------------------------------------
+  # You can either commit the packcheck.sh script at this path in your repo or
+  # you can use it by specifying the PACKCHECK_REPO_URL option below in which
+  # case it will be automatically copied from the packcheck repo to this path
+  # during CI tests. In any case it is finally invoked from this path.
+  - PACKCHECK_LOCAL_PATH="./packcheck.sh"
+  # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
+  # then it is automatically pulled from this URL.
+  - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
+  - PACKCHECK_GITHUB_COMMIT="da9d6da3d18d6250c06617817f0879324c75c224"
 
 notifications:
   email: false
@@ -141,13 +151,13 @@ script:
 
     # Get packcheck if needed
     CURL=$(which curl)
-    PACKCHECK_URL=https://raw.githubusercontent.com/harendra-kumar/packcheck/${PACKCHECK_COMMIT}/packcheck.sh
-    if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
-    chmod +x $PACKCHECK
+    PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
+    if test ! -e "$PACKCHECK_LOCAL_PATH"; then $CURL -sL -o "$PACKCHECK_LOCAL_PATH" $PACKCHECK_URL; fi;
+    chmod +x $PACKCHECK_LOCAL_PATH
 
     add_path GHCVER   ghc
     add_path CABALVER cabal
 
     # In addition to PACKCHECK envvars hpc-coveralls needs TRAVIS,
     # TRAVIS_JOB_ID variables set by the travis CI environment.
-  - bash -c "$PACKCHECK $BUILD"
+  - bash -c "$PACKCHECK_LOCAL_PATH $BUILD"
