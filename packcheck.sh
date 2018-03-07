@@ -740,12 +740,18 @@ ensure_cabal_config() {
   local name=$(echo *.cabal)
   if test ! -f "$name"
   then
-    echo "No cabal file found in the package directory"
-    if test -f "package.yaml" -a -n "$STACKCMD"
+    if test -n "$name"
     then
-      echo "Generating cabal file from package.yaml"
-      # Generate cabal file from package.yaml
-      run_verbose "$STACKCMD query > /dev/null 2>&1"
+        die "There should be exactly one .cabal file in the project dir. Found: $name"
+    else
+      if test -f "package.yaml" -a -n "$STACKCMD"
+      then
+        echo "Generating cabal file from package.yaml"
+        # Generate cabal file from package.yaml
+        run_verbose "$STACKCMD query > /dev/null 2>&1"
+      else
+        die "No cabal file found in the package directory"
+      fi
     fi
   fi
 
