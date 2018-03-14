@@ -300,13 +300,13 @@ show_help() {
 
   show_step1 "Advanced stack build parameters or env variables"
   help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
-  help_envvar STACK_OPTIONS "Provide additional stack global options (e.g. -v)"
-  help_envvar STACK_BUILD_OPTIONS "Override the default stack build command options"
+  help_envvar STACK_OPTIONS "ADDITIONAL stack global options (e.g. -v) to append"
+  help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
 
   show_step1 "Advanced cabal build parameters or env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
-  help_envvar CABAL_CONFIGURE_OPTIONS "Override the default cabal configure options"
+  help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL default cabal configure options to append"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
   # dependencies have to be installed twice in two separate sandboxes, once to
@@ -430,15 +430,12 @@ verify_build_config() {
     STACK_DEP_OPTIONS="--test --only-dependencies --ghc-options=-O0"
     test -z "$DISABLE_BENCH" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
-    init_default STACK_BUILD_OPTIONS \
-          "--test \
-          --haddock --no-haddock-deps"
-
     STACK_BUILD_OPTIONS=$(cat << EOF
-      $STACK_BUILD_OPTIONS
+      --test --haddock --no-haddock-deps
       $(test -z "$DISABLE_BENCH" && echo "--bench --no-run-benchmarks")
       $(test -n "${COVERAGE}" && echo --coverage)
       $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
+      $STACK_BUILD_OPTIONS
 EOF
 )
   else
@@ -448,13 +445,12 @@ EOF
     test -z "$DISABLE_BENCH" && \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
-    init_default CABAL_CONFIGURE_OPTIONS \
-                 "--enable-tests"
     CABAL_CONFIGURE_OPTIONS=$(cat << EOF
-      $CABAL_CONFIGURE_OPTIONS
+      --enable-tests
       $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
       $(test -n "$COVERAGE" && echo --enable-coverage)
       $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
+      $CABAL_CONFIGURE_OPTIONS
 EOF
 )
   fi
