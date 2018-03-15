@@ -7,6 +7,15 @@
 
 ## TL; DR
 
+* Just copy
+[.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
+and [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
+to your package repo and your package is CI ready.
+* Copy
+[packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
+to your local machine and run it from your package directory (works on
+Linux/OSX/Windows) to perform all the same tests that are done by CI, locally.
+
 ### What is it?
 
 `packcheck` is a minimal yet complete "hello world" Haskell package with model
