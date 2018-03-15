@@ -162,7 +162,8 @@ For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not specified,
 `cabal` and `ghc` must be pre-installed on the system before building.
 
 ```
-cueball $ packcheck.sh --help
+$ packcheck.sh --help
+
 --------------------------------------------------
 Usage
 --------------------------------------------------
@@ -193,7 +194,7 @@ CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
 GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Arguments to stack/cabal sdist command (e.g. --pvp-bounds)
-DISABLE_SDIST_BUILD     : Do not build from source distribution
+DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 PATH                    : [path] Set PATH explicitly for predictable builds
 TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (force install with cabal)
@@ -202,15 +203,15 @@ TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (f
 Advanced stack build parameters or env variables
 --------------------------------------------------
 STACK_YAML              : Alternative stack config, cannot be a path, just the file name
-STACK_OPTIONS           : Provide additional stack global options (e.g. -v)
-STACK_BUILD_OPTIONS     : Override the default stack build command options
-STACK_UPGRADE           : DESTRUCTIVE! Upgrades stack to latest version
+STACK_OPTIONS           : ADDITIONAL stack global options (e.g. -v) to append
+STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
+STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 
 --------------------------------------------------
 Advanced cabal build parameters or env variables
 --------------------------------------------------
 CABAL_USE_STACK_SDIST   : [y] Use stack sdist (to use --pvp-bounds)
-CABAL_CONFIGURE_OPTIONS : Override the default cabal configure options
+CABAL_CONFIGURE_OPTIONS : ADDITIONAL default cabal configure options to append
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
 CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file.
@@ -230,4 +231,5 @@ HLINT_COMMANDS          : hlint commands e.g.'hlint lint src; hlint lint test'
 --------------------------------------------------
 Diagnostics parameters or env variables
 --------------------------------------------------
-CHECK_ENV               : Treat unknown env variables as error, used with env -i
+CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
+BASE_TIME               : System time to be used as base for timeline reporting
