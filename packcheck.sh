@@ -579,6 +579,7 @@ use_stack_paths() {
   # Need the bin path (not just compiler-path) on mingw to find gcc
   # some packages may have a configure script looking for gcc, so we need to
   # use bin path so that on windows we will find the stack installed mingw gcc
+  run_verbose_errexit $STACKCMD path --bin-path
   local BINPATH=`$STACKCMD path --bin-path`
   if [[ `uname` = MINGW* ]]
   then
