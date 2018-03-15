@@ -41,7 +41,7 @@ environment:
     # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "3be460b9c8d4cf53eeacf1ac319c97420f6345cc"
+    PACKCHECK_GITHUB_COMMIT: "437800a90f3b469b04768af068094d2ac582f351"
 
 cache:
   - "%STACK_ROOT%"
