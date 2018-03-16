@@ -69,7 +69,7 @@ $ packcheck.sh cabal
 ## Salient Features
 
 * ***Comprehensive battery of tests for CI or pre-release to hackage***
-* ***works for all build types, all platforms, all CIs***
+* ***works for all build tools, all platforms, all CIs***
 * ***tests the source distribution of the package*** so you can rest assured
   that what you release on hackage is exactly what you tested. Also performs
   distribution checks and whether the package installs successfully.
