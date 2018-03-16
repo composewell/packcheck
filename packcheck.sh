@@ -401,11 +401,27 @@ need_stack() {
   fi
 }
 
+# $1: be verbose about why we need cabal
 need_cabal() {
-  if test "$BUILD" = cabal -o -z "$DISABLE_SDIST_BUILD"
+  if test "$BUILD" = cabal
   then
-    echo true
+    test -n "$1" && echo "Need cabal-install because 'BUILD=$BUILD'"
+    return 0
   fi
+
+  if test -z "$DISABLE_SDIST_BUILD"
+  then
+    test -n "$1" && echo "Need cabal-install because 'DISABLE_SDIST_BUILD=$DISABLE_SDIST_BUILD'"
+    return 0
+  fi
+
+  if test -n "$TEST_INSTALL"
+  then
+    test -n "$1" && echo "Need cabal-install because 'TEST_INSTALL=$TEST_INSTALL'"
+    return 0
+  fi
+
+  return 1
 }
 
 # $1: varname
@@ -658,17 +674,32 @@ cabal_use_mirror() {
   fi
 }
 
+# We need to ignore the project's stack.yaml when installing
+# cabal-install, otherwise it may fail due to dependency conflicts.
+#
+# On CI machines if our repo is cloned in the top dir then there is no way to
+# teach stack to ignore the project's stack.yaml. We cannot change our
+# directory to go above it. Because we have a project stack.yaml, stack does
+# not even create a global stack.yaml. So we work it around by creating a new
+# package and installing cabal via that.
+install_cabal () {
+    mkdir -p .packcheck/cabal-install || exit 1
+    cd .packcheck/cabal-install || exit 1
+    run_verbose_errexit $STACKCMD new --bare placeholder
+    run_verbose_errexit $STACKCMD install cabal-install
+    cd ../..
+}
+
 # $1: Directory to install cabal in
 ensure_cabal() {
   # We can only do this after ghc is installed.
   # We need cabal to retrieve the package version as well as for the solver
   # Also when we are using stack for cabal builds use stack installed cabal
   # We are assuming CI cache will be per resolver so we can cache the bin
-  # We need to ignore the project's stack.yaml when installing
-  # cabal-install, otherwise it may fail due to dependency conflict.
+
   if test -z "$(which_cmd cabal)" -a -n "$(need_stack)"
   then
-    (cd /; unset STACK_YAML; run_verbose_errexit $STACKCMD install cabal-install)
+    install_cabal
   fi
 
   require_cmd cabal
@@ -684,6 +715,7 @@ ensure_stack_yaml() {
     require_file $STACK_YAML
   elif test ! -e stack.yaml
   then
+    echo "Need cabal-install for 'stack init' to generate a stack.yaml"
     ensure_cabal
     # solver seems to be broken with latest cabal
     echo "Trying to generate a stack.yaml"
@@ -957,8 +989,7 @@ build_compile () {
   # ensure_msys_tools "tar" && require_cmd tar
 
   ensure_ghc && echo
-  test -n "$(need_cabal)" \
-    && ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+  need_cabal 'verbose' && ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 
   # use the stack installed 7z instead. depends on ensure ghc where we setup
   # stack paths.
@@ -969,7 +1000,7 @@ build_compile () {
 
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
-  test -n "$(need_cabal)" && ensure_cabal_config
+  need_cabal && ensure_cabal_config
   test -n "$(need_stack)" && ensure_stack_yaml
 
   if test -z "$DISABLE_SDIST_BUILD"

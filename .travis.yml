@@ -39,10 +39,12 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="437800a90f3b469b04768af068094d2ac582f351"
+  - PACKCHECK_GITHUB_COMMIT="6ffb15f88f0b6b646fec4635b55164cafa606273"
 
 notifications:
-  email: false
+  email:
+    on_success: change
+    on_failure: always
 
 # This matrix has total of 6 builds enabled, we try to cover last three major
 # GHC versions, stack, cabal, Linux and OSX with minimum number of builds
@@ -166,6 +168,7 @@ script:
     if test ! -e "$PACKCHECK_LOCAL_PATH"; then $CURL -sL -o "$PACKCHECK_LOCAL_PATH" $PACKCHECK_URL; fi;
     chmod +x $PACKCHECK_LOCAL_PATH
 
+    export PATH=/bin:/usr/bin
     add_path GHCVER   ghc
     add_path CABALVER cabal
 
