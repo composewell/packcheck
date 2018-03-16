@@ -583,6 +583,7 @@ ensure_stack() {
   STACKVER=$(stack --numeric-version) || exit 1
 
   STACKCMD="stack --no-terminal $STACK_OPTIONS"
+  STACKCMD_TOOL_INSTALL="$STACKCMD"
   $STACKCMD --version
 
   if test -n "$RESOLVER"
@@ -682,15 +683,33 @@ cabal_use_mirror() {
 # directory to go above it. Because we have a project stack.yaml, stack does
 # not even create a global stack.yaml. So we work it around by creating a new
 # package and installing cabal via that.
-install_cabal () {
-    mkdir -p .packcheck/cabal-install || exit 1
-    cd .packcheck/cabal-install || exit 1
-    run_verbose_errexit $STACKCMD new --bare placeholder
-    run_verbose_errexit $STACKCMD install cabal-install
+#
+# $1 tool name
+stack_install_tool () {
+    mkdir -p .packcheck/tool-install || exit 1
+    cd .packcheck/tool-install || exit 1
+
+    local res
+    # Where possible we want to use the same resolver for build as well as
+    # tools to share the snapshot when building.
+    # But nightlies may not have cabal-install all the time
+    if [[ "$RESOLVER" != "" && "$RESOLVER" != nightly* ]]
+    then
+      res="--resolver $RESOLVER"
+    fi
+
+    if test ! -e stack.yaml
+    then
+      run_verbose_errexit $STACKCMD_TOOL_INSTALL $res \
+        new --bare tool-install
+    fi
+    run_verbose_errexit $STACKCMD_TOOL_INSTALL $res install $1
     cd ../..
 }
 
 # $1: Directory to install cabal in
+# We are not using the param as currently it is always the dir where stack
+# installs binaries.
 ensure_cabal() {
   # We can only do this after ghc is installed.
   # We need cabal to retrieve the package version as well as for the solver
@@ -699,7 +718,7 @@ ensure_cabal() {
 
   if test -z "$(which_cmd cabal)" -a -n "$(need_stack)"
   then
-    install_cabal
+    stack_install_tool cabal-install
   fi
 
   require_cmd cabal
@@ -716,7 +735,7 @@ ensure_stack_yaml() {
   elif test ! -e stack.yaml
   then
     echo "Need cabal-install for 'stack init' to generate a stack.yaml"
-    ensure_cabal
+    ensure_cabal $OS_APP_HOME/$OS_LOCAL_DIR/bin
     # solver seems to be broken with latest cabal
     echo "Trying to generate a stack.yaml"
     run_verbose $STACKCMD init --solver --ignore-subdirs || die "Solver failed to generate a stack.yaml.\n\
@@ -949,7 +968,7 @@ build_hlint() {
     then
       ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
       ensure_ghc
-      (cd /; unset STACK_YAML; run_verbose_errexit $STACKCMD install hlint)
+      stack_install_tool hlint
     else
       ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
       ensure_cabal_config
@@ -968,7 +987,7 @@ coveralls_io() {
   then
     if test "$BUILD" = stack
     then
-      run_verbose_errexit $STACKCMD install hpc-coveralls
+      stack_install_tool hpc-coveralls
     else
       run_verbose_errexit cabal install hpc-coveralls
     fi
