@@ -16,7 +16,7 @@ to your package repo and your package is CI ready.
 to your local machine and run it from your package directory (works on
 Linux/OSX/Windows) to perform all the same tests that are done by CI, locally.
 
-### What is it?
+## What is it?
 
 `packcheck` is a minimal yet complete "hello world" Haskell package with model
 `travis` and `appveyor` config files that can be used unmodified in any Haskell
@@ -42,14 +42,14 @@ distribution, ***build from source distribution***, test install after build,
 perform distribution checks, generate coverage report, optionally send coverage
 report to coveralls.io. Everything can be controlled by the user.
 
-### Where can I use it?
+## Where can I use it?
 
 Everywhere. The same build steps can be consistently performed on or using:
 * Linux/OSX/Windows
 * Travis/Appveyor/Local Host
 * stack/cabal
 
-### How do I use it?
+## How do I use it?
 
 To use it for CI, simply copy the
 [travis](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml),
@@ -68,19 +68,17 @@ $ packcheck.sh cabal
 
 ## Salient Features
 
-* ***runs everywhere, for all build types***
-* ***specifically designed for use with CI*** or pre-release testing
-* ***installs all the required tools automatically*** (including stack) or lets
-you know what it needs so you can install/use your own. It never overwrites
-an existing tool during install.
+* ***Comprehensive battery of tests for CI or pre-release to hackage***
+* ***works for all build types, all platforms, all CIs***
 * ***tests the source distribution of the package*** so you can rest assured
-that what you release on hackage is exactly what you tested. Also performs
-distribution checks and whether the package installs successfully.
-* ***reproduces a failed CI on local machine***.  You can just cut
-and paste the same command on your local machine and run it there for easy
-debugging.
+  that what you release on hackage is exactly what you tested. Also performs
+  distribution checks and whether the package installs successfully.
+* ***reproduce a failed CI on local machine***.  You can just cut and paste the
+  same command on your local machine and run it there for easy debugging.
 * ***can send coverage information to coveralls.io*** with a simple option.
-* ***tests everything needed to ship to hacakge***
+* ***installs all the required tools automatically*** (including stack) or lets
+  you know what it needs so you can install/use your own. It never overwrites
+  an existing tool during install.
 
 ## Usage Examples
 
