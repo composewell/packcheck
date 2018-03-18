@@ -83,6 +83,9 @@ matrix:
   # --------------------------------------------------------------------------
   # (Linux) cabal builds
   # --------------------------------------------------------------------------
+  # NOTE: If you face problems with "BUILD=cabal-new"
+  # you can try using "BUILD=cabal" for old style cabal builds.
+  # --------------------------------------------------------------------------
 
   #- env: BUILD=cabal-new CABALVER=1.22 GHCVER=7.10.3
   #  addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
