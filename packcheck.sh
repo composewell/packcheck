@@ -214,7 +214,7 @@ ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
 find_var() {
   for v in $2
   do
-   test $v = "$1" && return 0
+   test $v != "$1" || return 0
   done
   return 1
 }
@@ -359,7 +359,7 @@ show_build_command() {
   for i in $SAFE_ENVVARS
   do
     local val="$(show_nonempty_var $i)"
-    test -n "$val" && echo -n "$val "
+    test -z "$val" || echo -n "$val "
   done
   echo
 
@@ -411,26 +411,26 @@ need_stack() {
 }
 
 # $1: be verbose about why we need cabal
-need_cabal() {
+dont_need_cabal() {
   if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
   then
-    test -n "$1" && echo "Need cabal-install because 'BUILD=$BUILD'"
-    return 0
+    test -z "$1" || echo "Need cabal-install because 'BUILD=$BUILD'"
+    return 1
   fi
 
   if test -z "$DISABLE_SDIST_BUILD"
   then
-    test -n "$1" && echo "Need cabal-install because 'DISABLE_SDIST_BUILD=$DISABLE_SDIST_BUILD'"
-    return 0
+    test -z "$1" || echo "Need cabal-install because 'DISABLE_SDIST_BUILD=$DISABLE_SDIST_BUILD'"
+    return 1
   fi
 
   if test -n "$TEST_INSTALL"
   then
-    test -n "$1" && echo "Need cabal-install because 'TEST_INSTALL=$TEST_INSTALL'"
-    return 0
+    test -z "$1" || echo "Need cabal-install because 'TEST_INSTALL=$TEST_INSTALL'"
+    return 1
   fi
 
-  return 1
+  return 0
 }
 
 # $1: varname
@@ -448,51 +448,51 @@ stack_only_var() {
 }
 
 verify_build_config() {
-  test -n "$COVERALLS_OPTIONS" && COVERAGE=y
+  test -z "$COVERALLS_OPTIONS" || COVERAGE=y
 
   if test "$BUILD" = stack
   then
     STACK_DEP_OPTIONS="--only-dependencies"
-    test -z "$DISABLE_TEST" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --test"
-    test -z "$DISABLE_BENCH" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
+    test -n "$DISABLE_TEST" || STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --test"
+    test -n "$DISABLE_BENCH" || STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
     STACK_BUILD_OPTIONS=$(cat << EOF
-      $(test -z "$DISABLE_DOCS" && echo "--haddock --no-haddock-deps")
-      $(test -z "$DISABLE_TEST" && echo "--test")
-      $(test -z "$DISABLE_BENCH" && echo "--bench --no-run-benchmarks")
-      $(test -n "${COVERAGE}" && echo --coverage)
-      $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
+      $(test -n "$DISABLE_DOCS" || echo "--haddock --no-haddock-deps")
+      $(test -n "$DISABLE_TEST" || echo "--test")
+      $(test -n "$DISABLE_BENCH" || echo "--bench --no-run-benchmarks")
+      $(test -z "${COVERAGE}" || echo --coverage)
+      $(test -z "${GHC_OPTIONS}" || echo --ghc-options=\"$GHC_OPTIONS\")
       $STACK_BUILD_OPTIONS
 EOF
 )
   elif test "$BUILD" = cabal
   then
     CABAL_DEP_OPTIONS="--only-dependencies --reorder-goals --max-backjumps=-1"
-    test -z "$DISABLE_TEST" && \
+    test -n "$DISABLE_TEST" || \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
-    test -z "$DISABLE_BENCH" && \
+    test -n "$DISABLE_BENCH" || \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
     CABAL_CONFIGURE_OPTIONS=$(cat << EOF
-      $(test -z "$DISABLE_TEST" && echo "--enable-tests")
-      $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
-      $(test -n "$COVERAGE" && echo --enable-coverage)
-      $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
+      $(test -n "$DISABLE_TEST" || echo "--enable-tests")
+      $(test -n "$DISABLE_BENCH" || echo "--enable-benchmarks")
+      $(test -z "$COVERAGE" || echo --enable-coverage)
+      $(test -z "$GHC_OPTIONS" || echo --ghc-options=\"$GHC_OPTIONS\")
       $CABAL_CONFIGURE_OPTIONS
 EOF
 )
   else
     CABAL_DEP_OPTIONS="--only-dependencies"
-    test -z "$DISABLE_TEST" && \
+    test -n "$DISABLE_TEST" || \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
-    test -z "$DISABLE_BENCH" && \
+    test -n "$DISABLE_BENCH" || \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
     CABAL_NEWBUILD_OPTIONS=$(cat << EOF
-      $(test -z "$DISABLE_TEST" && echo "--enable-tests")
-      $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
-      $(test -n "${COVERAGE}" && echo --enable-coverage)
-      $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
+      $(test -n "$DISABLE_TEST" || echo "--enable-tests")
+      $(test -n "$DISABLE_BENCH" || echo "--enable-benchmarks")
+      $(test -z "${COVERAGE}" || echo --enable-coverage)
+      $(test -z "${GHC_OPTIONS}" || echo --ghc-options=\"$GHC_OPTIONS\")
       $CABAL_NEWBUILD_OPTIONS
 EOF
 )
@@ -606,7 +606,7 @@ ensure_stack() {
     fi
   fi
 
-  test -n "$STACKVER" && check_version stack $STACKVER
+  test -z "$STACKVER" || check_version stack $STACKVER
   # Set the real version of stack
   STACKVER=$(stack --numeric-version) || exit 1
 
@@ -751,7 +751,7 @@ ensure_cabal() {
 
   require_cmd cabal
   cabal --version
-  test -n "$CABALVER" && check_version cabal $CABALVER
+  test -z "$CABALVER" || check_version cabal $CABALVER
   # Set the real version of cabal
   CABALVER=$(cabal --numeric-version) || exit 1
 }
@@ -771,10 +771,10 @@ Please provide a working stack.yaml or use cabal build."
     require_file stack.yaml
   fi
   SDIST_STACKCMD=$STACKCMD
-  test -n "$STACK_YAML" && SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
+  test -z "$STACK_YAML" || SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
   # We run the stack command from .packcheck/<package> dir after unpacking
   # sdist
-  test -n "$STACK_YAML" && STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
+  test -z "$STACK_YAML" || STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
   echo "Using stack command [$STACKCMD]"
 }
 
@@ -886,7 +886,7 @@ create_and_unpack_pkg_dist() {
   local SDIST_DIR
   local SDIST_CMD
 
-  test -n "$SDIST_OPTIONS" && opts="$SDIST_OPTIONS"
+  test -z "$SDIST_OPTIONS" || opts="$SDIST_OPTIONS"
 
   if test "$BUILD" = stack
   then
@@ -916,7 +916,7 @@ create_and_unpack_pkg_dist() {
   fi
 
   # stack commands return path in windows format
-  [[ `uname` = MINGW* ]] && SDIST_DIR=`cygpath ${SDIST_DIR}`
+  [[ `uname` != MINGW* ]] || SDIST_DIR=`cygpath ${SDIST_DIR}`
 
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
@@ -961,17 +961,17 @@ build_and_test() {
     cabal-new)
       run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS
       echo
-      test -z "$DISABLE_DOCS" && run_verbose_errexit cabal new-haddock
+      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock
       echo
-      test -z "$DISABLE_TEST" && run_verbose_errexit cabal new-test ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test ;;
     cabal)
       cabal_configure
       echo
       run_verbose_errexit cabal build
       echo
-      test -z "$DISABLE_DOCS" && run_verbose_errexit cabal haddock
+      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal haddock
       echo
-      test -z "$DISABLE_TEST" && run_verbose_errexit cabal test --show-details=always ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal test --show-details=always ;;
   esac
 }
 
@@ -1046,27 +1046,27 @@ build_compile () {
   # ---------Install any tools needed--------
   show_step "Check and install build tools"
 
-  test -n "$(need_stack)" \
-    && ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin \
+  test -z "$(need_stack)" \
+    || ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin \
     && echo
   # The tar installed by pacman does not seem to work. Maybe we need to have it
   # packed with msys itself.
   # ensure_msys_tools "tar" && require_cmd tar
 
   ensure_ghc && echo
-  need_cabal 'verbose' && ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+  dont_need_cabal 'verbose' || ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 
   # use the stack installed 7z instead. depends on ensure ghc where we setup
   # stack paths.
-  [[ `uname` = MINGW* ]] && require_cmd 7z
+  [[ `uname` != MINGW* ]] || require_cmd 7z
 
   show_step "Effective build config"
   show_build_config
 
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
-  need_cabal && ensure_cabal_config
-  test -n "$(need_stack)" && ensure_stack_yaml
+  dont_need_cabal || ensure_cabal_config
+  test -z "$(need_stack)" || ensure_stack_yaml
 
   if test -z "$DISABLE_SDIST_BUILD"
   then
@@ -1175,8 +1175,8 @@ case $1 in
   *) short_help; exit 1 ;;
 esac
 
-test -n "$CHECK_ENV" && check_boolean_var CHECK_ENV
-test -n "$CHECK_ENV" && check_clean_env
+test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
+test -z "$CHECK_ENV" || check_clean_env
 
 echo
 bash --version
@@ -1215,7 +1215,7 @@ verify_build_config
 # XXX this should be done from outside via env
 unset GHC_PACKAGE_PATH
 # stack does not work well with empty STACK_YAML env var
-test -z "$STACK_YAML" && unset STACK_YAML
+test -n "$STACK_YAML" || unset STACK_YAML
 
 if test -n "$HLINT_COMMANDS"
 then
