@@ -1,6 +1,8 @@
 ## Unreleased
 
-* _Enhancement:_ Add cabal new-build support. Use `packcheck.sh cabal-new` to use it.
+* _Enhancement:_ Add cabal new-build support. Use `packcheck.sh cabal-new` to
+  use it.
+* Run autoreconf if there is a configure.ac in the package dir
 
 ## 0.2.0
 
