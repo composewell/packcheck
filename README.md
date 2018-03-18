@@ -64,6 +64,7 @@ directory of the package you want to build.
 ```
 $ packcheck.sh stack
 $ packcheck.sh cabal
+$ packcheck.sh cabal-new
 ```
 
 ## Salient Features
@@ -120,7 +121,7 @@ $ stack exec ./packcheck.sh cabal RESOLVER=lts-6
 
 Cabal build using system installed ghc and cabal on PATH:
 ```
-$ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
+$ ./packcheck.sh cabal-new GHCVER=7.10.3 CABALVER=1.22
 ```
 
 Run hlint commands on the directories `src` and `test`:
@@ -131,7 +132,7 @@ $ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.  Note that this currently works only with a cabal build:
 ```
-$ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
+$ ./packcheck.sh cabal-new GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
 
 ## Diagnostics
@@ -161,12 +162,13 @@ files or build artifacts inside `.packcheck` directory. See the `clean` and
 `cleanall` commands to release the temporary space.
 
 `stack` is automatically installed and can be used to do cabal builds as well.
-If you specify `BUILD=cabal` and `RESOLVER` at the same time then the cabal
+If you specify `BUILD=cabal-new` and `RESOLVER` at the same time then the cabal
 build uses stack installed `cabal` and `ghc`, both are installed automatically
 when needed.
 
-For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not specified,
-`cabal` and `ghc` must be pre-installed on the system before building.
+For pure cabal builds i.e. when `BUILD=cabal-new` and `RESOLVER` is not
+specified, `cabal` and `ghc` must be pre-installed on the system before
+building.
 
 ```
 $ packcheck.sh --help
@@ -188,6 +190,7 @@ Commands
 --------------------------------------------------
 stack                   : build using stack
 cabal                   : build using cabal
+cabal-new               : build using cabal new-build
 clean                   : remove the .packcheck directory
 cleanall                : remove .packcheck, .stack-work, .cabal-sandbox directories
 help                    : show this help message
@@ -219,6 +222,7 @@ Advanced cabal build parameters or env variables
 --------------------------------------------------
 CABAL_USE_STACK_SDIST   : [y] Use stack sdist (to use --pvp-bounds)
 CABAL_CONFIGURE_OPTIONS : ADDITIONAL default cabal configure options to append
+CABAL_NEWBUILD_OPTIONS  : ADDITIONAL default cabal new-build options to append
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
 CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file.

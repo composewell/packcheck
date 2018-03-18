@@ -283,6 +283,7 @@ show_help() {
   show_step1 "Commands"
   help_cmd stack "build using stack"
   help_cmd cabal "build using cabal"
+  help_cmd cabal-new "build using cabal new-build"
   help_cmd clean "remove the .packcheck directory"
   help_cmd cleanall "remove .packcheck, .stack-work, .cabal-sandbox directories"
   help_cmd help "show this help message"

@@ -1,3 +1,7 @@
+## Unreleased
+
+* _Enhancement:_ Add cabal new-build support. Use `packcheck.sh cabal-new` to use it.
+
 ## 0.2.0
 
 ### Breaking Changes
