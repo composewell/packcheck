@@ -187,6 +187,7 @@ SAFE_ENVVARS="\
   CABAL_CHECK_RELAX \
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
+  CABAL_NEWBUILD_OPTIONS \
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT_COMMANDS \
@@ -307,6 +308,7 @@ show_help() {
   show_step1 "Advanced cabal build parameters or env variables"
   help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL default cabal configure options to append"
+  help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL default cabal new-build options to append"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
   # dependencies have to be installed twice in two separate sandboxes, once to
@@ -403,7 +405,7 @@ need_stack() {
 
 # $1: be verbose about why we need cabal
 need_cabal() {
-  if test "$BUILD" = cabal
+  if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
   then
     test -n "$1" && echo "Need cabal-install because 'BUILD=$BUILD'"
     return 0
@@ -443,7 +445,7 @@ verify_build_config() {
 
   if test "$BUILD" = stack
   then
-    STACK_DEP_OPTIONS="--test --only-dependencies --ghc-options=-O0"
+    STACK_DEP_OPTIONS="--test --only-dependencies"
     test -z "$DISABLE_BENCH" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
     STACK_BUILD_OPTIONS=$(cat << EOF
@@ -454,10 +456,11 @@ verify_build_config() {
       $STACK_BUILD_OPTIONS
 EOF
 )
-  else
+  elif test "$BUILD" = cabal
+  then
     CABAL_DEP_OPTIONS="--only-dependencies \
         --enable-tests --force-reinstalls \
-        --reorder-goals --max-backjumps=-1 --ghc-options=-O0"
+        --reorder-goals --max-backjumps=-1"
     test -z "$DISABLE_BENCH" && \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
@@ -469,6 +472,21 @@ EOF
       $CABAL_CONFIGURE_OPTIONS
 EOF
 )
+  else
+    CABAL_DEP_OPTIONS="--only-dependencies \
+        --enable-tests --force-reinstalls \
+        --reorder-goals --max-backjumps=-1"
+    test -z "$DISABLE_BENCH" && \
+      CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
+
+    CABAL_NEWBUILD_OPTIONS=$(cat << EOF
+      --enable-tests
+      $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
+      $(test -n "${COVERAGE}" && echo --enable-coverage)
+      $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
+      $CABAL_NEWBUILD_OPTIONS
+EOF
+)
   fi
 
   # These variables are now combined with other options so clear them
@@ -476,10 +494,10 @@ EOF
   COVERAGE=
   GHC_OPTIONS=
 
-  test "$BUILD" = stack -o "$BUILD" = cabal || \
-    die "build can only be 'stack' or 'cabal'"
+  test "$BUILD" = stack -o "$BUILD" = cabal -o "$BUILD" = "cabal-new" || \
+    die "build [$BUILD] can only be 'stack','cabal' or 'cabal-new'"
 
-  if test "$BUILD" = cabal
+  if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
   then
     if test -n "$GHCVER" -a -n "$RESOLVER"
     then
@@ -489,12 +507,13 @@ EOF
 
   if test -n "$CHECK_ENV"
   then
-    if test "$BUILD" != cabal
+    if test "$BUILD" != cabal -a "$BUILD" != "cabal-new"
     then
       cabal_only_var CABALVER
       cabal_only_var CABAL_USE_STACK_SDIST
       cabal_only_var CABAL_CHECK_RELAX
       cabal_only_var CABAL_CONFIGURE_OPTIONS
+      cabal_only_var CABAL_NEWBUILD_OPTIONS
       cabal_only_var CABAL_NO_SANDBOX
       cabal_only_var CABAL_HACKAGE_MIRROR
     fi
@@ -810,7 +829,7 @@ ensure_cabal_config() {
   # We rely on the cabal info command to create the config above.
   #run_verbose cabal user-config init || true
 
-  if test "$BUILD" = cabal
+  if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
   then
     if test -n "$CABAL_HACKAGE_MIRROR"
     then
@@ -878,8 +897,11 @@ create_and_unpack_pkg_dist() {
     # have to go through the whole process once and then again after
     # unpacking the sdist and to build it. If we use a sandbox then
     # we actually have to install the dependencies twice.
-    install_cabal_deps
-    cabal_configure
+    if test "$BUILD" != "cabal-new"
+    then
+      install_cabal_deps
+      cabal_configure
+    fi
     SDIST_CMD="cabal sdist $opts"
     SDIST_DIR=dist
   fi
@@ -913,6 +935,7 @@ create_and_unpack_pkg_dist() {
 install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
+    cabal-new) run_verbose_errexit cabal new-build $CABAL_DEP_OPTIONS ;;
     cabal) install_cabal_deps ;;
   esac
 }
@@ -920,6 +943,12 @@ install_deps() {
 build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
+    cabal-new)
+      run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS
+      echo
+      run_verbose_errexit cabal new-haddock
+      echo
+      run_verbose_errexit cabal new-test ;;
     cabal)
       cabal_configure
       echo
@@ -927,14 +956,14 @@ build_and_test() {
       echo
       run_verbose_errexit cabal haddock
       echo
-      run_verbose_errexit cabal test ;;
+      run_verbose_errexit cabal test --show-details=always ;;
   esac
 }
 
 dist_checks() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD sdist ;;
-    cabal)
+    cabal|cabal-new)
       run_verbose_errexit cabal sdist
       echo
       if test "$CABAL_CHECK_RELAX" = y
@@ -953,7 +982,7 @@ install_test() {
       run_verbose_errexit $STACKCMD install
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
-    cabal)
+    cabal|cabal-new)
       run_verbose_errexit cabal copy
       (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
       remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
@@ -1111,6 +1140,7 @@ test -n "$1" \
 
 case $1 in
   cabal) shift; eval_env "$@"; BUILD=cabal;;
+  cabal-new) shift; eval_env "$@"; BUILD=cabal-new;;
   stack) shift; eval_env "$@"; BUILD=stack;;
   clean) rm -rf .packcheck; exit;;
   cleanall)
@@ -1155,7 +1185,7 @@ export HOME=$(echo ~)
 set_os_specific_vars # depends on HOME
 
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
-if test "$BUILD" = cabal
+if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
 then
   export PATH=$PATH:$OS_APP_HOME/$OS_CABAL_DIR/bin
 fi
