@@ -5,7 +5,7 @@ environment:
     # ------------------------------------------------------------------------
     # Global options used for all CI tests
     # ------------------------------------------------------------------------
-    GHC_OPTIONS: "-Werror"
+    # GHC_OPTIONS: "-Werror"
 
     # ------------------------------------------------------------------------
     # Options for builds that need stack (note, cabal builds can use stack)
