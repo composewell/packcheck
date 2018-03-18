@@ -206,6 +206,8 @@ GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Arguments to stack/cabal sdist command (e.g. --pvp-bounds)
 DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
+DISABLE_TEST            : [y] Do not run tests, default is to run tests
+DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
 PATH                    : [path] Set PATH explicitly for predictable builds
 TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (force install with cabal)
 

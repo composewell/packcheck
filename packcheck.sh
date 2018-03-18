@@ -179,6 +179,8 @@ SAFE_ENVVARS="\
   SDIST_OPTIONS \
   DISABLE_SDIST_BUILD \
   DISABLE_BENCH \
+  DISABLE_TEST \
+  DISABLE_DOCS \
   PATH \
   STACKVER \
   STACK_YAML \
@@ -297,6 +299,8 @@ show_help() {
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command (e.g. --pvp-bounds)"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
+  help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
+  help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
   help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
 
@@ -344,6 +348,8 @@ check_all_boolean_vars () {
   check_boolean_var CABAL_NO_SANDBOX
   check_boolean_var TEST_INSTALL
   check_boolean_var DISABLE_BENCH
+  check_boolean_var DISABLE_TEST
+  check_boolean_var DISABLE_DOCS
   check_boolean_var COVERAGE
 }
 
@@ -446,11 +452,13 @@ verify_build_config() {
 
   if test "$BUILD" = stack
   then
-    STACK_DEP_OPTIONS="--test --only-dependencies"
+    STACK_DEP_OPTIONS="--only-dependencies"
+    test -z "$DISABLE_TEST" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --test"
     test -z "$DISABLE_BENCH" && STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
     STACK_BUILD_OPTIONS=$(cat << EOF
-      --test --haddock --no-haddock-deps
+      $(test -z "$DISABLE_DOCS" && echo "--haddock --no-haddock-deps")
+      $(test -z "$DISABLE_TEST" && echo "--test")
       $(test -z "$DISABLE_BENCH" && echo "--bench --no-run-benchmarks")
       $(test -n "${COVERAGE}" && echo --coverage)
       $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
@@ -459,14 +467,14 @@ EOF
 )
   elif test "$BUILD" = cabal
   then
-    CABAL_DEP_OPTIONS="--only-dependencies \
-        --enable-tests \
-        --reorder-goals --max-backjumps=-1"
+    CABAL_DEP_OPTIONS="--only-dependencies --reorder-goals --max-backjumps=-1"
+    test -z "$DISABLE_TEST" && \
+      CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
     test -z "$DISABLE_BENCH" && \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
     CABAL_CONFIGURE_OPTIONS=$(cat << EOF
-      --enable-tests
+      $(test -z "$DISABLE_TEST" && echo "--enable-tests")
       $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
       $(test -n "$COVERAGE" && echo --enable-coverage)
       $(test -n "$GHC_OPTIONS" && echo --ghc-options=\"$GHC_OPTIONS\")
@@ -474,12 +482,14 @@ EOF
 EOF
 )
   else
-    CABAL_DEP_OPTIONS="--only-dependencies --enable-tests"
+    CABAL_DEP_OPTIONS="--only-dependencies"
+    test -z "$DISABLE_TEST" && \
+      CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
     test -z "$DISABLE_BENCH" && \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
     CABAL_NEWBUILD_OPTIONS=$(cat << EOF
-      --enable-tests
+      $(test -z "$DISABLE_TEST" && echo "--enable-tests")
       $(test -z "$DISABLE_BENCH" && echo "--enable-benchmarks")
       $(test -n "${COVERAGE}" && echo --enable-coverage)
       $(test -n "${GHC_OPTIONS}" && echo --ghc-options=\"$GHC_OPTIONS\")
@@ -951,17 +961,17 @@ build_and_test() {
     cabal-new)
       run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS
       echo
-      run_verbose_errexit cabal new-haddock
+      test -z "$DISABLE_DOCS" && run_verbose_errexit cabal new-haddock
       echo
-      run_verbose_errexit cabal new-test ;;
+      test -z "$DISABLE_TEST" && run_verbose_errexit cabal new-test ;;
     cabal)
       cabal_configure
       echo
       run_verbose_errexit cabal build
       echo
-      run_verbose_errexit cabal haddock
+      test -z "$DISABLE_DOCS" && run_verbose_errexit cabal haddock
       echo
-      run_verbose_errexit cabal test --show-details=always ;;
+      test -z "$DISABLE_TEST" && run_verbose_errexit cabal test --show-details=always ;;
   esac
 }
 

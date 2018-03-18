@@ -1,7 +1,8 @@
 ## Unreleased
 
-* _Enhancement:_ Add cabal new-build support. Use `packcheck.sh cabal-new` to
-  use it.
+### Enhancements
+* Add cabal new-build support. Use `packcheck.sh cabal-new` to use it.
+* Add knobs to disable tests or doc builds (`DISABLE_TEST`, `DISABLE_DOCS`)
 * Run autoreconf if there is a configure.ac in the package dir
 
 ## 0.2.0
