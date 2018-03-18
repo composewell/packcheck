@@ -1,5 +1,5 @@
 name:               packcheck
-version:            0.1.2
+version:            0.2.0
 synopsis:           Universal build and CI testing for Haskell packages
 description:
   * Just copy @.travis.yml@ and @appveyor.yml@ to your package repo and your package is CI ready.

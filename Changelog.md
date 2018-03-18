@@ -1,4 +1,4 @@
-## 0.1.2
+## 0.2.0
 
 ### Breaking Changes
 * Make `STACK_BUILD_OPTIONS` and `CABAL_CONFIGURE_OPTIONS` append to the
