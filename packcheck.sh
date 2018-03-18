@@ -929,6 +929,12 @@ create_and_unpack_pkg_dist() {
   cd ${1}
   show_step "Package info [sdist $SDIST_OPTIONS]"
   run_verbose cabal info .
+
+  if test -f "./configure.ac"
+  then
+    show_step "Run autoreconf"
+    run_verbose_errexit autoreconf -i
+  fi
 }
 
 install_deps() {
