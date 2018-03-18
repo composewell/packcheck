@@ -460,7 +460,7 @@ EOF
   elif test "$BUILD" = cabal
   then
     CABAL_DEP_OPTIONS="--only-dependencies \
-        --enable-tests --force-reinstalls \
+        --enable-tests \
         --reorder-goals --max-backjumps=-1"
     test -z "$DISABLE_BENCH" && \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
@@ -474,9 +474,7 @@ EOF
 EOF
 )
   else
-    CABAL_DEP_OPTIONS="--only-dependencies \
-        --enable-tests --force-reinstalls \
-        --reorder-goals --max-backjumps=-1"
+    CABAL_DEP_OPTIONS="--only-dependencies --enable-tests"
     test -z "$DISABLE_BENCH" && \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
 
@@ -983,10 +981,12 @@ install_test() {
       run_verbose_errexit $STACKCMD install
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
-    cabal|cabal-new)
+    cabal)
       run_verbose_errexit cabal copy
       (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
       remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
+    cabal-new)
+      echo "WARNING! TEST_INSTALL does not work with cabal-new as of now" ;;
   esac
 }
 
