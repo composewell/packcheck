@@ -10,11 +10,16 @@
 * Just copy
 [.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
 and [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
-to your package repo and your package is CI ready.
+files to your package repo and your package is CI ready.
 * Copy
 [packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
 to your local machine and run it from your package directory (works on
-Linux/OSX/Windows) to perform all the same tests that are done by CI, locally.
+Linux/OSX/Windows) to perform all the CI tests locally.
+* Universal, flexible and simple, can do stack builds, old style cabal builds,
+  or new style cabal builds, or send coverage info to coveralls.io etc.  All
+  builds are fully controllable via envvars. For example you can specify build
+  flags, enable/disable docs, benchmarks or tests separately, for individual
+  builds or globally.
 
 ## What is it?
 
