@@ -20,6 +20,15 @@ Linux/OSX/Windows) to perform all the CI tests locally.
   builds are fully controllable via envvars. For example you can specify build
   flags, enable/disable docs, benchmarks or tests separately, for individual
   builds or globally.
+* Builds from the source distribution tar to make sure you build what you
+  release.
+* The most important part is that you run exact same tests, in the same way everywhere:
+
+| Platform      | CI Mode       | Build Type      |
+|:-------------:|:-------------:|:---------------:|
+| Linux         | Travis        | stack           |
+| OSX           | Appveyor      | cabal           |
+| Windows       | Local Machine | cabal new-build |
 
 ## What is it?
 
@@ -46,13 +55,6 @@ build source, build benchmarks, build docs, run tests, create source
 distribution, ***build from source distribution***, test install after build,
 perform distribution checks, generate coverage report, optionally send coverage
 report to coveralls.io. Everything can be controlled by the user.
-
-## Where can I use it?
-
-Everywhere. The same build steps can be consistently performed on or using:
-* Linux/OSX/Windows
-* Travis/Appveyor/Local Host
-* stack/cabal
 
 ## How do I use it?
 
