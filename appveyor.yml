@@ -1,11 +1,19 @@
-# See https://github.com/harendra-kumar/packcheck for all options and their
-# explanation.
+# You can use any of the options supported by packcheck as environment
+# variables here.  See https://github.com/harendra-kumar/packcheck for all
+# options and their explanation.
 environment:
   global:
     # ------------------------------------------------------------------------
     # Global options used for all CI tests
+    # Of course, you can use these per build as well
     # ------------------------------------------------------------------------
+    # Note - cabal-new builds apply GHC_OPTIONS on all dependencies
     # GHC_OPTIONS: "-Werror"
+    # DISABLE_TEST: "y"
+    # DISABLE_BENCH: "y"
+    # DISABLE_DOCS: "y"
+    # DISABLE_SDIST_BUILD: "y"
+    TEST_INSTALL: "y"
 
     # ------------------------------------------------------------------------
     # Options for builds that need stack (note, cabal builds can use stack)
@@ -15,7 +23,7 @@ environment:
     # version.
     #STACKVER: "1.6.5"
     STACK_UPGRADE: "y"
-    RESOLVER: "lts-11.0"
+    RESOLVER: "lts-11"
 
     # ------------------------------------------------------------------------
     # Normally you would not need to customize these params
@@ -24,7 +32,6 @@ environment:
     CABAL_CHECK_RELAX: "y"
     CABAL_NO_SANDBOX: "y"
     CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
-    TEST_INSTALL: "y"
     LC_ALL: "C.UTF-8"
     PATH: "%PATH%;%APPDATA%\\local\\bin"
     STACK_ROOT: "c:\\sr"
