@@ -24,7 +24,7 @@ Linux/OSX/Windows) to perform all the CI tests locally.
   release.
 * The most important part is that you run exact same tests, in the same way everywhere:
 
-| Platform      | CI Mode       | Build Type      |
+| Platforms     | CI Modes      | Build Types     |
 |:-------------:|:-------------:|:---------------:|
 | Linux         | Travis        | stack           |
 | OSX           | Appveyor      | cabal           |
