@@ -963,7 +963,7 @@ build_and_test() {
       echo
       test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock
       echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test --enable-tests ;;
     cabal)
       cabal_configure
       echo
