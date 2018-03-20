@@ -3,6 +3,10 @@
 ### Enhancements
 * Add cabal new-build support. Use `packcheck.sh cabal-new` to use it.
 * Add knobs to disable tests or doc builds (`DISABLE_TEST`, `DISABLE_DOCS`)
+* Now you can specify multiple versions of GHC in PATH and packcheck will
+  automatically find the right one based on GHCVER envvar.
+* GHCVER and CABALVER variables are now optional in travis config if you
+  specify the cabal and ghc PPAs under apt sources.
 * Run autoreconf if there is a configure.ac in the package dir
 
 ## 0.2.0

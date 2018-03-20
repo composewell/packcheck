@@ -31,6 +31,7 @@ env:
   - CABAL_NO_SANDBOX=y
   - CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com
   - PATH=/bin:/usr/bin
+  - TOOLS_DIR=/opt
   - LC_ALL=C.UTF-8
 
   # ------------------------------------------------------------------------
@@ -44,7 +45,7 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="f0745feb622cc690d7b17cb94781dde58fd91129"
+  - PACKCHECK_GITHUB_COMMIT="dbe814de811b1cbb106a8731912b5a6ad672a951"
 
 notifications:
   email:
@@ -66,17 +67,19 @@ matrix:
   # are: STACK_YAML, STACK_OPTIONS, STACK_BUILD_OPTIONS
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=stack CABALVER=1.22 GHCVER=7.10.3 RESOLVER=lts-6
-  #  addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
+  #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10.3
+  #  addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack CABALVER=1.24 GHCVER=8.0.2 RESOLVER=lts-9
-    addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
+  - env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0.2
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack CABALVER=2.0 GHCVER=8.2.2 RESOLVER=lts-11
-    addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
+  # Use cabal-install-1.24 for stack solver to work
+  - env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2.2
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  # Nightly
+  # Use cabal-install-1.24 for stack solver to work
   - env: BUILD=stack RESOLVER=nightly
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   # You can keep a STACK_YAML file at any path location
   #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
@@ -89,32 +92,32 @@ matrix:
   # CABAL_CONFIGURE_OPTIONS (cabal), CABAL_NEWBUILD_OPTIONS (cabal-new)
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=cabal-new CABALVER=1.22 GHCVER=7.10.3
+  #- env: BUILD=cabal-new GHCVER=7.10.3
   #  addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
 
-  #- env: BUILD=cabal-new CABALVER=1.24 GHCVER=8.0.2
+  #- env: BUILD=cabal-new GHCVER=8.0.2
   #  addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
   # Disabled by default as we have a cabal ghc-8.2.2 build for OSX
-  #- env: BUILD=cabal-new CABALVER=2.0 GHCVER=8.2.2
+  #- env: BUILD=cabal-new GHCVER=8.2.2
   #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal-new CABALVER=2.2 GHCVER=8.4.1
+  - env: BUILD=cabal-new GHCVER=8.4.1
     addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.1], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal-new CABALVER=head GHCVER=head
+  - env: BUILD=cabal-new GHCVER=head
     addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # OS X builds
   # --------------------------------------------------------------------------
 
-  # GHC 8.2.2/cabal build via stack
-  - env: BUILD=cabal-new RESOLVER=lts-11
+  # GHC 8.2.2/cabal build using stack!
+  - env: BUILD=cabal-new RESOLVER=lts-11 GHCVER=8.2.2
     os: osx
 
   # GHC 8.2.2/stack
-  #- env: BUILD=stack RESOLVER=lts-11
+  #- env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2.2
   #  os: osx
 
   # --------------------------------------------------------------------------
@@ -129,7 +132,7 @@ matrix:
   # For available options see hpc-coveralls docs.
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=cabal CABALVER=2.0 GHCVER=8.2.2 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
+  #- env: BUILD=cabal COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
   #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
@@ -138,7 +141,7 @@ matrix:
 
   allow_failures:
   - env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=cabal-new CABALVER=head GHCVER=head
+  - env: BUILD=cabal-new GHCVER=head
   - env: BUILD=stack RESOLVER=lts-11 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------
@@ -157,13 +160,6 @@ install: true
 
 script:
   - |
-    # When GHCVER or CABALVER env variables are specified, modify the path to
-    # find the binaries installed from hvr-ghc repo
-    add_path()  { eval "test -n \"\$$1\"" && eval "PATH=/opt/$2/\"\$$1\"/bin:$PATH"; true; }
-
-    # Emit the value of the var specified as arg only when the build is cabal
-    cabal_env() { test "$BUILD" = cabal && echo $1; }
-
     # If a custom stack-yaml is specified, replace the default with that
     if test -e "$STACK_YAML"; then rm -f stack.yaml && ln -sv $STACK_YAML stack.yaml; else true; fi
     unset STACK_YAML
@@ -174,10 +170,7 @@ script:
     if test ! -e "$PACKCHECK_LOCAL_PATH"; then $CURL -sL -o "$PACKCHECK_LOCAL_PATH" $PACKCHECK_URL; fi;
     chmod +x $PACKCHECK_LOCAL_PATH
 
-    export PATH=/bin:/usr/bin
-    add_path GHCVER   ghc
-    add_path CABALVER cabal
-
-    # In addition to PACKCHECK envvars hpc-coveralls needs TRAVIS,
-    # TRAVIS_JOB_ID variables set by the travis CI environment.
-  - bash -c "$PACKCHECK_LOCAL_PATH $BUILD"
+    # This script is governed by various PACKCHECK envvars that are set above.
+    # In addition, hpc-coveralls needs TRAVIS, TRAVIS_JOB_ID variables set by
+    # the travis CI environment.
+  - bash -c "$PACKCHECK_LOCAL_PATH $BUILD PATH=/bin:/usr/bin"
