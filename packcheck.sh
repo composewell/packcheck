@@ -652,7 +652,13 @@ check_version() {
 
   # Match that the expected version is a prefix of real
   # Do not check when the expected version is head
-  test "${real_ver#$2}" != ${real_ver} -o $2 = head
+  if test "${real_ver#$2}" != ${real_ver} -o $2 = head
+  then
+    return 0
+  else
+    echo "Found $1 version [$real_ver] expecting [$2]"
+    return 1
+  fi
 }
 
 # $1: tool name (used only for ghc, cabal and stack)
@@ -680,6 +686,7 @@ function path_remove {
 # $2: binary version prefix (e.g. 8 or 8.0 or 8.0.1)
 find_binary () {
   local binary
+  local path=$PATH
 
   binary=$(which_cmd $1)
   while test -n "$binary"
@@ -689,6 +696,7 @@ find_binary () {
       return 0
     else
       # remove it from the path and search again
+      echo "Mismatching $1 version found at [$(dirname $binary)], removing it from PATH and trying again"
       path_remove $(dirname $binary)
       binary="$(which_cmd $1)"
     fi
@@ -716,12 +724,18 @@ find_binary () {
       fi
       PATH=$dir/bin:$PATH
       export PATH
+      return 0
     fi
   fi
+  # If we did not find the binary, restore the PATH for better error reporting
+  PATH=$path
+  # This command does never fails even if we could not find the binary.
   return 0
 }
 
 ensure_ghc() {
+  local found
+  local compiler
   # If there is a ghc in PATH then use that otherwise install it using stack
   find_binary ghc "$GHCVER"
   found="$(which_cmd ghc)"
@@ -734,8 +748,9 @@ ensure_ghc() {
     echo
   fi
 
-  require_cmd ghc && \
-    echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
+  compiler="$(which_cmd ghc)"
+  test -n "$compiler" || die "ghc $GHCVER not found in PATH [$PATH]"
+  echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
   if test -n "$GHCVER"
   then
     check_version_die ghc $GHCVER
