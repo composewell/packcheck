@@ -8,21 +8,32 @@
 ## TL; DR
 
 * Just copy
-[.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
-and [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
-files to your package repo and your package is CI ready.
+  [.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
+  and
+  [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
+  files to your package repo, add your repo to travis/appveyor and CI will just
+  work.
 * Copy
-[packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
-to your local machine and run it from your package directory (works on
-Linux/OSX/Windows) to perform all the CI tests locally.
-* Universal, flexible and simple, can do stack builds, old style cabal builds,
-  or new style cabal builds, or send coverage info to coveralls.io etc.  All
-  builds are fully controllable via envvars. For example you can specify build
-  flags, enable/disable docs, benchmarks or tests separately, for individual
-  builds or globally.
+  [packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
+  to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
+  from your package directory and watch all the CI tests being done locally.
+  ```
+  $ packcheck.sh stack
+  $ packcheck.sh cabal
+  $ packcheck.sh cabal-new
+  ```
+* If a CI build fails just copy and paste the command printed in the log and
+  the same build will run on the local machine so that you can debug quickly.
+* Want to send coverage info to coverall.io? Just uncomment a line in your
+  `.travis.yml`.
+* Conveniently control all aspects of build, including tool options or whether
+  to enable benchmarks, haddock, coverage, install test etc. It is a very
+  powerful tool, can do whatever you can imagine, see full reference at the
+  end.
 * Builds from the source distribution tar to make sure you build what you
-  release.
-* The most important part is that you run exact same tests, in the same way everywhere:
+  release and don't miss any file from the distribution.
+* The most important part is that you run exact same tests, in the same way,
+  everywhere:
 
 | Platforms     | CI Modes      | Build Types     |
 |:-------------:|:-------------:|:---------------:|
@@ -32,16 +43,16 @@ Linux/OSX/Windows) to perform all the CI tests locally.
 
 ## What is it?
 
-`packcheck` is a minimal yet complete "hello world" Haskell package with model
-`travis` and `appveyor` config files that can be used unmodified in any Haskell
-package. The CI configs can be modified **declaratively** to adapt to **any**
-kind of build scenario you can imagine.
+The package `packcheck` is a minimal yet complete "hello world" Haskell package
+with model `travis` and `appveyor` config files that can be used unmodified in
+any Haskell package. The CI configs can be modified **declaratively** to adapt
+to **any** kind of build scenario you can imagine.
 
-The package includes `packcheck.sh`, a high level universal super build script
-to uniformly, consistently build and comprehensively sanity test a Haskell
-package across build tools (stack/cabal) and across all platforms
-(Linux/MacOS/Windows).  You do not need to be familiar with any of the build
-tools to use it.
+The package includes a script called `packcheck.sh`, it is a high level
+universal super build script to uniformly, consistently build and
+comprehensively sanity test a Haskell package across build tools (stack/cabal)
+and across all platforms (Linux/MacOS/Windows).  You do not need to be familiar
+with any of the build tools to use it.
 
 This is also a minimal yet complete model package (with tests, benchmarks,
 Linux/MacOS/Windows CI already working) that can be used as a starting point to
@@ -50,43 +61,21 @@ metadata structure.
 
 ## What all does it do?
 
-In a single invocation it performs a whole battery of tests:
-build source, build benchmarks, build docs, run tests, create source
-distribution, ***build from source distribution***, test install after build,
-perform distribution checks, generate coverage report, optionally send coverage
-report to coveralls.io. Everything can be controlled by the user.
+An invocation of packcheck performs a whole battery of tests:
 
-## How do I use it?
-
-To use it for CI, simply copy the
-[travis](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml),
-[appveyor](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
-config files from this package to your package and that's it. It should work
-without modification, of course you can edit them to customize. For use on
-local host, just copy over
-[packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
-and put it in your `PATH`. Run the script from the package
-directory of the package you want to build.
-
-```
-$ packcheck.sh stack
-$ packcheck.sh cabal
-$ packcheck.sh cabal-new
-```
-
-## Salient Features
-
-* ***Comprehensive battery of tests for CI or pre-release to hackage***
-* ***works for all build tools, all platforms, all CIs***
-* ***tests the source distribution of the package*** so you can rest assured
-  that what you release on hackage is exactly what you tested. Also performs
-  distribution checks and whether the package installs successfully.
-* ***reproduce a failed CI on local machine***.  You can just cut and paste the
-  same command on your local machine and run it there for easy debugging.
-* ***can send coverage information to coveralls.io*** with a simple option.
 * When using stack builds, stack and ghc are installed automatically, if needed
-* If the package being tested does not have a `stack.yaml` it is created
-  automatically using `stack init`.
+* for stack builds, if the package being tested does not have a `stack.yaml` it
+  is created automatically using `stack init`.
+* build source
+* build benchmarks
+* build docs
+* run tests
+* create source distribution
+* build from source distribution
+* test installation after build
+* perform distribution checks
+* generate coverage report
+* send coverage report to coveralls.io
 
 ## Usage Examples
 
