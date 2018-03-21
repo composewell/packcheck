@@ -201,7 +201,7 @@ SAFE_ENVVARS="\
 "
 
 UNSAFE_ENVVARS="\
-  TEST_INSTALL \
+  ENABLE_INSTALL \
   STACK_UPGRADE \
   CABAL_REINIT_CONFIG \
   CABAL_NO_SANDBOX \
@@ -272,7 +272,8 @@ short_help() {
   echo "$0 COMMAND [PARAMETER=VALUE ...]"
   echo
   echo "For example:"
-  echo "$0 stack RESOLVER=lts-10.0 GHC_OPTIONS=\"-O0 -Werror\""
+  echo "$0 stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
+  echo "$0 cabal-new GHC_OPTIONS=\"-O0 -Werror\""
   echo
   echo "Control parameters can either be passed on command line or exported"
   echo "as environment variables. Parameters marked DESTRUCTIVE may modify"
@@ -291,31 +292,39 @@ show_help() {
   help_cmd cleanall "remove .packcheck, .stack-work, .cabal-sandbox directories"
   help_cmd help "show this help message"
 
-  show_step1 "Commonly used parameters or env variables"
-  help_envvar RESOLVER "Stack resolver to use for stack or cabal builds"
+  show_step1 "Selecting tool versions"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
+  help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
+  help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
+
+  show_step1 "Where to find the required tools"
+  help_envvar PATH "[path] Set PATH explicitly for predictable builds"
+  help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/8.4.1/bin"
+
+  show_step1 "Specifying common tool options"
   help_envvar GHC_OPTIONS "Specify GHC options to use"
-  help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command (e.g. --pvp-bounds)"
-  help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
+  help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
+  # XXX this applies to both stack and cabal builds
+  help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
+
+  show_step1 "Specifying what to build"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
-  help_envvar PATH "[path] Set PATH explicitly for predictable builds"
-  help_envvar TOOLS_DIR "[dir] A dir to find tools by version like TOOLS_DIR/ghc/8.4.1/bin"
-  help_envvar TEST_INSTALL "[y] DESTRUCTIVE! Install the package after building (force install with cabal)"
+  help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
+  help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
-  show_step1 "Advanced stack build parameters or env variables"
+  show_step1 "stack options"
   help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
   help_envvar STACK_OPTIONS "ADDITIONAL stack global options (e.g. -v) to append"
   help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
-  help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
 
-  show_step1 "Advanced cabal build parameters or env variables"
-  help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
-  help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL default cabal configure options to append"
-  help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL default cabal new-build options to append"
+  show_step1 "cabal options"
+  #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
+  help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL cabal new-build options to append"
+  help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL cabal old style configure options to append"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
   # dependencies have to be installed twice in two separate sandboxes, once to
@@ -323,18 +332,16 @@ show_help() {
   # makes more sense as long as multiple builds running simultaneously will not
   # try to install conflicting packages.
   help_envvar CABAL_NO_SANDBOX "[y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db"
-  help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file."
-  # XXX this is not really a cabal build specific var
-  help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues"
+  help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
 
-  show_step1 "Coverage related parameters or env variables"
+  show_step1 "Coverage options"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
-  show_step1 "hlint related parameters or env variables"
+  show_step1 "hlint options"
   help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
 
-  show_step1 "Diagnostics parameters or env variables"
+  show_step1 "Diagnostics options"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "[y] Treat unknown env variables as error, used with env -i"
@@ -348,7 +355,13 @@ check_all_boolean_vars () {
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
   check_boolean_var CABAL_NO_SANDBOX
-  check_boolean_var TEST_INSTALL
+  if test -n "$TEST_INSTALL"
+  then
+    echo "WARNING! TEST_INSTALL is deprecated. Please use ENABLE_INSTALL instead"
+    ENABLE_INSTALL="$TEST_INSTALL"
+    unset TEST_INSTALL
+  fi
+  check_boolean_var ENABLE_INSTALL
   check_boolean_var DISABLE_BENCH
   check_boolean_var DISABLE_TEST
   check_boolean_var DISABLE_DOCS
@@ -429,9 +442,9 @@ dont_need_cabal() {
     return 1
   fi
 
-  if test -n "$TEST_INSTALL"
+  if test -n "$ENABLE_INSTALL"
   then
-    test -z "$1" || echo "Need cabal-install because 'TEST_INSTALL=$TEST_INSTALL'"
+    test -z "$1" || echo "Need cabal-install because 'ENABLE_INSTALL=$ENABLE_INSTALL'"
     return 1
   fi
 
@@ -1084,7 +1097,7 @@ install_test() {
       (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
       remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
     cabal-new)
-      echo "WARNING! Because of a cabal issue, TEST_INSTALL does not work with cabal-new" ;;
+      echo "WARNING! Because of a cabal issue, ENABLE_INSTALL does not work with cabal-new" ;;
   esac
 }
 
@@ -1172,7 +1185,7 @@ build_compile () {
   show_step "Package distribution checks"
   dist_checks
 
-  if test "$TEST_INSTALL" = y
+  if test "$ENABLE_INSTALL" = y
   then
     show_step "Package install test"
     install_test $PACKAGE_FULL_NAME
