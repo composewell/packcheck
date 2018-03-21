@@ -2,16 +2,25 @@
 # variables here.  See https://github.com/harendra-kumar/packcheck for all
 # options and their explanation.
 env:
-  global:
   # ------------------------------------------------------------------------
   # Global options, you can use these per build as well
   # ------------------------------------------------------------------------
+  global:
+  # ------------------------------------------------------------------------
+  # Common options
+  # ------------------------------------------------------------------------
   # - GHC_OPTIONS="-Werror"
+  - CABAL_REINIT_CONFIG=y
+  - LC_ALL=C.UTF-8
+
+  # ------------------------------------------------------------------------
+  # What to build
+  # ------------------------------------------------------------------------
   # - DISABLE_TEST=y
   # - DISABLE_BENCH=y
   # - DISABLE_DOCS=y
   # - DISABLE_SDIST_BUILD=y
-  - TEST_INSTALL=y
+  - ENABLE_INSTALL=y
 
   # ------------------------------------------------------------------------
   # stack options
@@ -23,16 +32,17 @@ env:
   - STACK_UPGRADE="y"
 
   # ------------------------------------------------------------------------
-  # Other options: Normally you would not need to customize these
-  # Note - these are used by both stack and cabal builds
+  # cabal options
   # ------------------------------------------------------------------------
-  - CABAL_REINIT_CONFIG=y
   - CABAL_CHECK_RELAX=y
   - CABAL_NO_SANDBOX=y
   - CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com
+
+  # ------------------------------------------------------------------------
+  # Where to find the required tools
+  # ------------------------------------------------------------------------
   - PATH=/bin:/usr/bin
   - TOOLS_DIR=/opt
-  - LC_ALL=C.UTF-8
 
   # ------------------------------------------------------------------------
   # Location of packcheck.sh (the shell script invoked to perform CI tests ).
@@ -45,7 +55,7 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="bbb0cfe540fcb3df68a73e3bba7c35cf1f3cbf63"
+  - PACKCHECK_GITHUB_COMMIT="359852abfed5a445ae7d5053d9324ecddf0d42a1"
 
 notifications:
   email:

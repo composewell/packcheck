@@ -63,9 +63,9 @@ To use it for CI, simply copy the
 [appveyor](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
 config files from this package to your package and that's it. It should work
 without modification, of course you can edit them to customize. For use on
-local host, just copy over the
+local host, just copy over
 [packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
-script and put it in your `PATH`. Run the script from the package
+and put it in your `PATH`. Run the script from the package
 directory of the package you want to build.
 
 ```
@@ -84,51 +84,26 @@ $ packcheck.sh cabal-new
 * ***reproduce a failed CI on local machine***.  You can just cut and paste the
   same command on your local machine and run it there for easy debugging.
 * ***can send coverage information to coveralls.io*** with a simple option.
-* ***installs all the required tools automatically*** (including stack) or lets
-  you know what it needs so you can install/use your own. It never overwrites
-  an existing tool during install.
+* When using stack builds, stack and ghc are installed automatically, if needed
+* If the package being tested does not have a `stack.yaml` it is created
+  automatically using `stack init`.
 
 ## Usage Examples
 
 You can run these commands on your local machine as well as inside a CI script.
-
-Make sure you are in the package directory. You can try these commands in this
-package itself:
+You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
-```
-
-Stack build (installs stack automatically if not found, creates a `stack.yaml`
-if not found):
-```
-$ ./packcheck.sh stack RESOLVER=lts-6
-```
-
-Set pvp-bounds before the test:
-```
-$ ./packcheck.sh stack RESOLVER=lts-6 SDIST_OPTIONS="--pvp-bounds both"
-```
-
-Stack build with system installed GHC, when GHCVER is specified it looks for
-the specified GHC version in PATH:
-```
-$ ./packcheck.sh stack GHCVER=7.10.3
-```
-
-Stack build with a specific `stack.yaml` config file and specified build flags,
-and requiring a specific cabal version:
-```
+$ ./packcheck.sh stack RESOLVER=lts-11
+$ ./packcheck.sh stack GHCVER=8.2.2
 $ ./packcheck.sh stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24
 ```
 
-Cabal build using stack installed ghc:
 ```
-$ stack exec ./packcheck.sh cabal RESOLVER=lts-6
-```
-
-Cabal build using system installed ghc and cabal on PATH:
-```
-$ ./packcheck.sh cabal-new GHCVER=7.10.3 CABALVER=1.22
+$ ./packcheck.sh cabal-new GHCVER=8.4.1
+$ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
+# You can also do a cabal build using stack installed ghc:
+$ stack exec ./packcheck.sh cabal RESOLVER=lts-11
 ```
 
 Run hlint commands on the directories `src` and `test`:
@@ -137,17 +112,18 @@ $ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
 ```
 
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
-using `hpc-coveralls`.  Note that this currently works only with a cabal build:
+using `hpc-coveralls`.  Note that this currently works only with an old-style
+cabal build:
 ```
-$ ./packcheck.sh cabal-new GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
+$ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
 
 ## Diagnostics
 
 There may be issues due to some environment variables unknowingly set or some
 command line parameters or env variables being misspelled and therefore
-silently ignored. To avoid any such issues the cleanest way to invoke the
-script is to use a clean environment using `env -i` and `CHECK_ENV=y`
+silently ignored. To avoid any such issues the robust way to invoke `packcheck`
+is to use a clean environment using `env -i` and passing `CHECK_ENV=y`
 parameter. When this parameter is set unwanted/misspelled variables are
 detected and reported.
 
@@ -155,7 +131,7 @@ detected and reported.
 $ env -i CHECK_ENV=y ./packcheck.sh stack
 ```
 
-For performance diagnostics the script prints the time elapsed from the
+For performance diagnostics `packcheck` prints the time elapsed from the
 beginning at each build step performed.
 
 ## Full Reference
@@ -203,53 +179,65 @@ cleanall                : remove .packcheck, .stack-work, .cabal-sandbox directo
 help                    : show this help message
 
 --------------------------------------------------
-Commonly used parameters or env variables
+Selecting tool versions
 --------------------------------------------------
-RESOLVER                : Stack resolver to use for stack or cabal builds
 GHCVER                  : [a.b.c] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
+RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
+STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
+
+--------------------------------------------------
+Where to find the required tools
+--------------------------------------------------
+PATH                    : [path] Set PATH explicitly for predictable builds
+TOOLS_DIR               : [dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/8.4.1/bin
+
+--------------------------------------------------
+Specifying common tool options
+--------------------------------------------------
 GHC_OPTIONS             : Specify GHC options to use
-SDIST_OPTIONS           : Arguments to stack/cabal sdist command (e.g. --pvp-bounds)
-DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
+SDIST_OPTIONS           : Arguments to stack/cabal sdist command
+CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatibility issues
+
+--------------------------------------------------
+Specifying what to build
+--------------------------------------------------
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 DISABLE_TEST            : [y] Do not run tests, default is to run tests
 DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
-PATH                    : [path] Set PATH explicitly for predictable builds
-TEST_INSTALL            : [y] DESTRUCTIVE! Install the package after building (force install with cabal)
+DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
+ENABLE_INSTALL          : [y] DESTRUCTIVE! Install the package after building
 
 --------------------------------------------------
-Advanced stack build parameters or env variables
+stack options
 --------------------------------------------------
 STACK_YAML              : Alternative stack config, cannot be a path, just the file name
 STACK_OPTIONS           : ADDITIONAL stack global options (e.g. -v) to append
 STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
-STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 
 --------------------------------------------------
-Advanced cabal build parameters or env variables
+cabal options
 --------------------------------------------------
-CABAL_USE_STACK_SDIST   : [y] Use stack sdist (to use --pvp-bounds)
-CABAL_CONFIGURE_OPTIONS : ADDITIONAL default cabal configure options to append
-CABAL_NEWBUILD_OPTIONS  : ADDITIONAL default cabal new-build options to append
+CABAL_NEWBUILD_OPTIONS  : ADDITIONAL cabal new-build options to append
+CABAL_CONFIGURE_OPTIONS : ADDITIONAL cabal old style configure options to append
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
-CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, will modify the cabal user config file.
-CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old cabal config to avoid any config incompatibility issues
+CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
 
 --------------------------------------------------
-Coverage related parameters or env variables
+Coverage options
 --------------------------------------------------
 COVERALLS_OPTIONS       : hpc-coveralls args and options, usually just test suite names
 COVERAGE                : [y] Just generate coverage information
 
 --------------------------------------------------
-hlint related parameters or env variables
+hlint options
 --------------------------------------------------
 HLINT_COMMANDS          : hlint commands e.g.'hlint lint src; hlint lint test'
 
 --------------------------------------------------
-Diagnostics parameters or env variables
+Diagnostics options
 --------------------------------------------------
 CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
 BASE_TIME               : System time to be used as base for timeline reporting

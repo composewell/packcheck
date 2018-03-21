@@ -9,6 +9,9 @@
   specify the cabal and ghc PPAs under apt sources.
 * Run autoreconf if there is a configure.ac in the package dir
 
+### Deprecations
+* TEST_INSTALL option is deprecated, use ENABLE_INSTALL instead
+
 ## 0.2.0
 
 ### Breaking Changes
