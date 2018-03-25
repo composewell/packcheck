@@ -26,6 +26,9 @@
   the same build will run on the local machine so that you can debug quickly.
 * Want to send coverage info to coverall.io? Just uncomment a line in your
   `.travis.yml`.
+* If you are using `hvr-ghc` PPA, just say `TOOLS_DIR=/opt` or wherever it
+  is installed, and you can use all the ghc/cabal versions available,
+  automatically.
 * Conveniently control all aspects of build, including tool options or whether
   to enable benchmarks, haddock, coverage, install test etc. It is a very
   powerful tool, can do whatever you can imagine, see full reference at the
