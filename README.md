@@ -7,13 +7,13 @@
 
 ## TL; DR
 
-* Just copy
+* For CI, just copy
   [.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
   and
   [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
   files to your package repo, add your repo to travis/appveyor and CI will just
   work.
-* Copy
+* For local use, copy
   [packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
   to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
   from your package directory and watch all the CI tests being done locally.
@@ -23,11 +23,11 @@
   $ packcheck.sh cabal-new
   ```
 * If a CI build fails just copy and paste the command printed in the log and
-  the same build will run on the local machine so that you can debug quickly.
+  the same build runs on the local machine so that you can debug quickly.
 * Want to send coverage info to coverall.io? Just uncomment a line in your
   `.travis.yml`.
-* If you are using `hvr-ghc` PPA, just say `TOOLS_DIR=/opt` or wherever it
-  is installed, and you can use all the ghc/cabal versions available,
+* If you are using `hvr-ghc` PPA, just use `TOOLS_DIR=/opt` or the path where
+  it is installed, and you can use all the ghc/cabal versions available,
   automatically.
 * Conveniently control all aspects of build, including tool options or whether
   to enable benchmarks, haddock, coverage, install test etc. It is a very
@@ -69,6 +69,8 @@ An invocation of packcheck performs a whole battery of tests:
 * When using stack builds, stack and ghc are installed automatically, if needed
 * for stack builds, if the package being tested does not have a `stack.yaml` it
   is created automatically using `stack init`.
+* Picks up the right version of GHC automatically if multiple versions are
+  available in the PATH or from hvr-ghc style ghc/cabal installation.
 * build source
 * build benchmarks
 * build docs
@@ -109,22 +111,6 @@ cabal build:
 ```
 $ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
-
-## Diagnostics
-
-There may be issues due to some environment variables unknowingly set or some
-command line parameters or env variables being misspelled and therefore
-silently ignored. To avoid any such issues the robust way to invoke `packcheck`
-is to use a clean environment using `env -i` and passing `CHECK_ENV=y`
-parameter. When this parameter is set unwanted/misspelled variables are
-detected and reported.
-
-```
-$ env -i CHECK_ENV=y ./packcheck.sh stack
-```
-
-For performance diagnostics `packcheck` prints the time elapsed from the
-beginning at each build step performed.
 
 ## Full Reference
 
@@ -233,3 +219,20 @@ Diagnostics options
 --------------------------------------------------
 CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
 BASE_TIME               : System time to be used as base for timeline reporting
+```
+
+## Diagnostics
+
+There may be issues due to some environment variables unknowingly set or some
+command line parameters or env variables being misspelled and therefore
+silently ignored. To avoid any such issues the robust way to invoke `packcheck`
+is to use a clean environment using `env -i` and passing `CHECK_ENV=y`
+parameter. When this parameter is set unwanted/misspelled variables are
+detected and reported.
+
+```
+$ env -i CHECK_ENV=y ./packcheck.sh stack
+```
+
+For performance diagnostics `packcheck` prints the time elapsed from the
+beginning at each build step performed.

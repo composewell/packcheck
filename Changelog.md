@@ -3,11 +3,13 @@
 ### Enhancements
 * Add cabal new-build support. Use `packcheck.sh cabal-new` to use it.
 * Add knobs to disable tests or doc builds (`DISABLE_TEST`, `DISABLE_DOCS`)
-* Now you can specify multiple versions of GHC in PATH and packcheck will
-  automatically find the right one based on GHCVER envvar.
+* Now you can specify multiple versions of GHC in PATH and packcheck
+  automatically finds the right one based on GHCVER envvar.
+* Add TOOLS_DIR option to specify hvr-ghc style installation of ghc and
+  cabal. A correct version of GHC is automatically picked from this directory.
 * GHCVER and CABALVER variables are now optional in travis config if you
   specify the cabal and ghc PPAs under apt sources.
-* Run autoreconf if there is a configure.ac in the package dir
+* Run `autoreconf` if there is a `configure.ac` in the package dir
 
 ### Deprecations
 * TEST_INSTALL option is deprecated, use ENABLE_INSTALL instead
