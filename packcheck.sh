@@ -474,6 +474,7 @@ verify_build_config() {
     test -n "$DISABLE_TEST" || STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --test"
     test -n "$DISABLE_BENCH" || STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
+    STACK_BUILD_OPTIONS_ORIG=$STACK_BUILD_OPTIONS
     STACK_BUILD_OPTIONS=$(cat << EOF
       $(test -n "$DISABLE_DOCS" || echo "--haddock --no-haddock-deps")
       $(test -n "$DISABLE_TEST" || echo "--test")
@@ -1089,7 +1090,7 @@ dist_checks() {
 install_test() {
   case "$BUILD" in
     stack)
-      run_verbose_errexit $STACKCMD install $STACK_BUILD_OPTIONS
+      run_verbose_errexit $STACKCMD install $STACK_BUILD_OPTIONS_ORIG
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
     cabal)
