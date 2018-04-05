@@ -1299,9 +1299,9 @@ set_os_specific_vars # depends on HOME
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
 if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
 then
-  export PATH=$PATH:$OS_APP_HOME/$OS_CABAL_DIR/bin
+  export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
-export PATH=$PATH:$OS_APP_HOME/$OS_LOCAL_DIR/bin
+export PATH=$OS_APP_HOME/$OS_LOCAL_DIR/bin:$PATH
 
 verify_build_config
 
