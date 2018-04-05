@@ -1089,12 +1089,12 @@ dist_checks() {
 install_test() {
   case "$BUILD" in
     stack)
-      run_verbose_errexit $STACKCMD install
+      run_verbose_errexit $STACKCMD install $STACK_BUILD_OPTIONS
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
     cabal)
       run_verbose_errexit cabal copy
-      (cd dist && run_verbose_errexit cabal install --force-reinstalls "${1}.tar.gz")
+      (cd dist && run_verbose_errexit cabal install "${1}.tar.gz")
       remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
     cabal-new)
       echo "WARNING! Because of a cabal issue, ENABLE_INSTALL does not work with cabal-new" ;;
