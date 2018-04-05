@@ -1,3 +1,8 @@
+## Unreleased
+
+* For stack builds, use the same options (STACK_BUILD_OPTIONS) for install test
+  as for build so that a rebuild does not occur during install.
+
 ## 0.3.0
 
 ### Enhancements
