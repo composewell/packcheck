@@ -1,7 +1,9 @@
 ## Unreleased
 
 * For stack builds, use the same options (STACK_BUILD_OPTIONS) for install test
-  as for build so that a rebuild does not occur during install.
+  as for build so that an extra rebuild does not occur during install.
+* Workaround to avoid depending on `cabal info` command; in certain cases this
+  command crashes cabal. See issue #13.
 
 ## 0.3.0
 
