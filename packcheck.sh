@@ -181,6 +181,7 @@ SAFE_ENVVARS="\
   DISABLE_BENCH \
   DISABLE_TEST \
   DISABLE_DOCS \
+  DISABLE_DIST_CHECKS \
   PATH \
   TOOLS_DIR \
   STACKVER \
@@ -314,6 +315,7 @@ show_help() {
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
+  help_envvar DISABLE_DIST_CHECKS "[y] Do not perform source distribution checks"
   help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
   show_step1 "stack options"
@@ -351,6 +353,7 @@ show_help() {
 check_all_boolean_vars () {
   check_boolean_var STACK_UPGRADE
   check_boolean_var DISABLE_SDIST_BUILD
+  check_boolean_var DISABLE_DIST_CHECKS
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
@@ -1201,8 +1204,11 @@ build_compile () {
       coveralls_io
   fi
 
-  show_step "Package distribution checks"
-  dist_checks
+  if test -z "$DISABLE_DIST_CHECKS"
+  then
+    show_step "Package distribution checks"
+    dist_checks
+  fi
 
   if test "$ENABLE_INSTALL" = y
   then

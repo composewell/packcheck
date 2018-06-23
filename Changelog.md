@@ -1,5 +1,8 @@
 ## Unreleased
 
+* Add a new environment var option DISABLE_DIST_CHECKS to disable source
+  distribution checks. This can be used as a workaround for a bug in stack
+  causing "stack sdist" to fail.
 * For stack builds, use the same options (STACK_BUILD_OPTIONS) for install test
   as for build so that an extra rebuild does not occur during install.
 * Workaround to avoid depending on `cabal info` command; in certain cases this
