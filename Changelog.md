@@ -1,4 +1,4 @@
-## Unreleased
+## 0.3.1
 
 * Add a new environment var option DISABLE_DIST_CHECKS to disable source
   distribution checks. This can be used as a workaround for a bug in stack
