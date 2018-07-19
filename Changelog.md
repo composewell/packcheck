@@ -1,3 +1,7 @@
+## Unreleased
+
+* Now packcheck works for multi-package stack repos as well.
+
 ## 0.3.1
 
 * Add a new environment var option DISABLE_DIST_CHECKS to disable source

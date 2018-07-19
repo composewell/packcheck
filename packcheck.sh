@@ -917,6 +917,37 @@ get_pkg_full_name() {
   echo $full_name
 }
 
+determine_build_type() {
+  local name=$(echo *.cabal)
+  if test "$name" = "*.cabal"
+  then
+    if test -f "package.yaml" -a -n "$STACKCMD"
+    then
+        echo "No cabal file found but a package.yaml file found"
+        echo "Generating cabal file from package.yaml"
+        # Generate cabal file from package.yaml
+        run_verbose "$STACKCMD query > /dev/null 2>&1"
+    else
+      if test $BUILD = "stack" -a -f "stack.yaml"
+      then
+        echo "No cabal file found but a stack.yaml found, assuming a multipackage project."
+        echo "Setting DISABLE_SDIST_BUILD=y and clearing ENABLE_INSTALL"
+        DISABLE_SDIST_BUILD=y
+        ENABLE_INSTALL=
+      else
+        die "No cabal file found."
+      fi
+    fi
+  else
+    if test ! -f "$name"
+    then
+      echo "Either there are multiple cabal files in the directory"
+      echo "or the cabal file is not a regular file."
+      die "cabal files: $name"
+    fi
+  fi
+}
+
 ensure_cabal_config() {
   # When cabal versions change across builds on a CI host its safer to remove
   # the old config so that the build does not error out.
@@ -926,27 +957,6 @@ ensure_cabal_config() {
     echo "Removing old cabal config [$cfg]"
     run_verbose_errexit rm -f "$cfg"
   fi
-
-  local name=$(echo *.cabal)
-  if test ! -f "$name"
-  then
-    if test -n "$name"
-    then
-        die "There should be exactly one .cabal file in the project dir. Found: $name"
-    else
-      if test -f "package.yaml" -a -n "$STACKCMD"
-      then
-        echo "Generating cabal file from package.yaml"
-        # Generate cabal file from package.yaml
-        run_verbose "$STACKCMD query > /dev/null 2>&1"
-      else
-        die "No cabal file found in the package directory"
-      fi
-    fi
-  fi
-
-  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
-  echo "Package name and version: [$PACKAGE_FULL_NAME]"
 
   # cabal 1.22 and earlier do not support this command
   # We rely on the cabal info command to create the config above.
@@ -1158,6 +1168,11 @@ coveralls_io() {
   run_verbose_errexit hpc-coveralls $COVERALLS_OPTIONS
 }
 
+determine_package_full_name() {
+  PACKAGE_FULL_NAME=$(get_pkg_full_name) || die "PACKAGE_FULL_NAME"
+  echo "Package name and version: [$PACKAGE_FULL_NAME]"
+}
+
 # stack or cabal build (i.e. not hlint)
 build_compile () {
   # ---------Install any tools needed--------
@@ -1170,6 +1185,8 @@ build_compile () {
   # packed with msys itself.
   # ensure_msys_tools "tar" && require_cmd tar
 
+  # This may use STACKCMD so happens after stack install
+  determine_build_type && echo
   ensure_ghc && echo
   dont_need_cabal 'verbose' || ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
 
@@ -1183,6 +1200,7 @@ build_compile () {
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
   dont_need_cabal || ensure_cabal_config
+  dont_need_cabal || determine_package_full_name
   test -z "$(need_stack)" || ensure_stack_yaml
 
   if test -z "$DISABLE_SDIST_BUILD"
