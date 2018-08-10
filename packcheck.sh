@@ -978,10 +978,10 @@ ensure_cabal_config() {
   fi
 
   # cabal 1.22 and earlier do not support this command
-  # We rely on the cabal info command to create the config above.
+  # We rely on the cabal info command to create the config.
   if test ! -e $cfg
   then
-    run_verbose cabal user-config init || true
+    run_verbose cabal user-config init || cabal info . > /dev/null || true
   fi
 
   if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
