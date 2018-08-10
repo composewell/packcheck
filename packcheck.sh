@@ -20,6 +20,12 @@
 # Utility functions
 #------------------------------------------------------------------------------
 
+PACKCHECK_VERSION=0.3.1
+
+show_version() {
+  echo "packcheck version $PACKCHECK_VERSION"
+}
+
 # $1: varname
 show_var() {
   echo "$1=$(eval \"echo \$$1\")"
@@ -285,14 +291,15 @@ show_help() {
   show_step1 "Usage"
   short_help
 
-  show_step1 "Commands"
-  help_cmd stack "build using stack"
+  show_step1 "Commands and flags"
+  help_cmd cabal-new "build using cabal new-build (GHCVER >= 8.2.2)"
   help_cmd cabal "build using cabal"
-  help_cmd cabal-new "build using cabal new-build"
+  help_cmd stack "build using stack"
   # TODO add hlint as a tool
   help_cmd clean "remove the .packcheck directory"
   help_cmd cleanall "remove .packcheck, .stack-work, .cabal-sandbox directories"
-  help_cmd help "show this help message"
+  help_cmd "help | --help | -h" "show this help message"
+  help_cmd "--version" "show packcheck version"
 
   show_step1 "Selecting tool versions"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
@@ -1329,6 +1336,7 @@ case $1 in
     fi
     exit;;
   -h | --help | help) show_help; exit;;
+  --version) show_version; exit;;
   *) short_help; exit 1 ;;
 esac
 
