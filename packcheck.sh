@@ -289,6 +289,7 @@ show_help() {
   help_cmd stack "build using stack"
   help_cmd cabal "build using cabal"
   help_cmd cabal-new "build using cabal new-build"
+  # TODO add hlint as a tool
   help_cmd clean "remove the .packcheck directory"
   help_cmd cleanall "remove .packcheck, .stack-work, .cabal-sandbox directories"
   help_cmd help "show this help message"
@@ -305,6 +306,9 @@ show_help() {
   help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/8.4.1/bin"
 
   show_step1 "Specifying common tool options"
+  # TODO
+  # help_envvar TOOL_OPTIONS "Specify the tool specific (stack or cabal) options to use."
+  # help_envvar BUILD_OPTIONS "Specify the tool specific build (stack build or cabal new-build) options to use."
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
   # XXX this applies to both stack and cabal builds
@@ -509,6 +513,7 @@ EOF
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
     test -n "$DISABLE_BENCH" || \
       CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
+    CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS $CABAL_NEWBUILD_OPTIONS"
 
     CABAL_NEWBUILD_OPTIONS=$(cat << EOF
       $(test -n "$DISABLE_TEST" || echo "--enable-tests")
@@ -918,6 +923,7 @@ get_pkg_full_name() {
 }
 
 determine_build_type() {
+  MULTI_PACKAGE_PROJECT=false
   local name=$(echo *.cabal)
   if test "$name" = "*.cabal"
   then
@@ -930,12 +936,25 @@ determine_build_type() {
     else
       if test $BUILD = "stack" -a -f "stack.yaml"
       then
-        echo "No cabal file found but a stack.yaml found, assuming a multipackage project."
-        echo "Setting DISABLE_SDIST_BUILD=y and clearing ENABLE_INSTALL"
+        echo "No cabal file found but a stack.yaml file found, assuming a multipackage project."
+        echo "Setting DISABLE_SDIST_BUILD=y and clearing DISABLE_DIST_CHECKS and ENABLE_INSTALL"
+        MULTI_PACKAGE_PROJECT=true
         DISABLE_SDIST_BUILD=y
+        DISABLE_DIST_CHECKS=y
         ENABLE_INSTALL=
       else
-        die "No cabal file found."
+        if test $BUILD = "cabal-new" -a -f "cabal.project"
+        then
+          echo "No cabal file found but a cabal.project file found, assuming a multipackage project."
+          echo "Setting DISABLE_SDIST_BUILD=y and clearing DISABLE_DIST_CHECKS and ENABLE_INSTALL"
+          MULTI_PACKAGE_PROJECT=true
+          DISABLE_SDIST_BUILD=y
+          DISABLE_DIST_CHECKS=y
+          ENABLE_INSTALL=
+        else
+          echo "No valid build config file cabal/cabal.project/package.yaml/stack.yaml found."
+          die "Make sure you are using BUILD=cabal-new if you are using a cabal.project file"
+        fi
       fi
     fi
   else
@@ -1088,9 +1107,9 @@ build_and_test() {
     cabal-new)
       run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock
+      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $CABAL_NEWBUILD_OPTIONS
       echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test --enable-tests ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test $CABAL_NEWBUILD_OPTIONS ;;
     cabal)
       cabal_configure
       echo
@@ -1200,7 +1219,7 @@ build_compile () {
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
   dont_need_cabal || ensure_cabal_config
-  dont_need_cabal || determine_package_full_name
+  dont_need_cabal || $MULTI_PACKAGE_PROJECT || determine_package_full_name
   test -z "$(need_stack)" || ensure_stack_yaml
 
   if test -z "$DISABLE_SDIST_BUILD"

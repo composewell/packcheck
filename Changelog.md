@@ -1,6 +1,7 @@
 ## Unreleased
 
 * Now packcheck works for multi-package stack repos as well.
+* Now packcheck works for multi-package cabal repos as well.
 
 ## 0.3.1
 
