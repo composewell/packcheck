@@ -57,7 +57,7 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="361f60103210d5e3788bc81f4fa795e1b47bc375"
+  - PACKCHECK_GITHUB_COMMIT="b31a6180f5c7658284bd60379fa6f1fc79d9a5f6"
 
 notifications:
   email:
@@ -75,31 +75,6 @@ matrix:
   include:
 
   # --------------------------------------------------------------------------
-  # (Linux) stack builds (BUILD=stack). Some common envvars for stack builds
-  # are: STACK_YAML, STACK_OPTIONS, STACK_BUILD_OPTIONS
-  # --------------------------------------------------------------------------
-
-  #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10.3
-  #  addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
-
-  - env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0.2
-    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
-
-  # Use cabal-install-1.24 for stack solver to work
-  - env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2.2
-    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
-
-  # Use cabal-install-1.24 for stack solver to work
-  - env: BUILD=stack RESOLVER=nightly
-    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
-
-  # You can keep a STACK_YAML file at any path location
-  #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
-
-  # You can specify build flags like this:
-  #- env: BUILD=stack RESOLVER=lts-11 STACK_BUILD_OPTIONS="--flag packcheck:dev"
-
-  # --------------------------------------------------------------------------
   # (Linux) cabal builds (BUILD=cabal, BUILD=cabal-new). Common envvars are:
   # CABAL_CONFIGURE_OPTIONS (cabal), CABAL_NEWBUILD_OPTIONS (cabal-new)
   # --------------------------------------------------------------------------
@@ -110,42 +85,75 @@ matrix:
   #- env: BUILD=cabal GHCVER=8.0.2
   #  addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
 
-  # Disabled by default as we have a cabal ghc-8.2.2 build for OSX
-  #- env: BUILD=cabal-new GHCVER=8.2.2
-  #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
+  - env: BUILD=cabal-new GHCVER=8.2.2
+    addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
 
   - env: BUILD=cabal-new GHCVER=8.4.3
     addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal-new GHCVER=head
-    addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
+  #- env: BUILD=cabal-new GHCVER=head
+  #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # You can specify build flags like this:
   #- env: BUILD=cabal-new CABAL_NEWBUILD_OPTIONS="--flags=dev"
   #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
+  # (Linux) stack builds (BUILD=stack). Some common envvars for stack builds
+  # are: STACK_YAML, STACK_OPTIONS, STACK_BUILD_OPTIONS
+  # --------------------------------------------------------------------------
+
+  #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10.3
+  #  addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
+
+  #- env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0.2
+  #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+
+  # Use cabal-install-1.24 for stack solver to work
+  - env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2.2
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+
+  # Use cabal-install-1.24 for stack solver to work
+  - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4.3
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+
+  # Use cabal-install-1.24 for stack solver to work
+  #- env: BUILD=stack RESOLVER=nightly
+  #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+
+  # You can keep a STACK_YAML file at any path location
+  #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
+
+  # You can specify build flags like this:
+  #- env: BUILD=stack RESOLVER=lts-12 STACK_BUILD_OPTIONS="--flag packcheck:dev"
+
+  # --------------------------------------------------------------------------
   # OS X builds
   # --------------------------------------------------------------------------
 
-  # GHC 8.2.2/cabal build using stack!
-  - env: BUILD=cabal-new RESOLVER=lts-11 GHCVER=8.2.2
+  # GHC 8.4.3 cabal build using stack!
+  - env: BUILD=cabal-new RESOLVER=lts-12 GHCVER=8.4.3
     os: osx
 
-  # GHC 8.2.2/stack
-  #- env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2.2
+  # GHC 8.4.3/stack
+  #- env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4.3
   #  os: osx
 
   # --------------------------------------------------------------------------
   # Lint e.g. HLINT_COMMANDS="hlint lint src; hlint lint test"
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=stack RESOLVER=lts-11 HLINT_COMMANDS="hlint lint ."
+  #- env: BUILD=stack RESOLVER=lts-12 HLINT_COMMANDS="hlint lint ."
 
   # --------------------------------------------------------------------------
-  # Build and send coverage report to coveralls.io using hpc-coveralls
-  # Works only with BUILD=cabal; add your project to coveralls.io first
-  # For available options see hpc-coveralls docs.
+  # Build and send coverage report to coveralls.io using hpc-coveralls.  Add
+  # your project to coveralls.io first, for available options see hpc-coveralls
+  # docs. CAVEATS:
+  # * Works only with BUILD=cabal
+  # * Does not work for multi-package repos
+  # * hpc-coveralls does not build with Cabal-2.2/GHC-8.4.3. The workaround is
+  #   to have a prebuilt hpc-coveralls binary installed on the build machine
+  #   and then you can use any version of ghc.
   # --------------------------------------------------------------------------
 
   #- env: BUILD=cabal COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
@@ -156,9 +164,9 @@ matrix:
   # --------------------------------------------------------------------------
 
   allow_failures:
-  - env: BUILD=stack RESOLVER=nightly
   - env: BUILD=cabal-new GHCVER=head
-  - env: BUILD=stack RESOLVER=lts-11 HLINT_COMMANDS="hlint lint ."
+  - env: BUILD=stack RESOLVER=nightly
+  - env: BUILD=stack RESOLVER=lts-12 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------
 #  Settings beyond this point are advanced and normally not tweaked

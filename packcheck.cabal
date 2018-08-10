@@ -47,6 +47,11 @@ source-repository head
     type: git
     location: https://github.com/harendra-kumar/packcheck
 
+flag dev
+  description: Development build
+  manual: True
+  default: False
+
 library
     hs-source-dirs:    src
     exposed-modules:   Hello

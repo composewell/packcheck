@@ -5,27 +5,30 @@
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![Coverage Status](https://coveralls.io/repos/harendra-kumar/packcheck/badge.svg?branch=master&service=github)](https://coveralls.io/github/harendra-kumar/packcheck?branch=master)
 
-## TL; DR
+## Push-button CI for Haskell Packages
 
 * For CI, just copy
   [.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
   and
   [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
   files to your package repo, add your repo to travis/appveyor and CI will just
-  work.
+  work. Uncomment the relevant lines in `.travis.yml` to enable CI for more
+  configs.
 * For local use, copy
   [packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
   to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
-  from your package directory and watch all the CI tests being done locally.
+  from your package directory. You can pass the same evironment variables that
+  are used in CI files to run the exact same tests locally. Usage is as simple
+  as:
   ```
-  $ packcheck.sh stack
-  $ packcheck.sh cabal
   $ packcheck.sh cabal-new
+  $ packcheck.sh cabal
+  $ packcheck.sh stack
   ```
 * If a CI build fails just copy and paste the command printed in the log and
   the same build runs on the local machine so that you can debug quickly.
-* Want to send coverage info to coverall.io? Just uncomment a line in your
-  `.travis.yml`.
+* To send coverage info to [coveralls.io](https://coveralls.io) just
+  uncomment a line in your `.travis.yml`.
 * If you are using `hvr-ghc` PPA, just use `TOOLS_DIR=/opt` or the path where
   it is installed, and you can use all the ghc/cabal versions available,
   automatically.
@@ -33,10 +36,11 @@
   to enable benchmarks, haddock, coverage, install test etc. It is a very
   powerful tool, can do whatever you can imagine, see full reference at the
   end.
-* Builds from the source distribution tar to make sure you build what you
-  release and don't miss any file from the distribution.
-* The most important part is that you run exact same tests, in the same way,
-  everywhere:
+* `packcheck` creates the source distribution and builds the package from the
+  generated tarball to make sure that you build what you release and don't miss
+  adding a file to the distribution.
+* The most important part is that you can run exact same tests, in the same
+  way, everywhere:
 
 | Platforms     | CI Modes      | Build Types     |
 |:-------------:|:-------------:|:---------------:|
@@ -46,56 +50,67 @@
 
 ## What is it?
 
-The package `packcheck` is a minimal yet complete "hello world" Haskell package
-with model `travis` and `appveyor` config files that can be used unmodified in
-any Haskell package. The CI configs can be modified **declaratively** to adapt
-to **any** kind of build scenario you can imagine.
-
-The package includes a script called `packcheck.sh`, it is a high level
-universal super build script to uniformly, consistently build and
+The package `packcheck` includes a script called `packcheck.sh`, it is a high
+level universal super build script to uniformly, consistently build and
 comprehensively sanity test a Haskell package across build tools (stack/cabal)
 and across all platforms (Linux/MacOS/Windows).  You do not need to be familiar
 with any of the build tools to use it.
 
-This is also a minimal yet complete model package (with tests, benchmarks,
-Linux/MacOS/Windows CI already working) that can be used as a starting point to
-develop a new package. Beginners can use it to learn about haskell package
-metadata structure.
+`packcheck` is a minimal yet complete "hello world" Haskell package
+with model `travis` and `appveyor` config files that can be used unmodified in
+any Haskell package. The CI configs can be modified **declaratively** to adapt
+to **any** kind of build scenario you can imagine.
+
+This model package has everything that a Haskell package usually has; including
+tests, benchmarks and Linux/MacOS/Windows CI already working. It can be used as
+a starting point to develop a new package. Beginners can use it to learn about
+haskell package metadata structure.
 
 ## What all does it do?
 
-An invocation of packcheck performs a whole battery of tests:
+An invocation of `packcheck.sh` performs a whole battery of tests. `packcheck` is
+designed to be a simple to use tool for power users, you can control all
+aspects of the build process the way you want, see the reference section below.
 
-* When using stack builds, stack and ghc are installed automatically, if needed
-* for stack builds, if the package being tested does not have a `stack.yaml` it
-  is created automatically using `stack init`.
-* Picks up the right version of GHC automatically if multiple versions are
+### Auto tool install and selection
+* Picks up the right version of GHC automatically (based on the version
+  sepcified via an environment variable) if multiple versions are
   available in the PATH or from hvr-ghc style ghc/cabal installation.
+* When using stack builds, `stack` and `ghc` are installed automatically, if
+  needed
+* For stack builds, if the package being tested does not have a `stack.yaml` it
+  can even create it automatically using `stack init`.
+### Build
 * build source
 * build benchmarks
 * build docs
+### Test
 * run tests
+### Lint
+* run `hlint`
+### Coverage and Coveralls
+* generate coverage report
+* send coverage report to coveralls.io
+### Create and Test Source Distribution
 * create source distribution
 * build from source distribution
 * test installation after build
 * perform distribution checks
-* generate coverage report
-* send coverage report to coveralls.io
 
 ## Usage Examples
 
 You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
+$ ./packcheck.sh cabal-new GHCVER=8.4.1
+$ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
+```
+
+```
 $ cd packcheck
 $ ./packcheck.sh stack RESOLVER=lts-11
 $ ./packcheck.sh stack GHCVER=8.2.2
 $ ./packcheck.sh stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24
-```
-
-```
-$ ./packcheck.sh cabal-new GHCVER=8.4.1
-$ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
 # You can also do a cabal build using stack installed ghc:
 $ stack exec ./packcheck.sh cabal RESOLVER=lts-11
 ```
@@ -106,8 +121,7 @@ $ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
 ```
 
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
-using `hpc-coveralls`.  Note that this currently works only with an old-style
-cabal build:
+using `hpc-coveralls`.
 ```
 $ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```

@@ -32,7 +32,7 @@ environment:
     # version.
     #STACKVER: "1.6.5"
     STACK_UPGRADE: "y"
-    RESOLVER: "lts-11"
+    RESOLVER: "lts-12"
     STACK_ROOT: "c:\\sr"
 
     # ------------------------------------------------------------------------
@@ -59,7 +59,7 @@ environment:
     # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "361f60103210d5e3788bc81f4fa795e1b47bc375"
+    PACKCHECK_GITHUB_COMMIT: "b31a6180f5c7658284bd60379fa6f1fc79d9a5f6"
 
 cache:
   - "%STACK_ROOT%"
