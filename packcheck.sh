@@ -783,6 +783,7 @@ ensure_ghc() {
 
   compiler="$(which_cmd ghc)"
   test -n "$compiler" || die "ghc $GHCVER not found in PATH [$PATH]"
+  echo "Using ghc at $compiler"
   echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
   if test -n "$GHCVER"
   then
@@ -948,7 +949,7 @@ determine_build_type() {
       if test $BUILD = "stack" -a -f "stack.yaml"
       then
         echo "No cabal file found but a stack.yaml file found, assuming a multipackage project."
-        echo "Setting DISABLE_SDIST_BUILD=y and clearing DISABLE_DIST_CHECKS and ENABLE_INSTALL"
+        echo "Setting DISABLE_SDIST_BUILD=y, DISABLE_DIST_CHECKS=y, and clearing ENABLE_INSTALL"
         MULTI_PACKAGE_PROJECT=true
         DISABLE_SDIST_BUILD=y
         DISABLE_DIST_CHECKS=y
@@ -957,7 +958,7 @@ determine_build_type() {
         if test $BUILD = "cabal-new" -a -f "cabal.project"
         then
           echo "No cabal file found but a cabal.project file found, assuming a multipackage project."
-          echo "Setting DISABLE_SDIST_BUILD=y and clearing DISABLE_DIST_CHECKS and ENABLE_INSTALL"
+          echo "Setting DISABLE_SDIST_BUILD=y, DISABLE_DIST_CHECKS=y, and clearing ENABLE_INSTALL"
           MULTI_PACKAGE_PROJECT=true
           DISABLE_SDIST_BUILD=y
           DISABLE_DIST_CHECKS=y
