@@ -198,6 +198,7 @@ SAFE_ENVVARS="\
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
   CABAL_NEWBUILD_OPTIONS \
+  CABAL_NEWBUILD_TARGETS \
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT_COMMANDS \
@@ -337,6 +338,7 @@ show_help() {
   show_step1 "cabal options"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL cabal new-build options to append"
+  help_envvar CABAL_NEWBUILD_TARGETS "cabal new-build targets, default is 'all'"
   help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL cabal old style configure options to append"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
@@ -515,13 +517,14 @@ EOF
 EOF
 )
   else
-    CABAL_DEP_OPTIONS="--only-dependencies"
-    test -n "$DISABLE_TEST" || \
-      CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
-    test -n "$DISABLE_BENCH" || \
-      CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
-    CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS $CABAL_NEWBUILD_OPTIONS"
+    #CABAL_DEP_OPTIONS="--only-dependencies"
+    #test -n "$DISABLE_TEST" || \
+    #  CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
+    #test -n "$DISABLE_BENCH" || \
+    #  CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
+    #CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS $CABAL_NEWBUILD_OPTIONS"
 
+    test -n "$CABAL_NEWBUILD_TARGETS" || CABAL_NEWBUILD_TARGETS=all
     CABAL_NEWBUILD_OPTIONS=$(cat << EOF
       $(test -n "$DISABLE_TEST" || echo "--enable-tests")
       $(test -n "$DISABLE_BENCH" || echo "--enable-benchmarks")
@@ -549,6 +552,7 @@ EOF
       cabal_only_var CABAL_CHECK_RELAX
       cabal_only_var CABAL_CONFIGURE_OPTIONS
       cabal_only_var CABAL_NEWBUILD_OPTIONS
+      cabal_only_var CABAL_NEWBUILD_TARGETS
       cabal_only_var CABAL_NO_SANDBOX
       cabal_only_var CABAL_HACKAGE_MIRROR
     fi
@@ -1103,7 +1107,7 @@ create_and_unpack_pkg_dist() {
 install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
-    cabal-new) run_verbose_errexit cabal new-build $CABAL_DEP_OPTIONS ;;
+    cabal-new) echo "No install dep step" ;;
     cabal) install_cabal_deps ;;
   esac
 }
@@ -1112,11 +1116,11 @@ build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-new)
-      run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS
+      run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $CABAL_NEWBUILD_OPTIONS
+      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
       echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test $CABAL_NEWBUILD_OPTIONS ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS ;;
     cabal)
       cabal_configure
       echo

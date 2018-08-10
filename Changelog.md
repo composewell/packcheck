@@ -2,6 +2,8 @@
 
 * Now packcheck works for multi-package stack repos as well.
 * Now packcheck works for multi-package cabal repos as well.
+* Add a version command
+* Add CABAL_NEWBUILD_TARGETS envvar
 
 ## 0.3.1
 

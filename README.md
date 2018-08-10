@@ -213,6 +213,7 @@ STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 cabal options
 --------------------------------------------------
 CABAL_NEWBUILD_OPTIONS  : ADDITIONAL cabal new-build options to append
+CABAL_NEWBUILD_TARGETS  : cabal new-build targets, default is 'all'
 CABAL_CONFIGURE_OPTIONS : ADDITIONAL cabal old style configure options to append
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
