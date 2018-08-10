@@ -720,20 +720,26 @@ function path_remove {
 find_binary () {
   local binary
   local path=$PATH
+  local removed_path
 
   binary=$(which_cmd $1)
   while test -n "$binary"
   do
     if test -z "$2" || check_version $binary $2
     then
+      PATH=$PATH$removed_path
       return 0
     else
       # remove it from the path and search again
       echo "Mismatching $1 version found at [$(dirname $binary)], removing it from PATH and trying again"
+      removed_path=$removed_path:$(dirname $binary)
       path_remove $(dirname $binary)
       binary="$(which_cmd $1)"
     fi
   done
+
+  # If we did not find the binary, restore the PATH for better error reporting
+  PATH=$path
 
   test -n "$TOOLS_DIR" || return 0
 
@@ -760,9 +766,7 @@ find_binary () {
       return 0
     fi
   fi
-  # If we did not find the binary, restore the PATH for better error reporting
-  PATH=$path
-  # This command does never fails even if we could not find the binary.
+  # This command never fails even if we could not find the binary.
   return 0
 }
 
@@ -783,8 +787,6 @@ ensure_ghc() {
 
   compiler="$(which_cmd ghc)"
   test -n "$compiler" || die "ghc $GHCVER not found in PATH [$PATH]"
-  echo "Using ghc at $compiler"
-  echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
   if test -n "$GHCVER"
   then
     check_version_die ghc $GHCVER
@@ -793,9 +795,17 @@ ensure_ghc() {
     # the snapshot.
     STACKCMD="$STACKCMD --system-ghc"
   fi
+
+  if test -n "$(need_stack)"
+  then
+    compiler=$($STACKCMD path --compiler-exe)
+  fi
+
+  echo "Using ghc at $compiler"
+  echo "$($compiler --version) [$($compiler --print-project-git-commit-id 2> /dev/null || echo '?')]"
   # Use the real version, the user might have specified a version prefix in
   # GHCVER
-  GHCVER=$(ghc --numeric-version) || exit 1
+  GHCVER=$($compiler --numeric-version) || exit 1
 }
 
 # XXX/TODO this may not work for cabal 1.24 config
