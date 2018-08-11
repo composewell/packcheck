@@ -151,7 +151,7 @@ show_machine_info() {
       lscpu | grep "^Archi\|^CPU\|^Bogo\|^Hyper\|^Virtualiz"
 
       echo "Memory:"
-      run_verbose free -h
+      run_verbose free -h || true
 
       show_step "Container/cgroup information"
       # See https://stackoverflow.com/questions/20010199/determining-if-a-process-runs-inside-lxc-docker
