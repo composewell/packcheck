@@ -22,7 +22,7 @@ env: &env
       # DISABLE_DOCS: "y"
       # DISABLE_SDIST_BUILD: "y"
       # DISABLE_DIST_CHECKS: "y"
-      # ENABLE_INSTALL: "y"
+      ENABLE_INSTALL: "y"
 
       # ------------------------------------------------------------------------
       # stack options
@@ -44,8 +44,8 @@ env: &env
       # ------------------------------------------------------------------------
       # Where to find the required tools
       # ------------------------------------------------------------------------
-      #PATH: /bin:/usr/bin
-      TOOLS_DIR: /opt
+      PATH: /opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
+      #TOOLS_DIR: /opt
 
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
@@ -54,12 +54,11 @@ env: &env
       # you can use it by specifying the PACKCHECK_REPO_URL option below in which
       # case it will be automatically copied from the packcheck repo to this path
       # during CI tests. In any case it is finally invoked from this path.
-      PACKCHECK_LOCAL_PATH: "./packcheck.sh"
-      # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
+      PACKCHECK: "./packcheck.sh"
+      # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
       PACKCHECK_GITHUB_COMMIT: "e78ad4b50eb17795ea4a58fcd79dffbb0c8979c6"
-      PACKCHECK_CMD: "$PACKCHECK_LOCAL_PATH $BUILD PATH=/opt/ghc/bin:$PATH"
 
     docker:
       - image: debian:stretch
@@ -87,8 +86,8 @@ preinstall: &preinstall
         # Get packcheck if needed
         CURL=$(which curl)
         PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
-        if test ! -e "$PACKCHECK_LOCAL_PATH"; then $CURL -sL -o "$PACKCHECK_LOCAL_PATH" $PACKCHECK_URL; fi;
-        chmod +x $PACKCHECK_LOCAL_PATH
+        if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
+        chmod +x $PACKCHECK
 
 restore: &restore
   # Needs to happen after installing ca-certificates
@@ -109,6 +108,59 @@ save: &save
 #-----------------------------------------------------------------------------
 
 jobs:
+  cabal-ghc-8.4.3:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.4.3
+              apt-get install -y cabal-install-2.2
+              bash -c "$PACKCHECK cabal-new"
+        - *save
+  cabal-ghc-8.2.2:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.2.2
+              apt-get install -y cabal-install-2.0
+              bash -c "$PACKCHECK cabal-new"
+        - *save
+  cabal-ghc-8.0.2:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.0.2
+              apt-get install -y cabal-install-1.24
+              bash -c "$PACKCHECK cabal"
+        - *save
+  cabal-ghc-7.10.3:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-7.10.3
+              apt-get install -y cabal-install-1.22
+              bash -c "$PACKCHECK cabal"
+        - *save
+  stack-ghc-8.4.3:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+            bash -c "$PACKCHECK stack RESOLVER=lts-12"
+        - *save
   coveralls:
       <<: *env
       steps:
@@ -117,7 +169,6 @@ jobs:
         - *restore
         - run:
             environment:
-              BUILD: cabal
               COVERALLS_OPTIONS: "--repo-token=cqLlrBTwrEm9IuaxJdzeLN76cTsZQ15kZ --coverage-mode=StrictlyFullLines --exclude-dir=test test"
             command: |
               apt-get install -y ghc-8.2.2
@@ -125,11 +176,16 @@ jobs:
               # required by hpc-coveralls
               apt-get install -y libcurl4-gnutls-dev
               apt-get install -y git
-              bash -c "$PACKCHECK_CMD"
+              bash -c "$PACKCHECK cabal"
         - *save
 
 workflows:
   version: 2
   build:
     jobs:
+      - cabal-ghc-8.4.3
+      #- cabal-ghc-8.2.2
+      #- cabal-ghc-8.0.2
+      #- cabal-ghc-7.10.3
+      - stack-ghc-8.4.3
       - coveralls
