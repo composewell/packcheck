@@ -1,7 +1,7 @@
 ## Unreleased
 
-* Now packcheck works for multi-package stack repos as well.
-* Now packcheck works for multi-package cabal repos as well.
+* Add support for circle CI
+* Add support for multi-package stack as well as cabal repos
 * Add a version command
 * Add CABAL_NEWBUILD_TARGETS envvar
 
