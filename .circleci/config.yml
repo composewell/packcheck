@@ -177,7 +177,7 @@ jobs:
         - run: |
             bash -c "$PACKCHECK stack RESOLVER=lts-11"
         - *save
-  coveralls:
+  coveralls-ghc-8.2.2:
       <<: *env
       steps:
         - checkout
@@ -204,5 +204,5 @@ workflows:
       #- cabal-ghc-8.0.2
       #- cabal-ghc-7.10.3
       #- stack-ghc-8.4.3
-      - stack-ghc-8.2.2
-      - coveralls
+      #- stack-ghc-8.2.2
+      - coveralls-ghc-8.2.2
