@@ -58,7 +58,7 @@ env: &env
       # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "e4c2137e43a8cc47405a97ae84878e192e086bdb"
+      PACKCHECK_GITHUB_COMMIT: "e78ad4b50eb17795ea4a58fcd79dffbb0c8979c6"
       PACKCHECK_CMD: "$PACKCHECK_LOCAL_PATH $BUILD PATH=/opt/ghc/bin:$PATH"
 
     docker:
