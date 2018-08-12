@@ -946,6 +946,7 @@ get_pkg_full_name() {
 
 determine_build_type() {
   MULTI_PACKAGE_PROJECT=false
+  echo "Looking for cabal or stack build files in the current directory..."
   local name=$(echo *.cabal)
   if test "$name" = "*.cabal"
   then
@@ -985,6 +986,8 @@ determine_build_type() {
       echo "Either there are multiple cabal files in the directory"
       echo "or the cabal file is not a regular file."
       die "cabal files: $name"
+    else
+      echo "Found [$name]"
     fi
   fi
 }
