@@ -93,11 +93,11 @@ preinstall: &preinstall
 restore: &restore
   # Needs to happen after installing ca-certificates
   restore_cache:
-      key: v1-{{ .Environment.CIRCLE_JOB }}
+    key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
 
 save: &save
   save_cache:
-      key: v1-{{ .Environment.CIRCLE_JOB }}
+      key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
       paths:
         - ~/.cabal
         - ~/.ghc

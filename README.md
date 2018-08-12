@@ -3,28 +3,37 @@
 [![Hackage](https://img.shields.io/hackage/v/packcheck.svg?style=flat)](https://hackage.haskell.org/package/packcheck)
 [![Build Status](https://travis-ci.org/harendra-kumar/packcheck.svg?branch=master)](https://travis-ci.org/harendra-kumar/packcheck)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
+[![CircleCI](https://circleci.com/gh/harendra-kumar/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/harendra-kumar/packcheck/tree/master)
 [![Coverage Status](https://coveralls.io/repos/harendra-kumar/packcheck/badge.svg?branch=master&service=github)](https://coveralls.io/github/harendra-kumar/packcheck?branch=master)
 
-## Push-button CI for Haskell Packages
+## Quick Start
 
-* For CI, just copy
-  [.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml)
-  and
-  [appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml)
-  files to your package repo, add your repo to travis/appveyor and CI will just
-  work. Uncomment the relevant lines in `.travis.yml` to enable CI for more
-  configs.
-* For local use, copy
-  [packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
-  to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
-  from your package directory. You can pass the same evironment variables that
-  are used in CI files to run the exact same tests locally. Usage is as simple
-  as:
-  ```
-  $ packcheck.sh cabal-new
-  $ packcheck.sh cabal
-  $ packcheck.sh stack
-  ```
+### CI
+To enable CI for your repo, just copy the relevant CI config file i.e.
+[.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml),
+[appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml),
+or
+[.circleci/config.yml](https://github.com/harendra-kumar/packcheck/blob/master/.circleci/config.yml)
+to your package repo, add your repo to travis/appveyor/circleci and CI should just
+work for most packages. Uncomment the relevant lines in the CI config files to enable CI for more
+configs. Just modify some environment variables in the configs to control
+everything about the build.
+
+### Local Machine
+For local use, copy
+[packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
+to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
+from your package directory. You can pass the same evironment variables that
+are used in CI files to run the exact same tests locally. Usage is as simple
+as:
+```
+$ packcheck.sh cabal-new
+$ packcheck.sh cabal
+$ packcheck.sh stack
+```
+
+### Some Key Points
+
 * If a CI build fails just copy and paste the command printed in the log and
   the same build runs on the local machine so that you can debug quickly.
 * To send coverage info to [coveralls.io](https://coveralls.io) just
@@ -32,7 +41,8 @@
 * If you are using `hvr-ghc` PPA, just use `TOOLS_DIR=/opt` or the path where
   it is installed, and you can use all the ghc/cabal versions available,
   automatically.
-* Conveniently control all aspects of build, including tool options or whether
+* Conveniently control all aspects of build through command line or environment
+  variables, including tool options or whether
   to enable benchmarks, haddock, coverage, install test etc. It is a very
   powerful tool, can do whatever you can imagine, see full reference at the
   end.
@@ -42,11 +52,16 @@
 * The most important part is that you can run exact same tests, in the same
   way, everywhere:
 
-| Platforms     | CI Modes      | Build Types     |
-|:-------------:|:-------------:|:---------------:|
-| Linux         | Travis        | stack           |
-| OSX           | Appveyor      | cabal           |
-| Windows       | Local Machine | cabal new-build |
+### Out of the box support
+
+| Platforms     | Build Types     | CI Modes      |
+|:-------------:|:---------------:|:-------------:|
+| Linux         | stack           | Travis        |
+| OSX           | cabal           | Appveyor      |
+| Windows       | cabal new-build | CircleCI      |
+|               |                 | Local Machine |
+
+The script can be easily adapted to any CI with a single line build command.
 
 ## What is it?
 
@@ -56,10 +71,16 @@ comprehensively sanity test a Haskell package across build tools (stack/cabal)
 and across all platforms (Linux/MacOS/Windows).  You do not need to be familiar
 with any of the build tools to use it.
 
-`packcheck` is a minimal yet complete "hello world" Haskell package
-with model `travis` and `appveyor` config files that can be used unmodified in
-any Haskell package. The CI configs can be modified **declaratively** to adapt
-to **any** kind of build scenario you can imagine.
+To make sure that it works everywhere without installing anything it is
+deliberately written in bash. Any of the parameters to control the builds can
+either be passed on the script command line or as environment variables for
+convenient use on CI systems.
+
+`packcheck` is also a minimal yet complete "hello world" Haskell package with
+model `travis` and `appveyor` config files that can be used unmodified in any
+Haskell package. The CI configs can be modified **declaratively**, using
+environment variables, to adapt to **any** kind of build scenario you can
+imagine.
 
 This model package has everything that a Haskell package usually has; including
 tests, benchmarks and Linux/MacOS/Windows CI already working. It can be used as
@@ -128,22 +149,10 @@ $ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 
 ## Full Reference
 
-Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
-local machine sometimes it may not be desirable as it will change the
-state of your global cabal config, so consider that before using these options.
-
-By default cabal builds are done using sandboxes. It creates any temporary
-files or build artifacts inside `.packcheck` directory. See the `clean` and
-`cleanall` commands to release the temporary space.
-
-`stack` is automatically installed and can be used to do cabal builds as well.
-If you specify `BUILD=cabal-new` and `RESOLVER` at the same time then the cabal
-build uses stack installed `cabal` and `ghc`, both are installed automatically
-when needed.
-
-For pure cabal builds i.e. when `BUILD=cabal-new` and `RESOLVER` is not
-specified, `cabal` and `ghc` must be pre-installed on the system before
-building.
+NOTE: Any of the parameters described below can either be passed on command
+line or as an environment variable. On a CI system you can just use a common
+command and control the build behavior for different builds using environment
+variables.
 
 ```
 $ packcheck.sh --help
@@ -236,6 +245,23 @@ Diagnostics options
 CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
 BASE_TIME               : System time to be used as base for timeline reporting
 ```
+
+Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
+local machine sometimes it may not be desirable as it will change the
+state of your global cabal config, so consider that before using these options.
+
+By default cabal builds are done using sandboxes. It creates any temporary
+files or build artifacts inside `.packcheck` directory. See the `clean` and
+`cleanall` commands to release the temporary space.
+
+`stack` is automatically installed and can be used to do cabal builds as well.
+If you specify `BUILD=cabal-new` and `RESOLVER` at the same time then the cabal
+build uses stack installed `cabal` and `ghc`, both are installed automatically
+when needed.
+
+For pure cabal builds i.e. when `BUILD=cabal-new` and `RESOLVER` is not
+specified, `cabal` and `ghc` must be pre-installed on the system before
+building.
 
 ## Diagnostics
 
