@@ -58,7 +58,7 @@ env: &env
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "e78ad4b50eb17795ea4a58fcd79dffbb0c8979c6"
+      PACKCHECK_GITHUB_COMMIT: "16029b049135d9f1ad51469f68290797fa3c33a8"
 
     docker:
       - image: debian:stretch
