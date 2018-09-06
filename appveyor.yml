@@ -61,6 +61,10 @@ environment:
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
     PACKCHECK_GITHUB_COMMIT: "16029b049135d9f1ad51469f68290797fa3c33a8"
 
+    # Override the temp directory to avoid sed escaping issues
+    # See https://github.com/haskell/cabal/issues/5386
+    TMP: "c:\\tmp"
+
 cache:
   - "%STACK_ROOT%"
   - "%LOCAL_BIN%"
