@@ -1,9 +1,10 @@
-## Unreleased
+## 0.4.0
 
 * Add support for circle CI
 * Add support for multi-package stack as well as cabal repos
 * Add a version command
-* Add CABAL_NEWBUILD_TARGETS envvar
+* Add CABAL_NEWBUILD_TARGETS envvar to build specific targets
+* Add GHC 8.6.1 in build matrices
 
 ## 0.3.1
 
