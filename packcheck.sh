@@ -20,7 +20,7 @@
 # Utility functions
 #------------------------------------------------------------------------------
 
-PACKCHECK_VERSION=0.3.1
+PACKCHECK_VERSION=0.4.0
 
 show_version() {
   echo "packcheck version $PACKCHECK_VERSION"
