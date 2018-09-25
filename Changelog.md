@@ -1,3 +1,7 @@
+## 0.4.1
+
+* Disable hpc-coveralls by default
+
 ## 0.4.0
 
 * Add support for circle CI
