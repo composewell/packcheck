@@ -126,15 +126,15 @@ jobs:
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-new"
         - *save
-  cabal-ghc-8.4.3:
+  cabal-ghc-8.4.4:
       <<: *env
       steps:
         - checkout
         - *preinstall
         - *restore
         - run: |
-              apt-get install -y ghc-8.4.3
-              apt-get install -y cabal-install-2.2
+              apt-get install -y ghc-8.4.4
+              apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-new"
         - *save
   cabal-ghc-8.2.2:
@@ -145,7 +145,7 @@ jobs:
         - *restore
         - run: |
               apt-get install -y ghc-8.2.2
-              apt-get install -y cabal-install-2.0
+              apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-new"
         - *save
   cabal-ghc-8.0.2:
@@ -156,7 +156,7 @@ jobs:
         - *restore
         - run: |
               apt-get install -y ghc-8.0.2
-              apt-get install -y cabal-install-1.24
+              apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal"
         - *save
   cabal-ghc-7.10.3:
@@ -167,10 +167,10 @@ jobs:
         - *restore
         - run: |
               apt-get install -y ghc-7.10.3
-              apt-get install -y cabal-install-1.22
+              apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal"
         - *save
-  stack-ghc-8.4.3:
+  stack-ghc-8.4:
       <<: *env
       steps:
         - checkout
@@ -179,7 +179,7 @@ jobs:
         - run: |
             bash -c "$PACKCHECK stack RESOLVER=lts-12"
         - *save
-  stack-ghc-8.2.2:
+  stack-ghc-8.2:
       <<: *env
       steps:
         - checkout
@@ -211,10 +211,10 @@ workflows:
   build:
     jobs:
       - cabal-ghc-8.6.1
-      #- cabal-ghc-8.4.3
+      #- cabal-ghc-8.4.4
       #- cabal-ghc-8.2.2
       #- cabal-ghc-8.0.2
       #- cabal-ghc-7.10.3
-      #- stack-ghc-8.4.3
-      #- stack-ghc-8.2.2
+      #- stack-ghc-8.4
+      #- stack-ghc-8.2
       #- coveralls-ghc-8.2.2
