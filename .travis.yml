@@ -85,8 +85,8 @@ matrix:
   - env: BUILD=cabal-new GHCVER=8.6.1
     addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.1], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal-new GHCVER=8.4.3
-    addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.3], sources: [hvr-ghc]}}
+  - env: BUILD=cabal-new GHCVER=8.4.4
+    addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
 
   #- env: BUILD=cabal-new GHCVER=8.2.2
   #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
@@ -111,17 +111,17 @@ matrix:
   #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   # Using cabal-install-1.24 for stack solver to work
-  - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4.3
+  - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
     addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   # Use cabal-install-1.24 for stack solver to work
-  - env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2.2
+  - env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2
     addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  #- env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0.2
+  #- env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0
   #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10.3
+  #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10
   #  addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
 
   # You can keep a STACK_YAML file at any path location
@@ -134,12 +134,12 @@ matrix:
   # OS X builds
   # --------------------------------------------------------------------------
 
-  # GHC 8.4.3 cabal build using stack!
-  - env: BUILD=cabal-new RESOLVER=lts-12 GHCVER=8.4.3
+  # GHC 8.4 cabal build using stack!
+  - env: BUILD=cabal-new RESOLVER=lts-12 GHCVER=8.4
     os: osx
 
-  # GHC 8.4.3/stack
-  #- env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4.3
+  # GHC 8.4/stack
+  #- env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
   #  os: osx
 
   # --------------------------------------------------------------------------
