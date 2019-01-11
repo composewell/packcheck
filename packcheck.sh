@@ -179,6 +179,7 @@ show_machine_info() {
 
 SAFE_ENVVARS="\
   RESOLVER \
+  ENABLE_GHCJS \
   GHCVER \
   CABALVER \
   GHC_OPTIONS \
@@ -303,6 +304,7 @@ show_help() {
   help_cmd "--version" "show packcheck version"
 
   show_step1 "Selecting tool versions"
+  help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
@@ -377,6 +379,7 @@ check_all_boolean_vars () {
     ENABLE_INSTALL="$TEST_INSTALL"
     unset TEST_INSTALL
   fi
+  check_boolean_var ENABLE_GHCJS
   check_boolean_var ENABLE_INSTALL
   check_boolean_var DISABLE_BENCH
   check_boolean_var DISABLE_TEST
@@ -483,6 +486,12 @@ stack_only_var() {
 
 verify_build_config() {
   test -z "$COVERALLS_OPTIONS" || COVERAGE=y
+  if test -n "$ENABLE_GHCJS"
+  then
+    test "$BUILD" = "cabal-new" || die "ENABLE_GHCJS works only with build type 'cabal-new'"
+    COMPILER=ghcjs
+    GHCJS_FLAG=--ghcjs
+  fi
 
   if test "$BUILD" = stack
   then
@@ -774,8 +783,8 @@ ensure_ghc() {
   local found
   local compiler
   # If there is a ghc in PATH then use that otherwise install it using stack
-  find_binary ghc "$GHCVER"
-  found="$(which_cmd ghc)"
+  find_binary "$COMPILER" "$GHCVER"
+  found="$(which_cmd $COMPILER)"
   if test -n "$(need_stack)" -a -z "$found"
   then
     # Use stack supplied ghc
@@ -785,11 +794,11 @@ ensure_ghc() {
     echo
   fi
 
-  compiler="$(which_cmd ghc)"
-  test -n "$compiler" || die "ghc $GHCVER not found in PATH [$PATH]"
+  compiler="$(which_cmd $COMPILER)"
+  test -n "$compiler" || die "$COMPILER $GHCVER not found in PATH [$PATH]"
   if test -n "$GHCVER"
   then
-    check_version_die ghc $GHCVER
+    check_version_die $COMPILER $GHCVER
     # If the user specified GHCVER then use it as system-ghc
     # Stack will still silently choose its own ghc if the ghc does not match
     # the snapshot.
@@ -801,7 +810,7 @@ ensure_ghc() {
     compiler=$($STACKCMD path --compiler-exe)
   fi
 
-  echo "Using ghc at $compiler"
+  echo "Using $COMPILER at $compiler"
   echo "$($compiler --version) [$($compiler --print-project-git-commit-id 2> /dev/null || echo '?')]"
   # Use the real version, the user might have specified a version prefix in
   # GHCVER
@@ -1018,7 +1027,12 @@ ensure_cabal_config() {
 
     echo
     echo "cabal update"
-    retry_cmd cabal update
+    if test "$BUILD" = cabal 
+    then
+      retry_cmd cabal update
+    else
+      retry_cmd cabal new-update
+    fi
   fi
 }
 
@@ -1068,9 +1082,9 @@ create_and_unpack_pkg_dist() {
   elif test -n "$CABAL_USE_STACK_SDIST"
   then
     # When custom setup is used we need to configure before we can use sdist.
-    run_verbose_errexit $SDIST_STACKCMD --compiler=ghc-$GHCVER build --only-configure
-    SDIST_CMD="$SDIST_STACKCMD --compiler=ghc-$GHCVER sdist $opts"
-    SDIST_DIR=$($SDIST_STACKCMD --compiler=ghc-$GHCVER path --dist-dir) || exit 1
+    run_verbose_errexit $SDIST_STACKCMD --compiler=$COMPILER-$GHCVER build --only-configure
+    SDIST_CMD="$SDIST_STACKCMD --compiler=$COMPILER-$GHCVER sdist $opts"
+    SDIST_DIR=$($SDIST_STACKCMD --compiler=$COMPILER-$GHCVER path --dist-dir) || exit 1
   else
     # XXX We need to configure to use sdist and we need to install
     # dependencies to configure. So to just create the sdist we will
@@ -1130,11 +1144,11 @@ build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-new)
-      run_verbose_errexit cabal new-build $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
+      run_verbose_errexit cabal new-build $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
+      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
       echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS ;;
     cabal)
       cabal_configure
       echo
@@ -1249,6 +1263,14 @@ build_compile () {
 
   if test -z "$DISABLE_SDIST_BUILD"
   then
+    if test -f "./configure.ac"
+    then
+      echo "Package contains a 'configure.ac' file."
+      echo "Checking for availability of 'autoreconf' command to regenerate "
+      echo "the configure script before testing. Use DISABLE_SDIST_BUILD "
+      echo "option if you do not have 'autoreconf' available"
+      require_cmd autoreconf
+    fi
     # Note this function leaves us in the package dir unpacked from sdist
     show_step "Prepare to build from source distribution"
     create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
