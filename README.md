@@ -28,6 +28,7 @@ are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
 $ packcheck.sh cabal-new
+$ packcheck.sh cabal-new ENABLE_GHCJS=y
 $ packcheck.sh cabal
 $ packcheck.sh stack
 ```
@@ -61,6 +62,8 @@ $ packcheck.sh stack
 | Windows       | cabal new-build | CircleCI      |
 |               |                 | Local Machine |
 
+GHCJS builds are also supported. See
+[.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml) for GHCJS CI build example.
 The script can be easily adapted to any CI with a single line build command.
 
 ## What is it?
@@ -182,6 +185,7 @@ help                    : show this help message
 --------------------------------------------------
 Selecting tool versions
 --------------------------------------------------
+ENABLE_GHCJS            : [y] Use GHCJS instead of GHC to build
 GHCVER                  : [a.b.c] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack

@@ -1,3 +1,7 @@
+## Unreleased
+
+* Add GHCJS support. Use ENABLE_GHCJS=y option.
+
 ## 0.4.1
 
 * Disable hpc-coveralls by default

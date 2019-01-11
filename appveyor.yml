@@ -32,7 +32,7 @@ environment:
     # version.
     #STACKVER: "1.6.5"
     STACK_UPGRADE: "y"
-    RESOLVER: "lts-12"
+    RESOLVER: "lts-13"
     STACK_ROOT: "c:\\sr"
 
     # ------------------------------------------------------------------------
@@ -59,7 +59,7 @@ environment:
     # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/harendra-kumar/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "16029b049135d9f1ad51469f68290797fa3c33a8"
+    PACKCHECK_GITHUB_COMMIT: "e6f26a690b4d1b93584954b62fa33071a06842f0"
 
     # Override the temp directory to avoid sed escaping issues
     # See https://github.com/haskell/cabal/issues/5386

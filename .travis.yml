@@ -57,7 +57,7 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="16029b049135d9f1ad51469f68290797fa3c33a8"
+  - PACKCHECK_GITHUB_COMMIT="e6f26a690b4d1b93584954b62fa33071a06842f0"
 
 notifications:
   email:
@@ -82,11 +82,11 @@ matrix:
   #- env: BUILD=cabal-new GHCVER=head
   #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
-  - env: BUILD=cabal-new GHCVER=8.6.1
-    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.1], sources: [hvr-ghc]}}
+  - env: BUILD=cabal-new GHCVER=8.6.3
+    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.3], sources: [hvr-ghc]}}
 
   - env: BUILD=cabal-new GHCVER=8.4.4
-    addons: {apt: {packages: [cabal-install-2.2,ghc-8.4.4], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-2.4,ghc-8.4.4], sources: [hvr-ghc]}}
 
   #- env: BUILD=cabal-new GHCVER=8.2.2
   #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
@@ -102,6 +102,18 @@ matrix:
   #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
+  # GHCJS cabal builds
+  # --------------------------------------------------------------------------
+
+  # Use CABAL_NEWBUILD_OPTIONS to pass any options to cabal e.g. project-file
+  - env: BUILD=cabal-new ENABLE_GHCJS=y CABAL_NEWBUILD_OPTIONS="" DISABLE_DOCS=y
+    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+    before_install:
+    - sudo add-apt-repository ppa:hvr/ghcjs -y
+    - sudo apt-get update -q
+    - sudo apt-get install ghcjs-8.4 -y
+
+  # --------------------------------------------------------------------------
   # (Linux) stack builds (BUILD=stack). Some common envvars for stack builds
   # are: STACK_YAML, STACK_OPTIONS, STACK_BUILD_OPTIONS
   # --------------------------------------------------------------------------
@@ -110,13 +122,17 @@ matrix:
   #- env: BUILD=stack RESOLVER=nightly
   #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  # Using cabal-install-1.24 for stack solver to work
+  # Use cabal-install-1.24 if you want stack solver to work
+  - env: BUILD=stack RESOLVER=lts-13 GHCVER=8.6
+    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+
+  # Use cabal-install-1.24 if you want stack solver to work
   - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
-    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
 
   # Use cabal-install-1.24 for stack solver to work
-  - env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2
-    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
+  #- env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2
+  #addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   #- env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0
   #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
@@ -134,8 +150,8 @@ matrix:
   # OS X builds
   # --------------------------------------------------------------------------
 
-  # GHC 8.4 cabal build using stack!
-  - env: BUILD=cabal-new RESOLVER=lts-12 GHCVER=8.4
+  # GHC 8.6 cabal build using stack!
+  - env: BUILD=cabal-new RESOLVER=lts-13 GHCVER=8.6
     os: osx
 
   # GHC 8.4/stack
@@ -169,7 +185,7 @@ matrix:
   allow_failures:
   - env: BUILD=cabal-new GHCVER=head
   - env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=stack RESOLVER=lts-12 HLINT_COMMANDS="hlint lint ."
+  - env: BUILD=stack RESOLVER=lts-13 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------
 #  Settings beyond this point are advanced and normally not tweaked
@@ -181,6 +197,7 @@ cache:
   directories:
   - $HOME/.cabal
   - $HOME/.ghc
+  - $HOME/.ghcjs
   - $HOME/.local
   - $HOME/.stack
 install: true
