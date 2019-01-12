@@ -491,6 +491,8 @@ verify_build_config() {
     test "$BUILD" = "cabal-new" || die "ENABLE_GHCJS works only with build type 'cabal-new'"
     COMPILER=ghcjs
     GHCJS_FLAG=--ghcjs
+  else
+    COMPILER=ghc
   fi
 
   if test "$BUILD" = stack

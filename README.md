@@ -1,19 +1,19 @@
 # packcheck
 
 [![Hackage](https://img.shields.io/hackage/v/packcheck.svg?style=flat)](https://hackage.haskell.org/package/packcheck)
-[![Build Status](https://travis-ci.org/harendra-kumar/packcheck.svg?branch=master)](https://travis-ci.org/harendra-kumar/packcheck)
-[![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
-[![CircleCI](https://circleci.com/gh/harendra-kumar/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/harendra-kumar/packcheck/tree/master)
-[![Coverage Status](https://coveralls.io/repos/harendra-kumar/packcheck/badge.svg?branch=master&service=github)](https://coveralls.io/github/harendra-kumar/packcheck?branch=master)
+[![Build Status](https://travis-ci.org/composewell/packcheck.svg?branch=master)](https://travis-ci.org/composewell/packcheck)
+[![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/composewell/packcheck)
+[![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)
+[![Coverage Status](https://coveralls.io/repos/composewell/packcheck/badge.svg?branch=master&service=github)](https://coveralls.io/github/composewell/packcheck?branch=master)
 
 ## Quick Start
 
 ### CI
 To enable CI for your repo, just copy the relevant CI config file i.e.
-[.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml),
-[appveyor.yml](https://github.com/harendra-kumar/packcheck/blob/master/appveyor.yml),
+[.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
+[appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
 or
-[.circleci/config.yml](https://github.com/harendra-kumar/packcheck/blob/master/.circleci/config.yml)
+[.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
 to your package repo, add your repo to travis/appveyor/circleci and CI should just
 work for most packages. Uncomment the relevant lines in the CI config files to enable CI for more
 configs. Just modify some environment variables in the configs to control
@@ -21,7 +21,7 @@ everything about the build.
 
 ### Local Machine
 For local use, copy
-[packcheck.sh](https://github.com/harendra-kumar/packcheck/blob/master/packcheck.sh)
+[packcheck.sh](https://github.com/composewell/packcheck/blob/master/packcheck.sh)
 to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
 from your package directory. You can pass the same evironment variables that
 are used in CI files to run the exact same tests locally. Usage is as simple
@@ -63,7 +63,7 @@ $ packcheck.sh stack
 |               |                 | Local Machine |
 
 GHCJS builds are also supported. See
-[.travis.yml](https://github.com/harendra-kumar/packcheck/blob/master/.travis.yml) for GHCJS CI build example.
+[.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml) for GHCJS CI build example.
 The script can be easily adapted to any CI with a single line build command.
 
 ## What is it?
