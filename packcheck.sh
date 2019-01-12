@@ -935,13 +935,11 @@ get_pkg_full_name() {
   then
     if test -n "$ENABLE_INSTALL"
     then
-      echo "'cabal info' command failed to determine package name."
-      die "Please disable install test by using 'ENABLE_INSTALL=' to avoid this issue."
+      die "'cabal info' command failed to determine package name.\nPlease disable install test by using 'ENABLE_INSTALL=' to avoid this issue."
     fi
     if test -z "$DISABLE_SDIST_BUILD"
     then
-      echo "'cabal info' command failed to determine package name."
-      die "Please use 'DISABLE_SDIST_BUILD=y' to avoid this issue."
+      die "'cabal info' command failed to determine package name.\nPlease use 'DISABLE_SDIST_BUILD=y' to avoid this issue."
     fi
   else
     if test "${pkgname}${full_name#$pkgname}" != "${full_name}"
@@ -1258,7 +1256,10 @@ build_compile () {
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
   dont_need_cabal || ensure_cabal_config
-  dont_need_cabal || $MULTI_PACKAGE_PROJECT || determine_package_full_name
+  if test -z "$DISABLE_SDIST_BUILD" -o -n "$ENABLE_INSTALL"
+  then
+    determine_package_full_name
+  fi
   test -z "$(need_stack)" || ensure_stack_yaml
 
   if test -z "$DISABLE_SDIST_BUILD"
