@@ -826,6 +826,15 @@ ensure_ghc() {
   # Use the real version, the user might have specified a version prefix in
   # GHCVER
   GHCVER=$($compiler --numeric-version) || exit 1
+
+  if test -n "$ENABLE_GHCJS"
+  then
+    require_cmd node
+    local node
+    node="$(which_cmd node)"
+    echo "Using node at [$node]"
+    echo "$($node --version)"
+  fi
 }
 
 # XXX/TODO this may not work for cabal 1.24 config
