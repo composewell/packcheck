@@ -1190,7 +1190,7 @@ build_and_test() {
       echo
       test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
       echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test --show-details=always $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS ;;
     cabal)
       cabal_configure
       echo
