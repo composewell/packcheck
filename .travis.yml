@@ -2,6 +2,8 @@
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/harendra-kumar/packcheck for all
 # options and their explanation.
+# dist: trusty
+dist: xenial
 env:
   # ------------------------------------------------------------------------
   # Global options, you can use these per build as well
@@ -57,7 +59,7 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="279b98d8243181b0f6ef1dd8b9a472cb6a6b53ec"
+  - PACKCHECK_GITHUB_COMMIT="82878e1fdc2a575719cf405c84f283c6368a4b7a"
 
 notifications:
   email:
@@ -106,12 +108,15 @@ matrix:
   # --------------------------------------------------------------------------
 
   # Use CABAL_NEWBUILD_OPTIONS to pass any options to cabal e.g. project-file
-  #- env: BUILD=cabal-new ENABLE_GHCJS=y CABAL_NEWBUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
-  #  addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
-  #  before_install:
-  #  - sudo add-apt-repository ppa:hvr/ghcjs -y
-  #  - sudo apt-get update -q
-  #  - sudo apt-get install ghcjs-8.4 -y
+  - env: BUILD=cabal-new ENABLE_GHCJS=y CABAL_NEWBUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
+    addons:
+      apt:
+        sources:
+        - hvr-ghc
+        - sourceline: 'ppa:hvr/ghcjs'
+        - sourceline: 'deb https://deb.nodesource.com/node_11.x xenial main'
+          key_url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key'
+        packages: [cabal-install-2.4,ghcjs-8.4]
 
   # --------------------------------------------------------------------------
   # (Linux) stack builds (BUILD=stack). Some common envvars for stack builds
