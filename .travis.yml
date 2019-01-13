@@ -91,13 +91,13 @@ matrix:
     addons: {apt: {packages: [cabal-install-2.4,ghc-8.4.4], sources: [hvr-ghc]}}
 
   #- env: BUILD=cabal-new GHCVER=8.2.2
-  #  addons: {apt: {packages: [cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
+  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.2.2], sources: [hvr-ghc]}}
 
   #- env: BUILD=cabal GHCVER=8.0.2
-  #  addons: {apt: {packages: [cabal-install-1.24,ghc-8.0.2], sources: [hvr-ghc]}}
+  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.0.2], sources: [hvr-ghc]}}
 
   #- env: BUILD=cabal GHCVER=7.10.3
-  #  addons: {apt: {packages: [cabal-install-1.22,ghc-7.10.3], sources: [hvr-ghc]}}
+  #  addons: {apt: {packages: [cabal-install-2.4,ghc-7.10.3], sources: [hvr-ghc]}}
 
   # You can specify build flags like this:
   #- env: BUILD=cabal-new CABAL_NEWBUILD_OPTIONS="--flags=dev"
@@ -127,13 +127,13 @@ matrix:
   #- env: BUILD=stack RESOLVER=nightly
   #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  # Use cabal-install-1.24 if you want stack solver to work
+  # Using cabal-install-1.24 for stack solver to work
   - env: BUILD=stack RESOLVER=lts-13 GHCVER=8.6
-    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
-  # Use cabal-install-1.24 if you want stack solver to work
+  # Using cabal-install-1.24 for stack solver to work
   - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
-    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   # Use cabal-install-1.24 for stack solver to work
   #- env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2
@@ -143,7 +143,7 @@ matrix:
   #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10
-  #  addons: {apt: {packages: [cabal-install-1.22], sources: [hvr-ghc]}}
+  #  addons: {apt: {packages: [cabal-install-1.24], sources: [hvr-ghc]}}
 
   # You can keep a STACK_YAML file at any path location
   #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
@@ -167,7 +167,7 @@ matrix:
   # Lint e.g. HLINT_COMMANDS="hlint lint src; hlint lint test"
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=stack RESOLVER=lts-12 HLINT_COMMANDS="hlint lint ."
+  #- env: BUILD=stack RESOLVER=lts-13 HLINT_COMMANDS="hlint lint ."
 
   # --------------------------------------------------------------------------
   # Build and send coverage report to coveralls.io using hpc-coveralls.  Add
