@@ -829,11 +829,35 @@ ensure_ghc() {
 
   if test -n "$ENABLE_GHCJS"
   then
-    require_cmd node
-    local node
-    node="$(which_cmd node)"
-    echo "Using node at [$node]"
-    echo "$($node --version)"
+    local tmpdir
+    local shebang
+    local nodepath
+    local output
+
+    # XXX the temp file may not get removed on crash/interrupt
+    tmpdir=`mktemp -d 2>/dev/null || mktemp -d -t 'packcheck'`
+    echo "main=putStrLn \"hello\"" > $tmpdir/test.hs
+    $compiler -build-runner -o ${tmpdir}/run $tmpdir/test.hs
+    shebang=$(head -1 ${tmpdir}/run)
+    nodepath=${shebang:2}
+    echo "$compiler uses node at [${nodepath}] for executing js output"
+    if test -x $nodepath
+    then
+      echo "$nodepath is version [$($nodepath --version)]" || die "Cannot determine node version"
+    else
+      rm -rf $tmpdir
+      die "[$nodepath] not found or not executable"
+    fi
+    echo "Trying to run a test executable produced by [$compiler]..."
+    output=$(${tmpdir}/run)
+    rm -rf $tmpdir
+
+    if test "$output" != "hello"
+    then
+      die "[$compiler] cannot produce executables runnable by [$nodepath]"
+    else
+      echo "[$compiler] produces executables runnable by [$nodepath]"
+    fi
   fi
 }
 
