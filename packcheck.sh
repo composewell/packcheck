@@ -313,7 +313,7 @@ show_help() {
 
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
-  help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/8.4.1/bin"
+  help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin"
 
   show_step1 "Specifying common tool options"
   # TODO
@@ -797,7 +797,16 @@ ensure_ghc() {
   fi
 
   compiler="$(which_cmd $COMPILER)"
-  test -n "$compiler" || die "$COMPILER $GHCVER not found in PATH [$PATH]"
+  if test -z "$compiler"
+  then
+    local msg="$COMPILER $GHCVER not found in PATH [$PATH]"
+    if test -n "$TOOLS_DIR"
+    then
+      msg="$msg or in $TOOLS_DIR/$COMPILER/$GHCVER*/bin"
+    fi
+    die msg
+  fi
+
   if test -n "$GHCVER"
   then
     check_version_die $COMPILER $GHCVER
