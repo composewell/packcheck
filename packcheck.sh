@@ -1193,8 +1193,18 @@ build_and_test() {
       run_verbose_errexit cabal new-build $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
       echo
       test -n "$DISABLE_DOCS" || run_verbose_errexit cabal new-haddock $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
-      echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal new-test --test-show-details=always $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS ;;
+      if test -z "$DISABLE_TEST"
+      then
+        local version
+        local SHOW_DETAILS
+        version=$(cabal --numeric-version|cut -f1,2 -d'.'|sed s/\\.//g)
+        if test $version -ge 25
+        then
+          SHOW_DETAILS="--test-show-details=streaming"
+        fi
+        echo
+        run_verbose_errexit cabal new-test $SHOW_DETAILS $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
+      fi ;;
     cabal)
       cabal_configure
       echo
