@@ -1220,7 +1220,13 @@ dist_checks() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD sdist ;;
     cabal|cabal-new)
-      run_verbose_errexit cabal sdist
+      if test "$BUILD" != "cabal-new"
+      then
+        run_verbose_errexit cabal sdist
+      else
+        run_verbose_errexit cabal new-sdist
+      fi
+
       echo
       if test "$CABAL_CHECK_RELAX" = y
       then
