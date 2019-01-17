@@ -49,11 +49,13 @@ The script can be easily adapted to any CI with a single line build command.
 * _Error messages:_ A lot of emphasis has been put on providing precise and
   detailed error messages when something fails so that the user can easily fix
   things.
+* _Informational:_ The output provides all the information that you may want to
+  know, tool paths being used, their versions, how they are invoked, build
+  options, time taken by each build step etc. You can even copy the commands
+  from the output and paste them on your local host to reproduce the build or
+  failure and debug quickly.
 * _Same tests everywhere:_ You can run exact same tests with same options or
   flags, in the same way, on all CI platforms.
-* _Reproduce failures:_ If a CI build fails just copy and paste the command
-  printed in the log and the same build runs on the local machine so that you
-  can debug quickly.
 * _Choose options:_ Conveniently control all aspects of build through command
   line or environment variables, including tool options or whether to enable
   benchmarks, haddock, coverage, install test etc. 
