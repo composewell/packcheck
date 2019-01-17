@@ -53,7 +53,8 @@ The script can be easily adapted to any CI with a single line build command.
   know, tool paths being used, their versions, how they are invoked, build
   options, time taken by each build step etc. You can even copy the commands
   from the output and paste them on your local host to reproduce the build or
-  failure and debug quickly.
+  failure and debug quickly. [See here for a sample
+  output](https://travis-ci.org/composewell/packcheck).
 * _Same tests everywhere:_ You can run exact same tests with same options or
   flags, in the same way, on all CI platforms.
 * _Choose options:_ Conveniently control all aspects of build through command
