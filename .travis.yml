@@ -108,15 +108,15 @@ matrix:
   # --------------------------------------------------------------------------
 
   # Use CABAL_NEWBUILD_OPTIONS to pass any options to cabal e.g. project-file
-  - env: BUILD=cabal-new ENABLE_GHCJS=y CABAL_NEWBUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
-    addons:
-      apt:
-        sources:
-        - hvr-ghc
-        - sourceline: 'ppa:hvr/ghcjs'
-        - sourceline: 'deb https://deb.nodesource.com/node_11.x xenial main'
-          key_url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key'
-        packages: [cabal-install-2.4,ghcjs-8.4]
+  # - env: BUILD=cabal-new ENABLE_GHCJS=y CABAL_NEWBUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
+  #   addons:
+  #     apt:
+  #       sources:
+  #       - hvr-ghc
+  #       - sourceline: 'ppa:hvr/ghcjs'
+  #       - sourceline: 'deb https://deb.nodesource.com/node_11.x xenial main'
+  #         key_url: 'https://deb.nodesource.com/gpgkey/nodesource.gpg.key'
+  #       packages: [cabal-install-2.4,ghcjs-8.4]
 
   # --------------------------------------------------------------------------
   # (Linux) stack builds (BUILD=stack). Some common envvars for stack builds
