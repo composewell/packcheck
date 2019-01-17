@@ -33,40 +33,45 @@ $ packcheck.sh cabal
 $ packcheck.sh stack
 ```
 
-### Some Key Points
-
-* If a CI build fails just copy and paste the command printed in the log and
-  the same build runs on the local machine so that you can debug quickly.
-* To send coverage info to [coveralls.io](https://coveralls.io) just
-  uncomment a line in your `.travis.yml`.
-* If you are using `hvr-ghc` PPA, just use `TOOLS_DIR=/opt` or the path where
-  it is installed, and you can use all the ghc/cabal versions available,
-  automatically.
-* Conveniently control all aspects of build through command line or environment
-  variables, including tool options or whether
-  to enable benchmarks, haddock, coverage, install test etc. It is a very
-  powerful tool, can do whatever you can imagine, see full reference at the
-  end.
-* `packcheck` creates the source distribution and builds the package from the
-  generated tarball to make sure that you build what you release and don't miss
-  adding a file to the distribution.
-* The most important part is that you can run exact same tests, in the same
-  way, everywhere:
-
 ### Out of the box support
 
-| Platforms     | Build Types     | CI Modes      |
-|:-------------:|:---------------:|:-------------:|
-| Linux         | stack           | Travis        |
-| OSX           | cabal           | Appveyor      |
-| Windows       | cabal new-build | CircleCI      |
-|               |                 | Local Machine |
+| Platforms     | Build Types     | CI Modes      | Compilers |
+|:-------------:|:---------------:|:-------------:|:---------:|
+| Linux         | stack           | Travis        | GHC       |
+| OSX           | cabal           | Appveyor      | GHCJS     |
+| Windows       | cabal new-build | CircleCI      |           |
+|               |                 | Local Machine |           |
 
-GHCJS builds are also supported. See
-[.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml) for GHCJS CI build example.
 The script can be easily adapted to any CI with a single line build command.
 
-## What is it?
+## Key Features
+
+* _Error messages:_ A lot of emphasis has been put on providing precise and
+  detailed error messages when something fails so that the user can easily fix
+  things.
+* _Same tests everywhere:_ You can run exact same tests with same options or
+  flags, in the same way, on all CI platforms.
+* _Reproduce failures:_ If a CI build fails just copy and paste the command
+  printed in the log and the same build runs on the local machine so that you
+  can debug quickly.
+* _Choose options:_ Conveniently control all aspects of build through command
+  line or environment variables, including tool options or whether to enable
+  benchmarks, haddock, coverage, install test etc. 
+* _Picking GHC:_ Right GHC is picked up automatically from PATH or TOOLS_DIR
+  (`hvr-ghc` installation dir) based on GHCVER.
+* _Test source distribution:_ `packcheck` creates the source distribution and
+  builds the package from the generated tarball to make sure that you build
+  what you release and don't miss adding a file to the distribution.
+* _Upload coverage:_ To send coverage info to
+  [coveralls.io](https://coveralls.io) just uncomment a line in your
+  `.travis.yml`.
+* _Non-destructive_: By default the script does not change any config or
+  upgrade any tools on the host machine.
+* _Auto tool install_: For stack builds, `stack` and `ghc` can be installed
+  automatically and `stack init` can be performed automatically to create a
+  `stack.yaml`.
+
+## Introduction
 
 The package `packcheck` includes a script called `packcheck.sh`, it is a high
 level universal super build script to uniformly, consistently build and
@@ -92,33 +97,17 @@ haskell package metadata structure.
 
 ## What all does it do?
 
-An invocation of `packcheck.sh` performs a whole battery of tests. `packcheck` is
-designed to be a simple to use tool for power users, you can control all
-aspects of the build process the way you want, see the reference section below.
+An invocation of `packcheck.sh` performs a whole battery of tests, all aspects
+can be controlled via environment variables, command line. The flow goes
+roughly as follows:
 
-### Auto tool install and selection
-* Picks up the right version of GHC automatically (based on the version
-  sepcified via an environment variable) if multiple versions are
-  available in the PATH or from hvr-ghc style ghc/cabal installation.
-* When using stack builds, `stack` and `ghc` are installed automatically, if
-  needed
-* For stack builds, if the package being tested does not have a `stack.yaml` it
-  can even create it automatically using `stack init`.
-### Build
-* build source
-* build benchmarks
-* build docs
-### Test
+* Pick up the correct version of GHC/cabal/stack
+* Use `stack init` if necessary
+* create source distribution and unpack it to test from it
+* build source, benchmarks and docs
 * run tests
-### Lint
 * run `hlint`
-### Coverage and Coveralls
-* generate coverage report
-* send coverage report to coveralls.io
-### Create and Test Source Distribution
-* create source distribution
-* build from source distribution
-* test installation after build
+* generate and upload coverage report (to coveralls.io)
 * perform distribution checks
 
 ## Usage Examples
