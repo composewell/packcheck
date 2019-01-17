@@ -8,7 +8,7 @@
 
 ## Quick Start
 
-### CI
+### CI (Travis/Appveyor/CircleCI)
 To enable CI for your repo, just copy the relevant CI config file i.e.
 [.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
 [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
