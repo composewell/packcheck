@@ -83,9 +83,9 @@ and across all platforms (Linux/MacOS/Windows).  You do not need to be familiar
 with any of the build tools to use it.
 
 To make sure that it works everywhere without installing anything it is
-deliberately written in bash. Any of the parameters to control the builds can
-either be passed on the script command line or as environment variables for
-convenient use on CI systems.
+deliberately written using the `bash` shell scripting language. Any of the
+parameters to control the builds can either be passed on the script command
+line or as environment variables for convenient use on CI systems.
 
 `packcheck` is also a minimal yet complete "hello world" Haskell package with
 model `travis` and `appveyor` config files that can be used unmodified in any
@@ -105,7 +105,7 @@ can be controlled via environment variables, command line. The flow goes
 roughly as follows:
 
 * Pick up the correct version of GHC/cabal/stack
-* Use `stack init` if necessary
+* For stack builds, use `stack init` if necessary
 * create source distribution and unpack it to test from it
 * build source, benchmarks and docs
 * run tests
@@ -118,12 +118,12 @@ roughly as follows:
 You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
+$ cd packcheck
 $ ./packcheck.sh cabal-new GHCVER=8.4.1
 $ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
 ```
 
 ```
-$ cd packcheck
 $ ./packcheck.sh stack RESOLVER=lts-11
 $ ./packcheck.sh stack GHCVER=8.2.2
 $ ./packcheck.sh stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24
@@ -142,12 +142,29 @@ using `hpc-coveralls`.
 $ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
 
+## Picking GHC versions
+
+When `GHCVER` parameter is not specified, `packcheck` looks for a binary named
+`ghc` in your `PATH` environment variable. It uses first such binary found in
+`PATH`.
+
+When `GHCVER` parameter is specified, it looks for `ghc` in the `PATH` and if
+`GHCVER` is a PREFIX of the actual version of `ghc` binary found then that
+`ghc` binary is used. Otherwise, `packcheck` tries to look for another `ghc`
+binary in the next PATH components until it finds a matching `ghc` version.
+
+When both `GHCVER` and `TOOLS_DIR` are specified then in addition to searching
+in `PATH` environment variable, `packcheck` also looks for ghc in
+`${TOOLS_DIR}/ghc/${GHCVER}*/bin`. This is to facilitate selecting any GHC
+version from an `hvr/ghc` ubuntu PPA installation without putting all the
+myriad GHC version directories explicitly in your `PATH`.
+
 ## Full Reference
 
 NOTE: Any of the parameters described below can either be passed on command
-line or as an environment variable. On a CI system you can just use a common
-command and control the build behavior for different builds using environment
-variables.
+line or as an environment variable. Passing options on command line is more
+convenient when running interactively, while environment variables are more
+convenient when running on a CI system.
 
 ```
 $ packcheck.sh --help
@@ -261,12 +278,12 @@ building.
 
 ## Diagnostics
 
-There may be issues due to some environment variables unknowingly set or some
-command line parameters or env variables being misspelled and therefore
-silently ignored. To avoid any such issues the robust way to invoke `packcheck`
-is to use a clean environment using `env -i` and passing `CHECK_ENV=y`
-parameter. When this parameter is set unwanted/misspelled variables are
-detected and reported.
+Sometimes you may run into issues due to some environment variables unknowingly
+set or some command line parameters or env variables being misspelled and
+therefore silently ignored. To avoid any such issues the robust way to invoke
+`packcheck` is to use a clean environment using `env -i` and passing
+`CHECK_ENV=y` parameter. When this parameter is set unwanted/misspelled
+variables are detected and reported.
 
 ```
 $ env -i CHECK_ENV=y ./packcheck.sh stack
