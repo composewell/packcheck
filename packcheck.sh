@@ -676,11 +676,13 @@ use_stack_paths() {
     GHCPATHS=$(cygpath -u -p $GHCPATHS)
     if test -n "$GHCPATHS"
     then
+      echo "Adding [$GHCPATHS] in front of PATH..."
       export PATH=$GHCPATHS:$PATH
     fi
   fi
   if test -n "$BINPATH"
   then
+    echo "Adding [$BINPATH] in front of PATH..."
     export PATH=$BINPATH:$PATH
   fi
 }
@@ -733,12 +735,14 @@ find_binary () {
   local path=$PATH
   local removed_path
 
+  echo "Looking for binary [$1]..."
   binary=$(which_cmd $1)
   while test -n "$binary"
   do
     if test -z "$2" || check_version $binary $2
     then
       PATH=$PATH$removed_path
+      echo "PATH set to [$PATH]..."
       return 0
     else
       # remove it from the path and search again
@@ -773,6 +777,7 @@ find_binary () {
         dir=`pwd`/$dir
       fi
       PATH=$dir/bin:$PATH
+      echo "PATH set to [$PATH]..."
       export PATH
       return 0
     fi
@@ -799,12 +804,13 @@ ensure_ghc() {
   compiler="$(which_cmd $COMPILER)"
   if test -z "$compiler"
   then
-    local msg="$COMPILER $GHCVER not found in PATH [$PATH]"
+    local msg
+    msg="$COMPILER $GHCVER not found in PATH [$PATH]"
     if test -n "$TOOLS_DIR"
     then
       msg="$msg or in $TOOLS_DIR/$COMPILER/$GHCVER*/bin"
     fi
-    die msg
+    die "$msg"
   fi
 
   if test -n "$GHCVER"
@@ -1472,11 +1478,13 @@ export HOME=$(echo ~)
 set_os_specific_vars # depends on HOME
 
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
+echo "Adding usual utility locations to PATH [$PATH]..."
 if test "$BUILD" = cabal -o "$BUILD" = "cabal-new"
 then
   export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
 export PATH=$OS_APP_HOME/$OS_LOCAL_DIR/bin:$PATH
+echo "PATH is now set to [$PATH]"
 
 verify_build_config
 
