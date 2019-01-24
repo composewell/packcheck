@@ -159,6 +159,23 @@ in `PATH` environment variable, `packcheck` also looks for ghc in
 version from an `hvr/ghc` ubuntu PPA installation without putting all the
 myriad GHC version directories explicitly in your `PATH`.
 
+## packcheck-safe.sh
+
+`packcheck-safe.sh` is a more robust wrapper over `packcheck.sh`, it does not
+trust or use any environment variables, all environment needs to be specified
+explicitly on the command line. Therefore, it ensures better reproducibility.
+
+It also catches any misspelled command line parameter names. For example,
+`packcheck.sh` won't catch it if you typed `GHCVWR=8.4` instead of
+`GHCVER=8.4`, it just assumes that `GHCVER` is not specified.
+`packcheck-safe.sh` would generate an error saying that `GHCVWR` is not
+recognized. Since it uses a clean environment you will have to specify PATH as
+well on the command line. For example,
+
+```
+$ ./packcheck-safe.sh cabal-new PATH=/bin:/usr/bin:/opt/ghc/bin
+```
+
 ## Full Reference
 
 NOTE: Any of the parameters described below can either be passed on command
