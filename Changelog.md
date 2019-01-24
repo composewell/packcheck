@@ -1,6 +1,9 @@
 ## Unreleased
 
 * Add GHCJS support. Use ENABLE_GHCJS=y option.
+* Add packcheck-safe.sh . The safe version does not trust or use any
+  environment variables, all environment needs to be specified on the command
+  line. It also catches any misspelled command line parameter names.
 
 ## 0.4.1
 

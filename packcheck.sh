@@ -234,17 +234,22 @@ error_novar() {
 }
 
 error_clean_env() {
-    echo "Error: Unknown parameter or environment variable [$1]."
-    die "Please check spelling mistakes and use a clean environment (e.g. env -i) with CHECK_ENV."
+    echo "Error: environment variable [$1] is set."
+    echo "Error: No environment variables except [$ALLOW_ENVVARS] are allowed to be set when using CHECK_ENV=y"
+    die "Please use a clean environment (e.g. env -i) with CHECK_ENV."
 }
 
-ALLOW_ENVVARS="STACK_ROOT APPDATA PWD SHLVL _"
+error_clean_param() {
+    die "Unknown parameter [$1] specified on command line."
+}
+
+ALLOW_ENVVARS="CHECK_ENV STACK_ROOT APPDATA PWD SHLVL _"
 
 check_clean_env() {
   local vars=$(env | cut -f1 -d=)
   for i in $vars
   do
-    find_var $i "$ENVVARS $ALLOW_ENVVARS" || error_clean_env "$i"
+    find_var $i "$ALLOW_ENVVARS" || error_clean_env "$i"
   done
 }
 
@@ -1379,6 +1384,7 @@ eval_env() {
       (*=*)
         key=${1%%=*}
         val=${1#*=}
+        find_var $key "$ENVVARS $ALLOW_ENVVARS" || error_clean_param "$key"
         eval "$key=\"$val\""
         ;;
       (*)

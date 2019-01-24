@@ -142,6 +142,23 @@ using `hpc-coveralls`.
 $ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
 
+## packcheck-safe.sh
+
+`packcheck-safe.sh` is a more robust wrapper over `packcheck.sh`, it does not
+trust or use any environment variables, all environment needs to be specified
+explicitly on the command line. Therefore, it ensures better reproducibility.
+
+It also catches any misspelled command line parameter names. For example,
+`packcheck.sh` won't catch it if you typed `GHCVWR=8.4` instead of
+`GHCVER=8.4`, it just assumes that `GHCVER` is not specified.
+`packcheck-safe.sh` would generate an error saying that `GHCVWR` is not
+recognized. Since it uses a clean environment you will have to specify PATH as
+well on the command line. For example,
+
+```
+$ ./packcheck-safe.sh cabal-new PATH=/bin:/usr/bin:/opt/ghc/bin
+```
+
 ## Full Reference
 
 NOTE: Any of the parameters described below can either be passed on command
@@ -259,18 +276,3 @@ For pure cabal builds i.e. when `BUILD=cabal-new` and `RESOLVER` is not
 specified, `cabal` and `ghc` must be pre-installed on the system before
 building.
 
-## Diagnostics
-
-There may be issues due to some environment variables unknowingly set or some
-command line parameters or env variables being misspelled and therefore
-silently ignored. To avoid any such issues the robust way to invoke `packcheck`
-is to use a clean environment using `env -i` and passing `CHECK_ENV=y`
-parameter. When this parameter is set unwanted/misspelled variables are
-detected and reported.
-
-```
-$ env -i CHECK_ENV=y ./packcheck.sh stack
-```
-
-For performance diagnostics `packcheck` prints the time elapsed from the
-beginning at each build step performed.
