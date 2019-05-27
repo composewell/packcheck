@@ -502,7 +502,7 @@ verify_build_config() {
 
   if test "$BUILD" = stack
   then
-    STACK_DEP_OPTIONS="--only-dependencies"
+    STACK_DEP_OPTIONS="$STACK_BUILD_OPTIONS --only-dependencies"
     test -n "$DISABLE_TEST" || STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --test"
     test -n "$DISABLE_BENCH" || STACK_DEP_OPTIONS="$STACK_DEP_OPTIONS --bench"
 
