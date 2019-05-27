@@ -4,6 +4,7 @@
 * Add packcheck-safe.sh . The safe version does not trust or use any
   environment variables, all environment needs to be specified on the command
   line. It also catches any misspelled command line parameter names.
+* Use STACK_BUILD_OPTIONS in the dependency install phase as well
 
 ## 0.4.1
 
