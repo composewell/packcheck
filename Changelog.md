@@ -5,6 +5,7 @@
   environment variables, all environment needs to be specified on the command
   line. It also catches any misspelled command line parameter names.
 * Use STACK_BUILD_OPTIONS in the dependency install phase as well
+* Remove stack yaml creation using solver
 
 ## 0.4.1
 

@@ -930,7 +930,7 @@ stack_install_tool () {
 # installs binaries.
 ensure_cabal() {
   # We can only do this after ghc is installed.
-  # We need cabal to retrieve the package version as well as for the solver
+  # We need cabal to retrieve the package version
   # We are assuming CI cache will be per resolver so we can cache the bin
 
   find_binary cabal "$CABALVER"
@@ -950,14 +950,7 @@ ensure_stack_yaml() {
   if test -n "$STACK_YAML"
   then
     require_file $STACK_YAML
-  elif test ! -e stack.yaml
-  then
-    echo "Need cabal-install for 'stack init' to generate a stack.yaml"
-    ensure_cabal $OS_APP_HOME/$OS_LOCAL_DIR/bin
-    # solver seems to be broken with latest cabal
-    echo "Trying to generate a stack.yaml"
-    run_verbose $STACKCMD init --solver --ignore-subdirs || die "Solver failed to generate a stack.yaml.\n\
-Please provide a working stack.yaml or use cabal build."
+  else
     require_file stack.yaml
   fi
   SDIST_STACKCMD=$STACKCMD

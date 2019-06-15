@@ -115,7 +115,7 @@ save: &save
 #-----------------------------------------------------------------------------
 
 jobs:
-  cabal-ghc-8.6.3:
+  cabal-ghc-8.6.5:
       <<: *env
       steps:
         - checkout
@@ -210,7 +210,7 @@ workflows:
   version: 2
   build:
     jobs:
-      - cabal-ghc-8.6.3
+      - cabal-ghc-8.6.5
       #- cabal-ghc-8.4.4
       #- cabal-ghc-8.2.2
       #- cabal-ghc-8.0.2
