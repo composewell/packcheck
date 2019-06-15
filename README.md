@@ -71,8 +71,7 @@ The script can be easily adapted to any CI with a single line build command.
 * _Non-destructive_: By default the script does not change any config or
   upgrade any tools on the host machine.
 * _Auto tool install_: For stack builds, `stack` and `ghc` can be installed
-  automatically and `stack init` can be performed automatically to create a
-  `stack.yaml`.
+  automatically
 
 ## Introduction
 
@@ -105,7 +104,6 @@ can be controlled via environment variables, command line. The flow goes
 roughly as follows:
 
 * Pick up the correct version of GHC/cabal/stack
-* For stack builds, use `stack init` if necessary
 * create source distribution and unpack it to test from it
 * build source, benchmarks and docs
 * run tests
