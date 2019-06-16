@@ -346,9 +346,9 @@ show_help() {
 
   show_step1 "cabal options"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
-  help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL cabal v2-build options to append"
+  help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
   help_envvar CABAL_NEWBUILD_TARGETS "cabal v2-build targets, default is 'all'"
-  help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL cabal v1-configure options to append"
+  help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL cabal v1-configure options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
   # dependencies have to be installed twice in two separate sandboxes, once to
@@ -485,6 +485,20 @@ cabal_only_var() {
 }
 
 # $1: varname
+cabal_v1_only_var() {
+  error_novar $1
+  local var=$(eval "echo \$$1")
+  test -z "$var" || die "[$1] is meaningful only for cabal-v1 build"
+}
+
+# $1: varname
+cabal_v2_only_var() {
+  error_novar $1
+  local var=$(eval "echo \$$1")
+  test -z "$var" || die "[$1] is meaningful only for cabal-v2 build"
+}
+
+# $1: varname
 stack_only_var() {
   error_novar $1
   local var=$(eval "echo \$$1")
@@ -570,11 +584,21 @@ EOF
       cabal_only_var CABALVER
       cabal_only_var CABAL_USE_STACK_SDIST
       cabal_only_var CABAL_CHECK_RELAX
-      cabal_only_var CABAL_CONFIGURE_OPTIONS
+      cabal_only_var CABAL_HACKAGE_MIRROR
+
       cabal_only_var CABAL_NEWBUILD_OPTIONS
       cabal_only_var CABAL_NEWBUILD_TARGETS
+
+      cabal_only_var CABAL_CONFIGURE_OPTIONS
       cabal_only_var CABAL_NO_SANDBOX
-      cabal_only_var CABAL_HACKAGE_MIRROR
+    else
+      case "$BUILD" in
+        cabal-v1) cabal_v2_only_var CABAL_NEWBUILD_OPTIONS
+                  cabal_v2_only_var CABAL_NEWBUILD_TARGETS ;;
+        cabal-v2) cabal_v1_only_var CABAL_NO_SANDBOX
+                  cabal_v1_only_var CABAL_CONFIGURE_OPTIONS ;;
+        *) echo "Bug: unknown build type: $BUILD" ;;
+      esac
     fi
 
     if test -z "$(need_stack)"
