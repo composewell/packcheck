@@ -78,7 +78,7 @@ matrix:
 
   # --------------------------------------------------------------------------
   # (Linux) cabal builds (BUILD=cabal-v1, BUILD=cabal-v2). Common envvars are:
-  # CABAL_CONFIGURE_OPTIONS (cabal-v1), CABAL_NEWBUILD_OPTIONS (cabal-v2)
+  # CABAL_CONFIGURE_OPTIONS (cabal-v1), CABAL_BUILD_OPTIONS (cabal-v2)
   # --------------------------------------------------------------------------
 
   #- env: BUILD=cabal-v2 GHCVER=head
@@ -100,15 +100,15 @@ matrix:
   #  addons: {apt: {packages: [cabal-install-2.4,ghc-7.10.3], sources: [hvr-ghc]}}
 
   # You can specify build flags like this:
-  #- env: BUILD=cabal-v2 CABAL_NEWBUILD_OPTIONS="--flags=dev"
+  #- env: BUILD=cabal-v2 CABAL_BUILD_OPTIONS="--flags=dev"
   #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # GHCJS cabal builds
   # --------------------------------------------------------------------------
 
-  # Use CABAL_NEWBUILD_OPTIONS to pass any options to cabal e.g. project-file
-  # - env: BUILD=cabal-v2 ENABLE_GHCJS=y CABAL_NEWBUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
+  # Use CABAL_BUILD_OPTIONS to pass any options to cabal e.g. project-file
+  # - env: BUILD=cabal-v2 ENABLE_GHCJS=y CABAL_BUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
   #   addons:
   #     apt:
   #       sources:

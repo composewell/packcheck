@@ -47,6 +47,20 @@ init_default() {
   test -n "$var" || eval "export $1=\"$2\""
 }
 
+# Rewrite deprecated environment variables
+rewrite_deprecated() {
+  local oldvar=$1
+  local oldval=$(eval "echo \$$1")
+  local newvar=$2
+
+  if test -n "$oldval"
+  then
+      echo "DEPRECATED [$oldvar] please use [$newvar] instead"
+      eval "export $newvar=$oldval"
+      unset $oldvar
+  fi
+}
+
 require_file () {
   if test ! -f "$1"
   then
@@ -198,7 +212,9 @@ SAFE_ENVVARS="\
   CABAL_CHECK_RELAX \
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
+  CABAL_BUILD_OPTIONS \
   CABAL_NEWBUILD_OPTIONS \
+  CABAL_BUILD_TARGETS \
   CABAL_NEWBUILD_TARGETS \
   COVERAGE \
   COVERALLS_OPTIONS \
@@ -346,8 +362,8 @@ show_help() {
 
   show_step1 "cabal options"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
-  help_envvar CABAL_NEWBUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
-  help_envvar CABAL_NEWBUILD_TARGETS "cabal v2-build targets, default is 'all'"
+  help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
+  help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
   help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL cabal v1-configure options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   # The sandbox mode is a bit expensive because a sandbox is used and
@@ -554,15 +570,15 @@ EOF
     #  CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
     #test -n "$DISABLE_BENCH" || \
     #  CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
-    #CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS $CABAL_NEWBUILD_OPTIONS"
+    #CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS $CABAL_BUILD_OPTIONS"
 
-    test -n "$CABAL_NEWBUILD_TARGETS" || CABAL_NEWBUILD_TARGETS=all
-    CABAL_NEWBUILD_OPTIONS=$(cat << EOF
+    test -n "$CABAL_BUILD_TARGETS" || CABAL_BUILD_TARGETS=all
+    CABAL_BUILD_OPTIONS=$(cat << EOF
       $(test -n "$DISABLE_TEST" || echo "--enable-tests")
       $(test -n "$DISABLE_BENCH" || echo "--enable-benchmarks")
       $(test -z "${COVERAGE}" || echo --enable-coverage)
       $(test -z "${GHC_OPTIONS}" || echo --ghc-options=\"$GHC_OPTIONS\")
-      $CABAL_NEWBUILD_OPTIONS
+      $CABAL_BUILD_OPTIONS
 EOF
 )
   fi
@@ -586,15 +602,15 @@ EOF
       cabal_only_var CABAL_CHECK_RELAX
       cabal_only_var CABAL_HACKAGE_MIRROR
 
-      cabal_only_var CABAL_NEWBUILD_OPTIONS
-      cabal_only_var CABAL_NEWBUILD_TARGETS
+      cabal_only_var CABAL_BUILD_OPTIONS
+      cabal_only_var CABAL_BUILD_TARGETS
 
       cabal_only_var CABAL_CONFIGURE_OPTIONS
       cabal_only_var CABAL_NO_SANDBOX
     else
       case "$BUILD" in
-        cabal-v1) cabal_v2_only_var CABAL_NEWBUILD_OPTIONS
-                  cabal_v2_only_var CABAL_NEWBUILD_TARGETS ;;
+        cabal-v1) cabal_v2_only_var CABAL_BUILD_OPTIONS
+                  cabal_v2_only_var CABAL_BUILD_TARGETS ;;
         cabal-v2) cabal_v1_only_var CABAL_NO_SANDBOX
                   cabal_v1_only_var CABAL_CONFIGURE_OPTIONS ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
@@ -1222,9 +1238,9 @@ build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-v2)
-      run_verbose_errexit cabal v2-build $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
+      run_verbose_errexit cabal v2-build $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal v2-haddock $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
+      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal v2-haddock $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       if test -z "$DISABLE_TEST"
       then
         local version
@@ -1235,7 +1251,7 @@ build_and_test() {
           SHOW_DETAILS="--test-show-details=streaming"
         fi
         echo
-        run_verbose_errexit cabal v2-test $SHOW_DETAILS $GHCJS_FLAG $CABAL_NEWBUILD_OPTIONS $CABAL_NEWBUILD_TARGETS
+        run_verbose_errexit cabal v2-test $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       fi ;;
     cabal-v1)
       cabal_v1_configure
@@ -1495,6 +1511,10 @@ test -z "$CHECK_ENV" || check_clean_env
 
 echo
 bash --version
+
+# Rewrite deprecated environment variables
+rewrite_deprecated CABAL_NEWBUILD_OPTIONS CABAL_BUILD_OPTIONS
+rewrite_deprecated CABAL_NEWBUILD_TARGETS CABAL_BUILD_TARGETS
 
 show_step "Build command"
 show_build_command

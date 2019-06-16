@@ -5,6 +5,8 @@
 * Deprecate and replace the `cabal` command with `cabal-v1`, in future `cabal`
   will be used for `cabal-v2`.
 * Deprecate and replace the `cabal-new` command with `cabal-v2`.
+* Deprecate and rename `CABAL_NEWBUILD_OPTIONS` to `CABAL_BUILD_OPTIONS`
+* Deprecate and rename `CABAL_NEWBUILD_TARGETS` to `CABAL_BUILD_TARGETS`
 * Use STACK_BUILD_OPTIONS envvar in the dependency install phase as well
 * Remove stack yaml creation using stack init/solver
 
