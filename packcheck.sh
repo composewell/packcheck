@@ -1503,7 +1503,8 @@ case $1 in
     exit;;
   -h | --help | help) show_help; exit;;
   --version) show_version; exit;;
-  *) short_help; exit 1 ;;
+  *) echo -e "Error: First argument must be a command\n"
+    short_help; exit 1 ;;
 esac
 
 test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
