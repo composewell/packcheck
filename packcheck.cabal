@@ -5,16 +5,17 @@ description:
   This package contains a universal CI/build script @packcheck.sh@ and config
   files designed such that you can just copy over @.travis.yml@, @appveyor.yml@
   or @.circleci/config.yml@ to your package repo and your package is CI ready
-  in a jiffy.  For local testing, copy @packcheck.sh@ to your local machine,
-  put it in your PATH, and run it from your package directory:
+  in a jiffy.  You can build and test packages on local machine as well. For
+  local testing, copy @packcheck.sh@ to your local machine, put it in your
+  PATH, and run it from your package directory:
   .
-  > $ packcheck.sh cabal-new
-  > $ packcheck.sh cabal
+  > $ packcheck.sh cabal-v2
+  > $ packcheck.sh cabal-v1
   > $ packcheck.sh stack
   .
-  You can try it on this package itself. @packcheck.sh@ uniformly, consistently
-  builds and comprehensively sanity tests a Haskell package across build tools
-  (stack/cabal) and across all platforms (Linux\/MacOS\/Windows).  You do not
+  You can try the script on this package itself. It builds and comprehensively
+  sanity tests a Haskell package across build tools (stack/cabal), uniformly,
+  consistently and across all platforms (Linux\/MacOS\/Windows).  You do not
   need to be familiar with any of the build tools to use it.
   .
   This is also a minimal yet complete model package (with tests, benchmarks, CI
@@ -32,7 +33,7 @@ tested-with:           GHC==7.10.3
                      , GHC==8.0.2
                      , GHC==8.2.2
                      , GHC==8.4.3
-                     , GHC==8.6.1
+                     , GHC==8.6.5
 author:              Harendra Kumar
 maintainer:          harendra.kumar@gmail.com
 copyright:           2017 Harendra Kumar

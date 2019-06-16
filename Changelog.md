@@ -1,6 +1,6 @@
 ## Unreleased
 
-## Change of behavior
+## Deprecations
 
 * Deprecate and replace the `cabal` command with `cabal-v1`, in future `cabal`
   will be used for `cabal-v2`.
