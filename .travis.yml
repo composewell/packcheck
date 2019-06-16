@@ -122,13 +122,26 @@ matrix:
   # (Linux) stack builds (BUILD=stack). Some common envvars for stack builds
   # are: STACK_YAML, STACK_OPTIONS, STACK_BUILD_OPTIONS
   # --------------------------------------------------------------------------
+  #
+  # NOTE: cabal-install is required for some of the packcheck options to work.
+  # We just install it so that packcheck does not build it from source
+  # otherwise.
 
   #- env: BUILD=stack RESOLVER=nightly
   - env: BUILD=stack RESOLVER=lts-13 GHCVER=8.6
+    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+
   - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
+    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+
   #- env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2
+  # addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+
   #- env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0
+  # addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+
   #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10
+  # addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
 
   # You can keep a STACK_YAML file at any path location
   #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
