@@ -1513,6 +1513,7 @@ echo
 bash --version
 
 # Rewrite deprecated environment variables
+echo
 rewrite_deprecated CABAL_NEWBUILD_OPTIONS CABAL_BUILD_OPTIONS
 rewrite_deprecated CABAL_NEWBUILD_TARGETS CABAL_BUILD_TARGETS
 
