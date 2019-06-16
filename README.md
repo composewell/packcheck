@@ -9,27 +9,32 @@
 ## Quick Start
 
 ### CI (Travis/Appveyor/CircleCI)
-To enable CI for your repo, just copy the relevant CI config file i.e.
+To use packcheck for CI testing of your repo:
+
+* Copy
 [.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
 [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
 or
 [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
-to your package repo, add your repo to travis/appveyor/circleci and CI should just
-work for most packages. Uncomment the relevant lines in the CI config files to enable CI for more
-configs. Just modify some environment variables in the configs to control
-everything about the build.
+to your package repo 
+* Add your repo to travis/appveyor/circleci
+
+CI should out of the box for most packages. Uncomment the relevant lines in the
+CI config files or change the values of the environment variables for fine
+grained control or custom configuration.
 
 ### Local Machine
-For local use, copy
+You can use packcheck to build or CI test a package on your local machine as
+well.  For local use, copy
 [packcheck.sh](https://github.com/composewell/packcheck/blob/master/packcheck.sh)
 to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
 from your package directory. You can pass the same evironment variables that
 are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
-$ packcheck.sh cabal-new
-$ packcheck.sh cabal-new ENABLE_GHCJS=y
-$ packcheck.sh cabal
+$ packcheck.sh cabal-v2
+$ packcheck.sh cabal-v2 ENABLE_GHCJS=y
+$ packcheck.sh cabal-v1
 $ packcheck.sh stack
 ```
 
@@ -117,13 +122,13 @@ You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
-$ ./packcheck.sh cabal-new GHCVER=8.4.1
-$ ./packcheck.sh cabal GHCVER=7.10.3 CABALVER=1.22
+$ ./packcheck.sh cabal-v2 GHCVER=8.6.5
+$ ./packcheck.sh cabal-v1 GHCVER=7.10.3 CABALVER=1.22
 ```
 
 ```
-$ ./packcheck.sh stack RESOLVER=lts-11
-$ ./packcheck.sh stack GHCVER=8.2.2
+$ ./packcheck.sh stack RESOLVER=lts-13
+$ ./packcheck.sh stack GHCVER=8.6.5
 $ ./packcheck.sh stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24
 # You can also do a cabal build using stack installed ghc:
 $ stack exec ./packcheck.sh cabal RESOLVER=lts-11
@@ -137,7 +142,7 @@ $ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.
 ```
-$ ./packcheck.sh cabal GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
+$ ./packcheck.sh cabal-v1 GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
 ```
 
 ## Picking GHC versions
@@ -157,7 +162,7 @@ in `PATH` environment variable, `packcheck` also looks for ghc in
 version from an `hvr/ghc` ubuntu PPA installation without putting all the
 myriad GHC version directories explicitly in your `PATH`.
 
-## packcheck-safe.sh
+## packcheck-safe
 
 `packcheck-safe.sh` is a more robust wrapper over `packcheck.sh`, it does not
 trust or use any environment variables, all environment needs to be specified
@@ -171,7 +176,7 @@ recognized. Since it uses a clean environment you will have to specify PATH as
 well on the command line. For example,
 
 ```
-$ ./packcheck-safe.sh cabal-new PATH=/bin:/usr/bin:/opt/ghc/bin
+$ ./packcheck-safe.sh cabal-v2 PATH=/bin:/usr/bin:/opt/ghc/bin
 ```
 
 ## Full Reference
@@ -197,14 +202,17 @@ as environment variables. Parameters marked DESTRUCTIVE may modify
 your global user config or state.
 
 --------------------------------------------------
-Commands
+Commands and flags
 --------------------------------------------------
+cabal-v2                : build using cabal v2-build
+cabal-v2               : Deprecated alias to cabal-v2
+cabal-v1                : build using cabal v1-build
+cabal                   : Deprecated alias to cabal-v1
 stack                   : build using stack
-cabal                   : build using cabal
-cabal-new               : build using cabal new-build
 clean                   : remove the .packcheck directory
 cleanall                : remove .packcheck, .stack-work, .cabal-sandbox directories
-help                    : show this help message
+help | --help | -h      : show this help message
+--version               : show packcheck version
 
 --------------------------------------------------
 Selecting tool versions
@@ -220,7 +228,7 @@ STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 Where to find the required tools
 --------------------------------------------------
 PATH                    : [path] Set PATH explicitly for predictable builds
-TOOLS_DIR               : [dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/8.4.1/bin
+TOOLS_DIR               : [dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin
 
 --------------------------------------------------
 Specifying common tool options
@@ -249,9 +257,9 @@ STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 --------------------------------------------------
 cabal options
 --------------------------------------------------
-CABAL_NEWBUILD_OPTIONS  : ADDITIONAL cabal new-build options to append
-CABAL_NEWBUILD_TARGETS  : cabal new-build targets, default is 'all'
-CABAL_CONFIGURE_OPTIONS : ADDITIONAL cabal old style configure options to append
+CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to defaults
+CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
+CABAL_CONFIGURE_OPTIONS : ADDITIONAL cabal v1-configure options to append to defaults
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
 CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
@@ -283,11 +291,11 @@ files or build artifacts inside `.packcheck` directory. See the `clean` and
 `cleanall` commands to release the temporary space.
 
 `stack` is automatically installed and can be used to do cabal builds as well.
-If you specify `BUILD=cabal-new` and `RESOLVER` at the same time then the cabal
+If you specify `BUILD=cabal-v2` and `RESOLVER` at the same time then the cabal
 build uses stack installed `cabal` and `ghc`, both are installed automatically
 when needed.
 
-For pure cabal builds i.e. when `BUILD=cabal-new` and `RESOLVER` is not
+For pure cabal builds i.e. when `BUILD=cabal-v2` and `RESOLVER` is not
 specified, `cabal` and `ghc` must be pre-installed on the system before
 building.
 
