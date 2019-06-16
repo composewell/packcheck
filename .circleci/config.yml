@@ -199,7 +199,7 @@ jobs:
               COVERALLS_OPTIONS: "--repo-token=cqLlrBTwrEm9IuaxJdzeLN76cTsZQ15kZ --coverage-mode=StrictlyFullLines --exclude-dir=test test"
             command: |
               apt-get install -y ghc-8.2.2
-              apt-get install -y cabal-install-2.2
+              apt-get install -y cabal-install-2.4
               # required by hpc-coveralls
               apt-get install -y libcurl4-gnutls-dev
               apt-get install -y git
