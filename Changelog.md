@@ -1,11 +1,19 @@
 ## Unreleased
 
+## Change of behavior
+
+* Deprecate and replace the `cabal` command with `cabal-v1`, in future `cabal`
+  will be used for `cabal-v2`.
+* Deprecate and replace the `cabal-new` command with `cabal-v2`.
+* Use STACK_BUILD_OPTIONS envvar in the dependency install phase as well
+* Remove stack yaml creation using stack init/solver
+
+## Enhancements
+
 * Add GHCJS support. Use ENABLE_GHCJS=y option.
 * Add packcheck-safe.sh . The safe version does not trust or use any
   environment variables, all environment needs to be specified on the command
   line. It also catches any misspelled command line parameter names.
-* Use STACK_BUILD_OPTIONS in the dependency install phase as well
-* Remove stack yaml creation using solver
 
 ## 0.4.1
 
