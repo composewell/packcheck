@@ -1,5 +1,10 @@
 ## 0.4.2
 
+## Bug Fixes
+
+* When building from source distribution, it would not build again unless
+  cleaned with `packcheck clean` if a file in the source has changed.
+
 ## Deprecations
 
 * Deprecate and replace the `cabal` command with `cabal-v1`, in future `cabal`

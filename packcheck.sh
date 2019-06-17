@@ -141,7 +141,7 @@ set_os_specific_vars() {
   case "$os" in
     Darwin|Linux)
       OS_HAS_TOOLS=tar
-      OS_UNGZTAR_CMD="run_verbose_errexit tar xzvf"
+      OS_UNGZTAR_CMD="run_verbose_errexit tar xmzvf"
       OS_LOCAL_DIR=.local
       OS_CABAL_DIR=.cabal
       OS_APP_HOME=$HOME ;;
