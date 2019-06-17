@@ -17,6 +17,7 @@
 
 ## Enhancements
 
+* Search for ghc among stack installed GHC binaries as well
 * Add GHCJS support. Use ENABLE_GHCJS=y option.
 * Add packcheck-safe.sh . The safe version does not trust or use any
   environment variables, all environment needs to be specified on the command

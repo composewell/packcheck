@@ -784,14 +784,14 @@ find_binary () {
   local path=$PATH
   local removed_path
 
-  echo "Looking for binary [$1]..."
+  echo "Looking for binary [$1] in PATH..."
   binary=$(which_cmd $1)
   while test -n "$binary"
   do
     if test -z "$2" || check_version $binary $2
     then
       PATH=$PATH$removed_path
-      echo "PATH set to [$PATH]..."
+      echo "Found. PATH set to [$PATH]..."
       return 0
     else
       # remove it from the path and search again
@@ -801,35 +801,67 @@ find_binary () {
       binary="$(which_cmd $1)"
     fi
   done
+  echo "Not found."
 
   # If we did not find the binary, restore the PATH for better error reporting
   PATH=$path
 
-  test -n "$TOOLS_DIR" || return 0
-
-  # Find if we have a binary in TOOLS_DIR
-  local dir
-  if test -n "$2"
+  if test -n "$TOOLS_DIR" 
   then
-    dir=$(echo ${TOOLS_DIR}/$1/$2*/ | tr ' ' '\n' | sort | tail -1)
-  else
-    dir=$(echo ${TOOLS_DIR}/$1/[0-9]*/ | tr ' ' '\n' | sort | tail -1)
-    test -x "${dir}/bin/$1" || dir="${TOOLS_DIR}/$1/head"
+    echo "Looking for binary [$1] in [$TOOLS_DIR]..."
+    # Find if we have a binary in TOOLS_DIR
+    local dir
+    if test -n "$2"
+    then
+      dir=$(echo ${TOOLS_DIR}/$1/$2*/ | tr ' ' '\n' | sort | tail -1)
+    else
+      dir=$(echo ${TOOLS_DIR}/$1/[0-9]*/ | tr ' ' '\n' | sort | tail -1)
+      test -x "${dir}/bin/$1" || dir="${TOOLS_DIR}/$1/head"
+    fi
+
+    if test -x "${dir}/bin/$1"
+    then
+      if test -z "$2" || check_version "${dir}/bin/$1" $2
+      then
+        if [[ $dir != /* ]]
+        then
+          dir=`pwd`/$dir
+        fi
+        PATH=$dir/bin:$PATH
+        echo "Found. PATH set to [$PATH]..."
+        export PATH
+        return 0
+      fi
+    fi
+    echo "Not found."
   fi
 
-  if test -x "${dir}/bin/$1"
+  STACK_ROOT_PATH="~/.stack"
+  if test -n "$STACK_ROOT"
+  then 
+    STACK_ROOT_PATH=$STACK_ROOT
+  fi
+  # XXX what if there are multiple arch dirs in programs?
+  if test -d $STACK_ROOT_PATH -a "$1" = "ghc"
   then
-    if test -z "$2" || check_version "${dir}/bin/$1" $2
+    echo "Looking for binary [$1] in [$STACK_ROOT_PATH]..."
+    # XXX We should pick the highest version by default
+    local dir=$(echo $STACK_ROOT_PATH/programs/*/${1}-${2}*/)
+    if test -x "${dir}/bin/$1"
     then
-      if [[ $dir != /* ]]
+      if test -z "$2" || check_version "${dir}/bin/$1" $2
       then
-        dir=`pwd`/$dir
+        if [[ $dir != /* ]]
+        then
+          dir=`pwd`/$dir
+        fi
+        PATH=$dir/bin:$PATH
+        echo "Found. PATH set to [$PATH]..."
+        export PATH
+        return 0
       fi
-      PATH=$dir/bin:$PATH
-      echo "PATH set to [$PATH]..."
-      export PATH
-      return 0
     fi
+    echo "Not found."
   fi
   # This command never fails even if we could not find the binary.
   return 0

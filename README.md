@@ -33,10 +33,17 @@ are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
 $ packcheck.sh cabal-v2
+$ packcheck.sh cabal-v2 GHCVER=8.6.5
 $ packcheck.sh cabal-v2 ENABLE_GHCJS=y
 $ packcheck.sh cabal-v1
-$ packcheck.sh stack
+$ packcheck.sh stack GHCVER=8.6
 ```
+
+`packcheck` can automatically pick the requested version of GHC from:
+
+* multiple GHC path components in your PATH environment variable
+* [hvr ghc PPA](https://launchpad.net/~hvr/+archive/ubuntu/ghc) install directory
+* stack installed ghc binaries
 
 ### Out of the box support
 
@@ -66,7 +73,8 @@ The script can be easily adapted to any CI with a single line build command.
   line or environment variables, including tool options or whether to enable
   benchmarks, haddock, coverage, install test etc. 
 * _Picking GHC:_ Right GHC is picked up automatically from PATH or TOOLS_DIR
-  (`hvr-ghc` installation dir) based on GHCVER.
+  (`hvr ghc PPA` installation dir) based on GHCVER. Stack installed GHC
+  binaries can be picked automatically when available.
 * _Test source distribution:_ `packcheck` creates the source distribution and
   builds the package from the generated tarball to make sure that you build
   what you release and don't miss adding a file to the distribution.
@@ -161,6 +169,9 @@ in `PATH` environment variable, `packcheck` also looks for ghc in
 `${TOOLS_DIR}/ghc/${GHCVER}*/bin`. This is to facilitate selecting any GHC
 version from an `hvr/ghc` ubuntu PPA installation without putting all the
 myriad GHC version directories explicitly in your `PATH`.
+
+If all of the above fails `packcheck` looks for ghc in the `stack` install
+locations.
 
 ## packcheck-safe
 
