@@ -281,7 +281,7 @@ check_boolean_var() {
   local var=$(eval "echo \$$1")
   if test -n "$var" -a "$var" != y
   then
-    die "Boolean parameter or environment variable [$1] can only be empty or 'y'"
+    die "Boolean parameter or environment variable [$1=$var] can only be set to empty value or 'y'"
   fi
 }
 
