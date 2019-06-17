@@ -205,7 +205,7 @@ your global user config or state.
 Commands and flags
 --------------------------------------------------
 cabal-v2                : build using cabal v2-build
-cabal-v2               : Deprecated alias to cabal-v2
+cabal-new               : Deprecated alias to cabal-v2
 cabal-v1                : build using cabal v1-build
 cabal                   : Deprecated alias to cabal-v1
 stack                   : build using stack
