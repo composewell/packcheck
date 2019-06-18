@@ -11,17 +11,17 @@
 ### CI (Travis/Appveyor/CircleCI)
 To use packcheck for CI testing of your repo:
 
+* Add your package repo to travis/appveyor/circleci
 * Copy
 [.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
 [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
 or
 [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
 to your package repo 
-* Add your repo to travis/appveyor/circleci
 
-CI should out of the box for most packages. Uncomment the relevant lines in the
-CI config files or change the values of the environment variables for fine
-grained control or custom configuration.
+CI should work out of the box for most packages. Uncomment the relevant lines
+in the CI config files or change the values of the environment variables for
+fine grained control or custom configuration.
 
 ### Local Machine
 You can use packcheck to build or CI test a package on your local machine as
