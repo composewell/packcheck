@@ -1,4 +1,4 @@
-version: 2.1
+version: 2
 
 #-----------------------------------------------------------------------------
 # packcheck-0.4.2
@@ -207,7 +207,7 @@ jobs:
         - *save
 
 workflows:
-  version: 2.1
+  version: 2
   build:
     jobs:
       - cabal-ghc-8-6-5
