@@ -115,7 +115,7 @@ save: &save
 #-----------------------------------------------------------------------------
 
 jobs:
-  cabal-ghc-8.6.5:
+  cabal-ghc-8-6-5:
       <<: *env
       steps:
         - checkout
@@ -126,7 +126,7 @@ jobs:
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-v2"
         - *save
-  cabal-ghc-8.4.4:
+  cabal-ghc-8-4-4:
       <<: *env
       steps:
         - checkout
@@ -137,7 +137,7 @@ jobs:
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-v2"
         - *save
-  cabal-ghc-8.2.2:
+  cabal-ghc-8-2-2:
       <<: *env
       steps:
         - checkout
@@ -148,7 +148,7 @@ jobs:
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-v2"
         - *save
-  cabal-ghc-8.0.2:
+  cabal-ghc-8-0-2:
       <<: *env
       steps:
         - checkout
@@ -159,7 +159,7 @@ jobs:
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-v2"
         - *save
-  cabal-ghc-7.10.3:
+  cabal-ghc-7-10-3:
       <<: *env
       steps:
         - checkout
@@ -170,7 +170,7 @@ jobs:
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-v2"
         - *save
-  stack-ghc-8.4:
+  stack-ghc-8-4:
       <<: *env
       steps:
         - checkout
@@ -179,7 +179,7 @@ jobs:
         - run: |
             bash -c "$PACKCHECK stack RESOLVER=lts-12"
         - *save
-  stack-ghc-8.2:
+  stack-ghc-8-2:
       <<: *env
       steps:
         - checkout
@@ -188,7 +188,7 @@ jobs:
         - run: |
             bash -c "$PACKCHECK stack RESOLVER=lts-11"
         - *save
-  coveralls-ghc-8.2.2:
+  coveralls-ghc-8-2-2:
       <<: *env
       steps:
         - checkout
@@ -210,11 +210,11 @@ workflows:
   version: 2.1
   build:
     jobs:
-      - cabal-ghc-8.6.5
-      #- cabal-ghc-8.4.4
-      #- cabal-ghc-8.2.2
-      #- cabal-ghc-8.0.2
-      #- cabal-ghc-7.10.3
-      #- stack-ghc-8.4
-      #- stack-ghc-8.2
-      #- coveralls-ghc-8.2.2
+      - cabal-ghc-8-6-5
+      - cabal-ghc-8-4-4
+      - cabal-ghc-8-2-2
+      - cabal-ghc-8-0-2
+      - cabal-ghc-7-10-3
+      - stack-ghc-8-4
+      - stack-ghc-8-2
+      - coveralls-ghc-8-2-2
