@@ -1,4 +1,4 @@
-version: 2
+version: 2.1
 
 #-----------------------------------------------------------------------------
 # packcheck-0.4.2
@@ -122,7 +122,7 @@ jobs:
         - *preinstall
         - *restore
         - run: |
-              apt-get install -y ghc-8.6.3
+              apt-get install -y ghc-8.6.5
               apt-get install -y cabal-install-2.4
               bash -c "$PACKCHECK cabal-v2"
         - *save
@@ -207,7 +207,7 @@ jobs:
         - *save
 
 workflows:
-  version: 2
+  version: 2.1
   build:
     jobs:
       - cabal-ghc-8.6.5
