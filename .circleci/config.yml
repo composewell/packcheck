@@ -215,13 +215,14 @@ workflows:
   version: 2
   build:
     jobs:
+      # Uncomment the configs that you want to enable
       - cabal-ghc-8-6-5
-      - cabal-ghc-8-4-4
-      - cabal-ghc-8-2-2
-      - cabal-ghc-8-0-2
-      - cabal-ghc-7-10-3
-      - stack-ghc-8-4
-      - stack-ghc-8-2
+      #- cabal-ghc-8-4-4
+      #- cabal-ghc-8-2-2
+      #- cabal-ghc-8-0-2
+      #- cabal-ghc-7-10-3
+      #- stack-ghc-8-4
+      #- stack-ghc-8-2
       # IMPORTANT: Please change the --repo-token to your repo token
       # in COVERALLS_OPTIONS above before enabling this.
-      - coveralls-ghc-8-2-2
+      #- coveralls-ghc-8-2-2
