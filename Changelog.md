@@ -22,6 +22,8 @@
 * Add packcheck-safe.sh . The safe version does not trust or use any
   environment variables, all environment needs to be specified on the command
   line. It also catches any misspelled command line parameter names.
+* Allow boolean parameters to be specified with a lenient syntax allowing
+  values y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON|n|N|no|No|NO|false|False|FALSE|off|Off|OFF
 
 ## 0.4.1
 

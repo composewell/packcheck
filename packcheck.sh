@@ -275,13 +275,18 @@ require_envvar() {
   test -n "$var" || die "Parameter or environment variable [$1] must be set. Try --help for usage."
 }
 
-# $1: envvar
+# $1: envvar name
 check_boolean_var() {
   error_novar "$1"
   local var=$(eval "echo \$$1")
-  if test -n "$var" -a "$var" != y
+
+  if test -n "$var"
   then
-    die "Boolean parameter or environment variable [$1=$var] can only be set to empty value or 'y'"
+    case "$var" in
+    y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON) export $1=y ;;
+    n|N|no|No|NO|false|False|FALSE|off|Off|OFF) export $1= ;;
+    *) die "Boolean parameter or environment variable [$1=$var] can only be set to either an empty value or one of the following boolean values: y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON|n|N|no|No|NO|false|False|FALSE|off|Off|OFF"
+    esac
   fi
 }
 
@@ -308,6 +313,10 @@ short_help() {
   echo "Control parameters can either be passed on command line or exported"
   echo "as environment variables. Parameters marked DESTRUCTIVE may modify"
   echo "your global user config or state."
+  echo
+  echo "Boolean parameters can be specified as "
+  echo "y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON for an affirmative value and as"
+  echo "n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value."
 }
 
 show_help() {

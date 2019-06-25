@@ -212,6 +212,10 @@ Control parameters can either be passed on command line or exported
 as environment variables. Parameters marked DESTRUCTIVE may modify
 your global user config or state.
 
+Boolean parameters can be specified as
+y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON for an affirmative value and as
+n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value.
+
 --------------------------------------------------
 Commands and flags
 --------------------------------------------------
