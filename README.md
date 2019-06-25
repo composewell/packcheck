@@ -1,6 +1,7 @@
 # packcheck
 
 [![Hackage](https://img.shields.io/hackage/v/packcheck.svg?style=flat)](https://hackage.haskell.org/package/packcheck)
+[![Gitter chat](https://badges.gitter.im/composewell/gitter.svg)](https://gitter.im/composewell/packcheck)
 [![Build Status](https://travis-ci.org/composewell/packcheck.svg?branch=master)](https://travis-ci.org/composewell/packcheck)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)

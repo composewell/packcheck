@@ -307,8 +307,17 @@ short_help() {
   echo "$0 COMMAND [PARAMETER=VALUE ...]"
   echo
   echo "For example:"
-  echo "$0 cabal-v2 GHC_OPTIONS=\"-O0 -Werror\""
+  echo "$0 cabal-v2 GHCVER=8.6.5"
   echo "$0 stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
+  echo
+  echo "Ask questions: https://gitter.im/composewell/packcheck"
+  echo "Report issues: https://github.com/composewell/packcheck/issues/new"
+}
+
+show_help() {
+  show_step1 "Usage"
+  short_help
+
   echo
   echo "Control parameters can either be passed on command line or exported"
   echo "as environment variables. Parameters marked DESTRUCTIVE may modify"
@@ -317,11 +326,6 @@ short_help() {
   echo "Boolean parameters can be specified as "
   echo "y|Y|yes|Yes|YES|true|True|TRUE|on|On|ON for an affirmative value and as"
   echo "n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value."
-}
-
-show_help() {
-  show_step1 "Usage"
-  short_help
 
   show_step1 "Commands and flags"
   help_cmd cabal-v2 "build using cabal v2-build"
