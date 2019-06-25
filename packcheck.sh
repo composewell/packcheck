@@ -304,11 +304,12 @@ help_envvar() {
 }
 
 short_help() {
-  echo "$0 COMMAND [PARAMETER=VALUE ...]"
+  local script=$(basename $0)
+  echo "$script COMMAND [PARAMETER=VALUE ...]"
   echo
   echo "For example:"
-  echo "$0 cabal-v2 GHCVER=8.6.5"
-  echo "$0 stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
+  echo "$script cabal-v2 GHCVER=8.6.5"
+  echo "$script stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
   echo
   echo "Ask questions: https://gitter.im/composewell/packcheck"
   echo "Report issues: https://github.com/composewell/packcheck/issues/new"
