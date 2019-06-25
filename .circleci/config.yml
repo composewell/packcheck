@@ -178,6 +178,7 @@ jobs:
         - *restore
         - run: |
             apt-get install -y ghc-8.4.4
+            apt-get install -y cabal-install-2.4
             bash -c "$PACKCHECK stack RESOLVER=lts-12"
         - *save
   stack-ghc-8-2:
@@ -188,6 +189,7 @@ jobs:
         - *restore
         - run: |
             apt-get install -y ghc-8.2.2
+            apt-get install -y cabal-install-2.4
             bash -c "$PACKCHECK stack RESOLVER=lts-11"
         - *save
   coveralls-ghc-8-2-2:
