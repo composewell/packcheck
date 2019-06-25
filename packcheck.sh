@@ -246,7 +246,7 @@ find_var() {
 }
 
 error_novar() {
-  find_var "$1" "$ENVVARS" || die "Unknown parameter or environment variable [$1]"
+  find_var "$1" "$ENVVARS" || die "Unknown parameter or environment variable [$1]\nTry --help for supported parameters"
 }
 
 error_clean_env() {
@@ -256,7 +256,7 @@ error_clean_env() {
 }
 
 error_clean_param() {
-    die "Unknown parameter [$1] specified on command line."
+    die "Unknown parameter [$1] specified on command line.\nTry --help for supported parameters"
 }
 
 ALLOW_ENVVARS="CHECK_ENV STACK_ROOT APPDATA PWD SHLVL _"
@@ -562,6 +562,21 @@ verify_build_config() {
       $STACK_BUILD_OPTIONS
 EOF
 )
+  elif test "$BUILD" = "cabal-v2"
+  then
+    test -n "$CABAL_BUILD_TARGETS" || CABAL_BUILD_TARGETS=all
+
+    CABAL_BUILD_OPTIONS=$(cat << EOF
+      $(test -n "$DISABLE_TEST" || echo "--enable-tests")
+      $(test -n "$DISABLE_BENCH" || echo "--enable-benchmarks")
+      $(test -z "${GHC_OPTIONS}" || echo --ghc-options=\"$GHC_OPTIONS\")
+      $CABAL_BUILD_OPTIONS
+EOF
+)
+    CABAL_DEP_OPTIONS="$CABAL_BUILD_OPTIONS --only-dependencies --reorder-goals --max-backjumps=-1"
+
+    test -z "${COVERAGE}" || \
+      CABAL_BUILD_OPTIONS="$CABAL_BUILD_OPTIONS --enable-coverage"
   elif test "$BUILD" = "cabal-v1"
   then
     CABAL_DEP_OPTIONS="--only-dependencies --reorder-goals --max-backjumps=-1"
@@ -579,22 +594,7 @@ EOF
 EOF
 )
   else
-    #CABAL_DEP_OPTIONS="--only-dependencies"
-    #test -n "$DISABLE_TEST" || \
-    #  CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-tests"
-    #test -n "$DISABLE_BENCH" || \
-    #  CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS --enable-benchmarks"
-    #CABAL_DEP_OPTIONS="$CABAL_DEP_OPTIONS $CABAL_BUILD_OPTIONS"
-
-    test -n "$CABAL_BUILD_TARGETS" || CABAL_BUILD_TARGETS=all
-    CABAL_BUILD_OPTIONS=$(cat << EOF
-      $(test -n "$DISABLE_TEST" || echo "--enable-tests")
-      $(test -n "$DISABLE_BENCH" || echo "--enable-benchmarks")
-      $(test -z "${COVERAGE}" || echo --enable-coverage)
-      $(test -z "${GHC_OPTIONS}" || echo --ghc-options=\"$GHC_OPTIONS\")
-      $CABAL_BUILD_OPTIONS
-EOF
-)
+      die "Bug: Unknown build type [$BUILD]"
   fi
 
   # These variables are now combined with other options so clear them
@@ -1275,7 +1275,7 @@ create_and_unpack_pkg_dist() {
 install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
-    cabal-v2) echo "No install dep step" ;;
+    cabal-v2) run_verbose_errexit cabal v2-build $GHCJS_FLAG $CABAL_DEP_OPTIONS ;;
     cabal-v1) install_cabal_v1_deps ;;
   esac
 }
@@ -1585,12 +1585,14 @@ export HOME=$(echo ~)
 set_os_specific_vars # depends on HOME
 
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
+echo
 echo "Adding usual utility locations to PATH [$PATH]..."
 if test "$BUILD" = "cabal-v1" -o "$BUILD" = "cabal-v2"
 then
   export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
 export PATH=$OS_APP_HOME/$OS_LOCAL_DIR/bin:$PATH
+echo
 echo "PATH is now set to [$PATH]"
 
 verify_build_config
