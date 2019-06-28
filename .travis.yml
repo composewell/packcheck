@@ -1,7 +1,8 @@
 # packcheck-0.4.2
 # You can use any of the options supported by packcheck as environment
-# variables here.  See https://github.com/harendra-kumar/packcheck for all
+# variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
+
 # dist: trusty
 dist: xenial
 env:
@@ -102,6 +103,11 @@ matrix:
   # You can specify build flags like this:
   #- env: BUILD=cabal-v2 CABAL_BUILD_OPTIONS="--flags=dev"
   #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
+
+  # You can use a cabal project file to specify flags like -Werror on per
+  # package basis.
+  - env: BUILD=cabal-v2 CABAL_PROJECT=cabal.project.ci
+    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # GHCJS cabal builds
