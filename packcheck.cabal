@@ -25,8 +25,8 @@ description:
   .
   See the README for comprehensive documentation.
 
-homepage:            https://github.com/harendra-kumar/packcheck
-bug-reports:         https://github.com/harendra-kumar/packcheck/issues
+homepage:            https://github.com/composewell/packcheck
+bug-reports:         https://github.com/composewell/packcheck/issues
 license:             BSD3
 license-file:        LICENSE
 tested-with:           GHC==7.10.3
@@ -53,7 +53,7 @@ extra-source-files:
 
 source-repository head
     type: git
-    location: https://github.com/harendra-kumar/packcheck
+    location: https://github.com/composewell/packcheck
 
 flag dev
   description: Development build
