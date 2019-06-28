@@ -209,6 +209,7 @@ SAFE_ENVVARS="\
   STACK_YAML \
   STACK_OPTIONS \
   STACK_BUILD_OPTIONS \
+  CABAL_PROJECT \
   CABAL_CHECK_RELAX \
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
@@ -375,6 +376,7 @@ show_help() {
   help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
 
   show_step1 "cabal options"
+  help_envvar CABAL_PROJECT "Alternative cabal project config, cannot be a path, just the file name"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
   help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
@@ -611,6 +613,7 @@ EOF
   then
     if test "$BUILD" != "cabal-v1" -a "$BUILD" != "cabal-v2"
     then
+      cabal_only_var CABAL_PROJECT
       cabal_only_var CABALVER
       cabal_only_var CABAL_USE_STACK_SDIST
       cabal_only_var CABAL_CHECK_RELAX
@@ -624,7 +627,8 @@ EOF
     else
       case "$BUILD" in
         cabal-v1) cabal_v2_only_var CABAL_BUILD_OPTIONS
-                  cabal_v2_only_var CABAL_BUILD_TARGETS ;;
+                  cabal_v2_only_var CABAL_BUILD_TARGETS
+                  cabal_v2_only_var CABAL_PROJECT ;;
         cabal-v2) cabal_v1_only_var CABAL_NO_SANDBOX
                   cabal_v1_only_var CABAL_CONFIGURE_OPTIONS ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
@@ -1036,6 +1040,26 @@ ensure_cabal() {
   CABALVER=$(cabal --numeric-version) || exit 1
 }
 
+ensure_cabal_project() {
+  CABALCMD=cabal
+  SDIST_CABALCMD=$CABALCMD
+
+  if test -n "$CABAL_PROJECT"
+  then
+    require_file $CABAL_PROJECT
+    SDIST_CABALCMD="$CABALCMD --project-file=$CABAL_PROJECT"
+    if test -n "$DISABLE_SDIST_BUILD"
+    then
+      CABALCMD="$SDIST_CABALCMD"
+    else
+      # We run the command from .packcheck/<package> dir after unpacking
+      # sdist
+      CABALCMD="$CABALCMD --project-file=../../$CABAL_PROJECT"
+    fi
+  fi
+  echo "Using cabal command [$CABALCMD]"
+}
+
 ensure_stack_yaml() {
   if test -n "$STACK_YAML"
   then
@@ -1043,11 +1067,20 @@ ensure_stack_yaml() {
   else
     require_file stack.yaml
   fi
+
   SDIST_STACKCMD=$STACKCMD
-  test -z "$STACK_YAML" || SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
-  # We run the stack command from .packcheck/<package> dir after unpacking
-  # sdist
-  test -z "$STACK_YAML" || STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
+  if test -n "$STACK_YAML"
+  then
+    SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
+    if test -n "$DISABLE_SDIST_BUILD"
+    then
+      STACKCMD="$SDIST_STACKCMD"
+    else
+      # We run the stack command from .packcheck/<package> dir after unpacking
+      # sdist
+      STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
+    fi
+  fi
   echo "Using stack command [$STACKCMD]"
 }
 
@@ -1232,10 +1265,10 @@ create_and_unpack_pkg_dist() {
     then
       install_cabal_v1_deps
       cabal_v1_configure
-      SDIST_CMD="cabal v1-sdist $opts"
+      SDIST_CMD="$SDIST_CABALCMD v1-sdist $opts"
       SDIST_DIR=dist
     else
-      SDIST_CMD="cabal v2-sdist $opts"
+      SDIST_CMD="$SDIST_CABALCMD v2-sdist $opts"
       SDIST_DIR=dist-newstyle/sdist
     fi
   fi
@@ -1275,7 +1308,7 @@ create_and_unpack_pkg_dist() {
 install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
-    cabal-v2) run_verbose_errexit cabal v2-build $GHCJS_FLAG $CABAL_DEP_OPTIONS ;;
+    cabal-v2) run_verbose_errexit $CABALCMD v2-build $GHCJS_FLAG $CABAL_DEP_OPTIONS $CABAL_BUILD_TARGETS ;;
     cabal-v1) install_cabal_v1_deps ;;
   esac
 }
@@ -1284,9 +1317,9 @@ build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-v2)
-      run_verbose_errexit cabal v2-build $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      run_verbose_errexit $CABALCMD v2-build $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal v2-haddock $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      test -n "$DISABLE_DOCS" || run_verbose_errexit $CABALCMD v2-haddock $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       if test -z "$DISABLE_TEST"
       then
         local version
@@ -1297,7 +1330,7 @@ build_and_test() {
           SHOW_DETAILS="--test-show-details=streaming"
         fi
         echo
-        run_verbose_errexit cabal v2-test $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+        run_verbose_errexit $CABALCMD v2-test $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       fi ;;
     cabal-v1)
       cabal_v1_configure
@@ -1318,7 +1351,7 @@ dist_checks() {
       then
         run_verbose_errexit cabal v1-sdist
       else
-        run_verbose_errexit cabal v2-sdist
+        run_verbose_errexit $CABALCMD v2-sdist $CABAL_BUILD_TARGETS
       fi
 
       echo
@@ -1343,7 +1376,8 @@ install_test() {
       (cd dist && run_verbose_errexit cabal install "${1}.tar.gz")
       remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
     cabal-v2)
-      echo "WARNING! Because of a cabal issue, ENABLE_INSTALL does not work with cabal-v2" ;;
+      run_verbose_errexit $CABALCMD v2-install $CABAL_BUILD_TARGETS
+      remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
   esac
 }
 
@@ -1362,7 +1396,7 @@ build_hlint() {
       ensure_ghc
       case "$BUILD" in
         cabal-v1) run_verbose_errexit cabal v1-install hlint ;;
-        cabal-v2) run_verbose_errexit cabal v2-install hlint ;;
+        cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
       esac
     fi
@@ -1382,7 +1416,7 @@ coveralls_io() {
     else
       case "$BUILD" in
         cabal-v1) run_verbose_errexit cabal v1-install hpc-coveralls ;;
-        cabal-v2) run_verbose_errexit cabal v2-install hpc-coveralls ;;
+        cabal-v2) run_verbose_errexit $CABALCMD v2-install hpc-coveralls ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
       esac
     fi
@@ -1421,6 +1455,7 @@ build_compile () {
 
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"
+  dont_need_cabal || ensure_cabal_project
   dont_need_cabal || ensure_cabal_config
   if test -z "$DISABLE_SDIST_BUILD" -o -n "$ENABLE_INSTALL"
   then
