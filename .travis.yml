@@ -106,8 +106,8 @@ matrix:
 
   # You can use a cabal project file to specify flags like -Werror on per
   # package basis.
-  - env: BUILD=cabal-v2 CABAL_PROJECT=cabal.project.ci
-    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5], sources: [hvr-ghc]}}
+  #- env: BUILD=cabal-v2 CABAL_PROJECT=cabal.project.ci
+  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # GHCJS cabal builds
