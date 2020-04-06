@@ -232,6 +232,7 @@ UNSAFE_ENVVARS="\
   CABAL_REINIT_CONFIG \
   CABAL_NO_SANDBOX \
   CABAL_HACKAGE_MIRROR \
+  CABAL_GLOBAL_INSTALL_OPTIONS \
 "
 
 ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
@@ -389,6 +390,7 @@ show_help() {
   # try to install conflicting packages.
   help_envvar CABAL_NO_SANDBOX "[y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db"
   help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
+  help_envvar CABAL_GLOBAL_INSTALL_OPTIONS "ADDITIONAL install options like different project files."
 
   show_step1 "Coverage options"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
@@ -824,7 +826,7 @@ find_binary () {
   # If we did not find the binary, restore the PATH for better error reporting
   PATH=$path
 
-  if test -n "$TOOLS_DIR" 
+  if test -n "$TOOLS_DIR"
   then
     echo "Looking for binary [$1] in [$TOOLS_DIR]..."
     # Find if we have a binary in TOOLS_DIR
@@ -856,7 +858,7 @@ find_binary () {
 
   STACK_ROOT_PATH="~/.stack"
   if test -n "$STACK_ROOT"
-  then 
+  then
     STACK_ROOT_PATH=$STACK_ROOT
   fi
   # XXX what if there are multiple arch dirs in programs?
@@ -1396,7 +1398,7 @@ build_hlint() {
       ensure_ghc
       case "$BUILD" in
         cabal-v1) run_verbose_errexit cabal v1-install hlint ;;
-        cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
+        cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint $CABAL_GLOBAL_INSTALL_OPTIONS ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
       esac
     fi
@@ -1416,7 +1418,7 @@ coveralls_io() {
     else
       case "$BUILD" in
         cabal-v1) run_verbose_errexit cabal v1-install hpc-coveralls ;;
-        cabal-v2) run_verbose_errexit $CABALCMD v2-install hpc-coveralls ;;
+        cabal-v2) run_verbose_errexit $CABALCMD v2-install hpc-coveralls $CABAL_GLOBAL_INSTALL_OPTIONS ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
       esac
     fi
