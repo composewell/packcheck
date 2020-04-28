@@ -1,4 +1,4 @@
-# packcheck-0.4.2
+# packcheck-0.4.3
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -33,7 +33,7 @@ environment:
     # version.
     #STACKVER: "1.6.5"
     STACK_UPGRADE: "y"
-    RESOLVER: "lts-13"
+    RESOLVER: "lts-15"
     STACK_ROOT: "c:\\sr"
 
     # ------------------------------------------------------------------------

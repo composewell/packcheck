@@ -1,4 +1,4 @@
-# packcheck-0.4.2
+# packcheck-0.4.3
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -85,20 +85,20 @@ matrix:
   #- env: BUILD=cabal-v2 GHCVER=head
   #  addons: {apt: {packages: [cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
+  - env: BUILD=cabal-v2 GHCVER=8.10.1
+    addons: {apt: {packages: [cabal-install-3.2,ghc-8.10.1], sources: [hvr-ghc]}}
+
+  - env: BUILD=cabal-v2 GHCVER=8.8.3
+    addons: {apt: {packages: [cabal-install-3.2,ghc-8.8.3], sources: [hvr-ghc]}}
+
   - env: BUILD=cabal-v2 GHCVER=8.6.5
-    addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-3.2,ghc-8.6.5], sources: [hvr-ghc]}}
 
   - env: BUILD=cabal-v2 GHCVER=8.4.4
-    addons: {apt: {packages: [cabal-install-2.4,ghc-8.4.4], sources: [hvr-ghc]}}
-
-  #- env: BUILD=cabal-v2 GHCVER=8.2.2
-  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.2.2], sources: [hvr-ghc]}}
-
-  #- env: BUILD=cabal-v2 GHCVER=8.0.2
-  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.0.2], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-3.2,ghc-8.4.4], sources: [hvr-ghc]}}
 
   #- env: BUILD=cabal-v2 GHCVER=7.10.3
-  #  addons: {apt: {packages: [cabal-install-2.4,ghc-7.10.3], sources: [hvr-ghc]}}
+  #  addons: {apt: {packages: [cabal-install-3.2,ghc-7.10.3], sources: [hvr-ghc]}}
 
   # You can specify build flags like this:
   #- env: BUILD=cabal-v2 CABAL_BUILD_OPTIONS="--flags=dev"
@@ -107,7 +107,7 @@ matrix:
   # You can use a cabal project file to specify flags like -Werror on per
   # package basis.
   #- env: BUILD=cabal-v2 CABAL_PROJECT=cabal.project.ci
-  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.6.5], sources: [hvr-ghc]}}
+  #  addons: {apt: {packages: [cabal-install-3.2,ghc-8.6.5], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # GHCJS cabal builds
@@ -134,20 +134,17 @@ matrix:
   # otherwise.
 
   #- env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=stack RESOLVER=lts-13 GHCVER=8.6
-    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+  - env: BUILD=stack RESOLVER=lts-15 GHCVER=8.8
+    addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
+
+  - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.6
+    addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
 
   - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
-    addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
-
-  #- env: BUILD=stack RESOLVER=lts-11 GHCVER=8.2
-  # addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
-
-  #- env: BUILD=stack RESOLVER=lts-9 GHCVER=8.0
-  # addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+    addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
 
   #- env: BUILD=stack RESOLVER=lts-6 GHCVER=7.10
-  # addons: {apt: {packages: [cabal-install-2.4], sources: [hvr-ghc]}}
+  # addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
 
   # You can keep a STACK_YAML file at any path location
   #- env: BUILD=stack STACK_YAML=.ci/stack-8.0.yaml
@@ -160,7 +157,7 @@ matrix:
   # --------------------------------------------------------------------------
 
   # GHC 8.6 cabal build using stack!
-  - env: BUILD=cabal-v2 RESOLVER=lts-13 GHCVER=8.6
+  - env: BUILD=cabal-v2 RESOLVER=lts-15 GHCVER=8.8
     os: osx
 
   # GHC 8.4/stack

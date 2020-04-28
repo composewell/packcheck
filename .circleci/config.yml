@@ -1,4 +1,4 @@
-# packcheck-0.4.2
+# packcheck-0.4.3
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -119,6 +119,28 @@ save: &save
 #-----------------------------------------------------------------------------
 
 jobs:
+  cabal-ghc-8-10-1:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.10.1
+              apt-get install -y cabal-install-3.2
+              bash -c "$PACKCHECK cabal-v2"
+        - *save
+  cabal-ghc-8-8-3:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+              apt-get install -y ghc-8.8.3
+              apt-get install -y cabal-install-3.2
+              bash -c "$PACKCHECK cabal-v2"
+        - *save
   cabal-ghc-8-6-5:
       <<: *env
       steps:
@@ -127,7 +149,7 @@ jobs:
         - *restore
         - run: |
               apt-get install -y ghc-8.6.5
-              apt-get install -y cabal-install-2.4
+              apt-get install -y cabal-install-3.2
               bash -c "$PACKCHECK cabal-v2"
         - *save
   cabal-ghc-8-4-4:
@@ -138,29 +160,7 @@ jobs:
         - *restore
         - run: |
               apt-get install -y ghc-8.4.4
-              apt-get install -y cabal-install-2.4
-              bash -c "$PACKCHECK cabal-v2"
-        - *save
-  cabal-ghc-8-2-2:
-      <<: *env
-      steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-8.2.2
-              apt-get install -y cabal-install-2.4
-              bash -c "$PACKCHECK cabal-v2"
-        - *save
-  cabal-ghc-8-0-2:
-      <<: *env
-      steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-              apt-get install -y ghc-8.0.2
-              apt-get install -y cabal-install-2.4
+              apt-get install -y cabal-install-3.2
               bash -c "$PACKCHECK cabal-v2"
         - *save
   cabal-ghc-7-10-3:
@@ -171,8 +171,19 @@ jobs:
         - *restore
         - run: |
               apt-get install -y ghc-7.10.3
-              apt-get install -y cabal-install-2.4
+              apt-get install -y cabal-install-3.2
               bash -c "$PACKCHECK cabal-v2"
+        - *save
+  stack-ghc-8-8:
+      <<: *env
+      steps:
+        - checkout
+        - *preinstall
+        - *restore
+        - run: |
+            apt-get install -y ghc-8.8.3
+            apt-get install -y cabal-install-3.2
+            bash -c "$PACKCHECK stack RESOLVER=lts-15"
         - *save
   stack-ghc-8-4:
       <<: *env
@@ -182,19 +193,8 @@ jobs:
         - *restore
         - run: |
             apt-get install -y ghc-8.4.4
-            apt-get install -y cabal-install-2.4
+            apt-get install -y cabal-install-3.2
             bash -c "$PACKCHECK stack RESOLVER=lts-12"
-        - *save
-  stack-ghc-8-2:
-      <<: *env
-      steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run: |
-            apt-get install -y ghc-8.2.2
-            apt-get install -y cabal-install-2.4
-            bash -c "$PACKCHECK stack RESOLVER=lts-11"
         - *save
   coveralls-ghc-8-2-2:
       <<: *env
@@ -220,13 +220,13 @@ workflows:
   build:
     jobs:
       # Uncomment the configs that you want to enable
-      - cabal-ghc-8-6-5
+      - cabal-ghc-8-10-1
+      #- cabal-ghc-8-8-3
+      #- cabal-ghc-8-6-5
       #- cabal-ghc-8-4-4
-      #- cabal-ghc-8-2-2
-      #- cabal-ghc-8-0-2
       #- cabal-ghc-7-10-3
+      #- stack-ghc-8-8
       #- stack-ghc-8-4
-      #- stack-ghc-8-2
       # IMPORTANT: Please change the --repo-token to your repo token
       # in COVERALLS_OPTIONS above before enabling this.
       #- coveralls-ghc-8-2-2
