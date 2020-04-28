@@ -1,4 +1,4 @@
-## Unreleased
+## 0.4.3
 
 * Add `CABAL_PROJECT` environment variable to support specifying a cabal
   project file.
