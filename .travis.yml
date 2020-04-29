@@ -58,8 +58,8 @@ env:
   - PACKCHECK_LOCAL_PATH="./packcheck.sh"
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
-  - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/harendra-kumar/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="3d48b1711a099fb30fe202b620f6fcf70ed3410b"
+  - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/composewell/packcheck"
+  - PACKCHECK_GITHUB_COMMIT="a8570f8dac83b05247a23f71a5b3d2e9e26c21dc"
 
 notifications:
   email:
@@ -136,7 +136,7 @@ matrix:
   - env: BUILD=stack RESOLVER=lts-15 GHCVER=8.8
     addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
 
-  - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.6
+  - env: BUILD=stack RESOLVER=lts-14 GHCVER=8.6
     addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
 
   - env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
@@ -155,19 +155,19 @@ matrix:
   # OS X builds
   # --------------------------------------------------------------------------
 
-  # GHC 8.6 cabal build using stack!
-  - env: BUILD=cabal-v2 RESOLVER=lts-15 GHCVER=8.8
+  # cabal build using stack!
+  #- env: BUILD=cabal-v2 RESOLVER=lts-15 GHCVER=8.8
+  - env: BUILD=stack RESOLVER=lts-15 GHCVER=8.8 DISABLE_SDIST_BUILD=y
     os: osx
 
-  # GHC 8.4/stack
-  #- env: BUILD=stack RESOLVER=lts-12 GHCVER=8.4
+  #- env: BUILD=stack RESOLVER=lts-14 GHCVER=8.6
   #  os: osx
 
   # --------------------------------------------------------------------------
   # Lint e.g. HLINT_COMMANDS="hlint lint src; hlint lint test"
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=stack RESOLVER=lts-13 HLINT_COMMANDS="hlint lint ."
+  #- env: BUILD=stack RESOLVER=lts-15 HLINT_COMMANDS="hlint lint ."
 
   # --------------------------------------------------------------------------
   # Build and send coverage report to coveralls.io using hpc-coveralls.  Add
@@ -190,7 +190,7 @@ matrix:
   allow_failures:
   - env: BUILD=cabal-v2 GHCVER=head
   - env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=stack RESOLVER=lts-13 HLINT_COMMANDS="hlint lint ."
+  - env: BUILD=stack RESOLVER=lts-15 HLINT_COMMANDS="hlint lint ."
 
 # ------------------------------------------------------------------------
 #  Settings beyond this point are advanced and normally not tweaked
