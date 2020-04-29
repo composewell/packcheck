@@ -368,7 +368,7 @@ show_help() {
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
   help_envvar DISABLE_DIST_CHECKS "[y] Do not perform source distribution checks"
-  help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
+  #help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
   show_step1 "stack options"
   help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
@@ -420,6 +420,12 @@ check_all_boolean_vars () {
   fi
   check_boolean_var ENABLE_GHCJS
   check_boolean_var ENABLE_INSTALL
+  if test -n "$ENABLE_INSTALL"
+  then
+    echo "WARNING! ENABLE_INSTALL is deprecated and will be removed in future"
+    echo "WARNING! ENABLE_INSTALL is a no op, it will be do nothing"
+    unset ENABLE_INSTALL
+  fi
   check_boolean_var DISABLE_BENCH
   check_boolean_var DISABLE_TEST
   check_boolean_var DISABLE_DOCS
@@ -1565,7 +1571,8 @@ test -n "$1" \
 case $1 in
   cabal) shift; eval_env "$@"; BUILD=cabal-v1; \
     echo "DEPRECATED! please use cabal-v1 instead";;
-  cabal-v1) shift; eval_env "$@"; BUILD=cabal-v1;;
+  cabal-v1) shift; eval_env "$@"; BUILD=cabal-v1; \
+    echo "DEPRECATED! please use cabal-v2 instead";;
   cabal-new) shift; eval_env "$@"; BUILD=cabal-v2; \
     echo "DEPRECATED! please use cabal-v2 instead";;
   cabal-v2) shift; eval_env "$@"; BUILD=cabal-v2;;

@@ -26,7 +26,6 @@ env: &env
       # DISABLE_DOCS: "y"
       # DISABLE_SDIST_BUILD: "y"
       # DISABLE_DIST_CHECKS: "y"
-      ENABLE_INSTALL: "y"
 
       # ------------------------------------------------------------------------
       # stack options

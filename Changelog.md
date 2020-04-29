@@ -1,5 +1,7 @@
 ## 0.4.3
 
+* `cabal-v1` command now shows a deprecation message
+* `ENABLE_INSTALL` option now does nothing. It will be removed in future.
 * Add `CABAL_PROJECT` environment variable to support specifying a cabal
   project file.
 

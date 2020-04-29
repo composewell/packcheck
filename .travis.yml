@@ -25,7 +25,6 @@ env:
   # - DISABLE_DOCS=y
   # - DISABLE_SDIST_BUILD=y
   # - DISABLE_DIST_CHECKS=y
-  - ENABLE_INSTALL=y
 
   # ------------------------------------------------------------------------
   # stack options
@@ -114,7 +113,7 @@ matrix:
   # --------------------------------------------------------------------------
 
   # Use CABAL_BUILD_OPTIONS to pass any options to cabal e.g. project-file
-  # - env: BUILD=cabal-v2 ENABLE_GHCJS=y CABAL_BUILD_OPTIONS="" DISABLE_DOCS=y ENABLE_INSTALL= DISABLE_SDIST_BUILD=y
+  # - env: BUILD=cabal-v2 ENABLE_GHCJS=y CABAL_BUILD_OPTIONS="" DISABLE_DOCS=y DISABLE_SDIST_BUILD=y
   #   addons:
   #     apt:
   #       sources:
