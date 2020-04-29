@@ -3,8 +3,7 @@
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
 
-# dist: trusty
-dist: xenial
+#dist: bionic
 env:
   # ------------------------------------------------------------------------
   # Global options, you can use these per build as well
