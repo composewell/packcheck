@@ -38,7 +38,6 @@ as:
 $ packcheck.sh cabal-v2
 $ packcheck.sh cabal-v2 GHCVER=8.6.5
 $ packcheck.sh cabal-v2 ENABLE_GHCJS=y
-$ packcheck.sh cabal-v1
 $ packcheck.sh stack GHCVER=8.6
 ```
 
@@ -134,7 +133,6 @@ You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
 $ ./packcheck.sh cabal-v2 GHCVER=8.6.5
-$ ./packcheck.sh cabal-v1 GHCVER=7.10.3 CABALVER=1.22
 ```
 
 ```
@@ -153,7 +151,7 @@ $ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.
 ```
-$ ./packcheck.sh cabal-v1 GHCVER=8.0.2 COVERALLS_OPTIONS="test1 test2"
+$ ./packcheck.sh cabal-v2 GHCVER=8.8.3 COVERALLS_OPTIONS="test1 test2"
 ```
 
 ## Picking GHC versions
