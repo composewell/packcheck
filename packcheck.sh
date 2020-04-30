@@ -199,6 +199,7 @@ SAFE_ENVVARS="\
   GHC_OPTIONS \
   SDIST_OPTIONS \
   DISABLE_SDIST_BUILD \
+  DISABLE_SDIST_GIT_CHECK \
   DISABLE_BENCH \
   DISABLE_TEST \
   DISABLE_DOCS \
@@ -367,6 +368,7 @@ show_help() {
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
+  help_envvar DISABLE_SDIST_GIT_CHECK "[y] Do not compare source distribution with git repo"
   help_envvar DISABLE_DIST_CHECKS "[y] Do not perform source distribution checks"
   #help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
@@ -408,6 +410,7 @@ check_all_boolean_vars () {
   check_boolean_var STACK_UPGRADE
   check_boolean_var DISABLE_SDIST_BUILD
   check_boolean_var DISABLE_DIST_CHECKS
+  check_boolean_var DISABLE_SDIST_GIT_CHECK
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
@@ -1128,6 +1131,8 @@ get_pkg_full_name() {
   echo $full_name
 }
 
+# XXX use MULTI_PACKAGE_PROJECT as a CLI option, instead of trying to determine
+# it here.
 determine_build_type() {
   MULTI_PACKAGE_PROJECT=false
   echo "Looking for cabal or stack build files in the current directory..."
@@ -1294,6 +1299,39 @@ create_and_unpack_pkg_dist() {
 
   # Unpack the tar inside .packcheck directory
   mkdir -p .packcheck || exit 1
+
+  if test -d ".git" -a -n $(which_cmd git) -a -n $(which_cmd tar)
+  then
+    echo ".git directory found, assuming git repo"
+    echo "Comparing distribution contents against git ls-files..."
+    tar -ztf $tarpath \
+      | sed -e 's%^packcheck-0\.4\.3/%%' \
+      | grep -v '/$' \
+      | grep -v '^$' \
+      > .packcheck/tar-ztf.txt
+    if test -f .packcheck.ignore
+    then
+      cat .packcheck.ignore .packcheck/tar-ztf.txt \
+        | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
+    else
+      mv .packcheck/tar-ztf.txt .packcheck/tar-ztf1.txt
+    fi
+    git ls-files | grep -v '^$' > .packcheck/git-ls-files.txt
+    diff .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt ||
+      { echo "WARNING! Source distribution tar and git repo contents differ."
+        if test -z "$DISABLE_SDIST_GIT_CHECK"
+        then
+          echo "Exiting. Use DISABLE_SDIST_GIT_CHECK=y to disable this check."
+          echo "Or put the exceptions in .packcheck.ignore file."
+          exit
+        fi
+      }
+
+      rm -f .packcheck/tar-ztf.txt \
+        .packcheck/tar-ztf1.txt \
+        .packcheck/git-ls-files.txt
+  fi
+
   echo
   echo "cd .packcheck"
   cd .packcheck || exit 1

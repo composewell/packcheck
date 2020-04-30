@@ -84,7 +84,8 @@ The script can be easily adapted to any CI with a single line build command.
   binaries can be picked automatically when available.
 * _Test source distribution:_ `packcheck` creates the source distribution and
   builds the package from the generated tarball to make sure that you build
-  what you release and don't miss adding a file to the distribution.
+  what you release and don't miss adding a file to the distribution. Also,
+  checks if any file in the git repo is missing in the source distribution.
 * _Upload coverage:_ To send coverage info to
   [coveralls.io](https://coveralls.io) just uncomment a line in your
   `.travis.yml`.
@@ -264,6 +265,7 @@ DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but n
 DISABLE_TEST            : [y] Do not run tests, default is to run tests
 DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
 DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
+DISABLE_SDIST_GIT_CHECK : [y] Do not compare source distribution with git repo
 DISABLE_DIST_CHECKS     : [y] Do not perform source distribution checks
 
 --------------------------------------------------
@@ -301,6 +303,12 @@ Diagnostics options
 CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
 BASE_TIME               : System time to be used as base for timeline reporting
 ```
+
+Build fails if `DISABLE_SDIST_BUILD` is not set and the contents
+of the source distribution tar ball do not match the git repository
+contents. Either add any exceptions to `.packcheck.ignore` file or use
+`DISABLE_SDIST_GIT_CHECK=y` to disable this feature. Currently this check is
+done only if `git` and `tar` commands are available in the `PATH`.
 
 Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
 local machine sometimes it may not be desirable as it will change the

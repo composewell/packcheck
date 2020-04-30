@@ -50,6 +50,10 @@ extra-source-files:
     .circleci/config.yml
     appveyor.yml
     cabal.project.coveralls
+    cabal.project.ci
+    packcheck.sh
+    packcheck-safe.sh
+    MAINTAINING.md
 
 source-repository head
     type: git

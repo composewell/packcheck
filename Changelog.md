@@ -1,25 +1,39 @@
 ## 0.4.3
 
-## Deprecations
+### Bug Fixes
+
+* `packcheck.sh` script itself was missing from the package, added.
+
+### Breaking Changes
+
+* CI now fails if `DISABLE_SDIST_BUILD` is not set and the contents
+  of the source distribution tar ball do not match the git repository
+  contents. Either add any exceptions to `.packcheck.ignore` file or use
+  `DISABLE_SDIST_GIT_CHECK=y` to disable this feature. Currently this check is
+  done only if `git` and `tar` commands are available in the `PATH`.
+
+### Deprecations
 
 * `cabal-v1` command now shows a deprecation message and is removed from help.
   This command will be removed in future.
 * `ENABLE_INSTALL` option now does nothing. This change is because of the new
-  behavior in cabal-3. It will be removed in future.
+  behavior in cabal-3. This option will be removed in future.
 
-## Enhancements
+### Enhancements
 
+* Added a feature to detect if any files in the git repo are missing from the
+  source distribution tarball.
 * Add `CABAL_PROJECT` environment variable to support specifying a cabal
   project file.
 
 ## 0.4.2
 
-## Bug Fixes
+### Bug Fixes
 
 * When building from source distribution, it would not build again unless
   cleaned with `packcheck clean` if a file in the source has changed.
 
-## Deprecations
+### Deprecations
 
 * Deprecate and replace the `cabal` command with `cabal-v1`, in future `cabal`
   will be used for `cabal-v2`.
@@ -29,7 +43,7 @@
 * Use STACK_BUILD_OPTIONS envvar in the dependency install phase as well
 * Remove stack yaml creation using stack init/solver
 
-## Enhancements
+### Enhancements
 
 * Search for ghc among stack installed GHC binaries as well
 * Add GHCJS support. Use ENABLE_GHCJS=y option.
