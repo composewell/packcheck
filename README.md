@@ -11,7 +11,7 @@
 
 Please use `cabal` version 2.4 or later.
 
-### CI (Travis/Appveyor/CircleCI)
+### Build on CI (Travis/Appveyor/CircleCI)
 To use packcheck for CI testing of your repo:
 
 * Add your package repo to travis/appveyor/circleci
@@ -26,7 +26,7 @@ CI should work out of the box for most packages. Uncomment the relevant lines
 in the CI config files or change the values of the environment variables for
 fine grained control or custom configuration.
 
-### Local Machine
+### Build on Local Machine
 You can use packcheck to build or CI test a package on your local machine as
 well.  For local use, copy
 [packcheck.sh](https://github.com/composewell/packcheck/blob/master/packcheck.sh)
@@ -49,12 +49,17 @@ $ packcheck.sh stack GHCVER=8.6
 
 ### Out of the box support
 
-| Platforms     | Build Types     | CI Modes      | Compilers |
-|:-------------:|:---------------:|:-------------:|:---------:|
-| Linux         | stack           | Travis        | GHC       |
-| OSX           | cabal           | Appveyor      | GHCJS     |
-| Windows       | cabal new-build | CircleCI      |           |
-|               |                 | Local Machine |           |
+| GHC           | GHCJS     |
+|:-------------:|:---------:|
+
+| cabal         | stack     |
+|:-------------:|:---------:|
+
+| Linux         | OSX       | Windows       |
+|:-------------:|:---------:|:--------------|
+
+| Travis        | Appveyor  | CircleCI      | Local Machine |
+|:-------------:|:---------:|:--------------|:--------------|
 
 The script can be easily adapted to any CI with a single line build command.
 
