@@ -203,6 +203,7 @@ jobs:
         - *restore
         - run:
             environment:
+              CABAL_PROJECT: "cabal.project.coveralls"
               # Please change the repo token to your repo token
               COVERALLS_OPTIONS: "--repo-token=YvxdfMiOmfq0limz6nLd4DxiC1RBQJ4dA --coverage-mode=StrictlyFullLines --exclude-dir=test test"
             command: |

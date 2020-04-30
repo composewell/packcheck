@@ -49,6 +49,7 @@ extra-source-files:
     .travis.yml
     .circleci/config.yml
     appveyor.yml
+    cabal.project.coveralls
 
 source-repository head
     type: git

@@ -131,6 +131,7 @@ matrix:
   # otherwise.
 
   #- env: BUILD=stack RESOLVER=nightly
+
   - env: BUILD=stack RESOLVER=lts-15 GHCVER=8.8
     addons: {apt: {packages: [cabal-install-3.2], sources: [hvr-ghc]}}
 
@@ -176,7 +177,7 @@ matrix:
   # * See the packcheck README for more details
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=cabal-v2 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
+  #- env: BUILD=cabal-v2 CABAL_PROJECT=cabal.project.coveralls COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
   #  addons: {apt: {packages: [cabal-install-3.2,ghc-8.8.3], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------

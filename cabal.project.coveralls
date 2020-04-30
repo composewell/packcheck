@@ -1,0 +1,6 @@
+packages: .
+
+source-repository-package
+  type: git
+  location: https://github.com/composewell/hpc-coveralls
+  tag: d9e20179579f0638f6e978816355d18568e6a1f0
