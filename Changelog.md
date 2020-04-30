@@ -1,7 +1,14 @@
 ## 0.4.3
 
-* `cabal-v1` command now shows a deprecation message
-* `ENABLE_INSTALL` option now does nothing. It will be removed in future.
+## Deprecations
+
+* `cabal-v1` command now shows a deprecation message and is removed from help.
+  This command will be removed in future.
+* `ENABLE_INSTALL` option now does nothing. This chnage is because of the new
+  behavior in cabal-3. It will be removed in future.
+
+## Enhancements
+
 * Add `CABAL_PROJECT` environment variable to support specifying a cabal
   project file.
 

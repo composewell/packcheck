@@ -10,7 +10,6 @@ description:
   PATH, and run it from your package directory:
   .
   > $ packcheck.sh cabal-v2
-  > $ packcheck.sh cabal-v1
   > $ packcheck.sh stack
   .
   You can try the script on this package itself. It builds and comprehensively
