@@ -9,6 +9,8 @@
 
 ## Quick Start
 
+Please use `cabal` version 2.4 or later.
+
 ### CI (Travis/Appveyor/CircleCI)
 To use packcheck for CI testing of your repo:
 
@@ -193,6 +195,8 @@ $ ./packcheck-safe.sh cabal-v2 PATH=/bin:/usr/bin:/opt/ghc/bin
 
 ## Full Reference
 
+Please use `cabal` version 2.4 or later.
+
 NOTE: Any of the parameters described below can either be passed on command
 line or as an environment variable. Passing options on command line is more
 convenient when running interactively, while environment variables are more
@@ -221,9 +225,6 @@ n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value.
 Commands and flags
 --------------------------------------------------
 cabal-v2                : build using cabal v2-build
-cabal-new               : Deprecated alias to cabal-v2
-cabal-v1                : build using cabal v1-build
-cabal                   : Deprecated alias to cabal-v1
 stack                   : build using stack
 clean                   : remove the .packcheck directory
 cleanall                : remove .packcheck, .stack-work, .cabal-sandbox directories
@@ -314,6 +315,22 @@ when needed.
 For pure cabal builds i.e. when `BUILD=cabal-v2` and `RESOLVER` is not
 specified, `cabal` and `ghc` must be pre-installed on the system before
 building.
+
+## Coveralls
+
+Please pick the updated version of `hpc-coveralls` from
+[here](https://github.com/composewell/hpc-coveralls). You can create a
+`cabal.project.coveralls` file, and use that as project file using
+the `CABAL_PROJECT=cabal.project.coveralls` option/env var.
+
+```
+packages: .
+
+source-repository-package
+  type: git
+  location: https://github.com/composewell/hpc-coveralls
+  tag: d9e20179579f0638f6e978816355d18568e6a1f0
+```
 
 ## Diagnostics
 

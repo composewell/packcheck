@@ -76,8 +76,7 @@ matrix:
   include:
 
   # --------------------------------------------------------------------------
-  # (Linux) cabal builds (BUILD=cabal-v1, BUILD=cabal-v2). Common envvars are:
-  # CABAL_CONFIGURE_OPTIONS (cabal-v1), CABAL_BUILD_OPTIONS (cabal-v2)
+  # (Linux) cabal builds. Common envvars are: CABAL_BUILD_OPTIONS
   # --------------------------------------------------------------------------
 
   #- env: BUILD=cabal-v2 GHCVER=head
@@ -172,15 +171,13 @@ matrix:
   # Build and send coverage report to coveralls.io using hpc-coveralls.  Add
   # your project to coveralls.io first, for available options see hpc-coveralls
   # docs. CAVEATS:
-  # * Works only with BUILD=cabal-v1
   # * Does not work for multi-package repos
-  # * hpc-coveralls does not build with Cabal-2.2/GHC-8.4.3. The workaround is
-  #   to have a prebuilt hpc-coveralls binary installed on the build machine
-  #   and then you can use any version of ghc.
+  # * Use https://github.com/composewell/hpc-coveralls
+  # * See the packcheck README for more details
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=cabal-v1 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
-  #  addons: {apt: {packages: [cabal-install-2.4,ghc-8.2.2], sources: [hvr-ghc]}}
+  #- env: BUILD=cabal-v2 COVERALLS_OPTIONS="--coverage-mode=StrictlyFullLines --exclude-dir=test test"
+  #  addons: {apt: {packages: [cabal-install-3.2,ghc-8.8.3], sources: [hvr-ghc]}}
 
   # --------------------------------------------------------------------------
   # Builds that are allowed to fail

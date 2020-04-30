@@ -331,9 +331,9 @@ show_help() {
 
   show_step1 "Commands and flags"
   help_cmd cabal-v2 "build using cabal v2-build"
-  help_cmd cabal-new "Deprecated alias to cabal-v2"
-  help_cmd cabal-v1 "build using cabal v1-build"
-  help_cmd cabal "Deprecated alias to cabal-v1"
+  #help_cmd cabal-new "Deprecated alias to cabal-v2"
+  #help_cmd cabal-v1 "Deprecated: build using cabal v1-build"
+  #help_cmd cabal "Deprecated alias to cabal-v1"
   help_cmd stack "build using stack"
   # TODO add hlint as a tool
   help_cmd clean "remove the .packcheck directory"
