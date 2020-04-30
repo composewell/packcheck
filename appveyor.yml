@@ -1,4 +1,4 @@
-# packcheck-0.4.3
+# packcheck-0.5.0
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -60,7 +60,7 @@ environment:
     # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "b3e207e1286205c9285089b8c72cc1625816adfe"
+    PACKCHECK_GITHUB_COMMIT: "8c2f44a86e45948dc0ac01d125f4f7366dd78402"
 
     # Override the temp directory to avoid sed escaping issues
     # See https://github.com/haskell/cabal/issues/5386
