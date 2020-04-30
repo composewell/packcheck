@@ -423,7 +423,7 @@ check_all_boolean_vars () {
   if test -n "$ENABLE_INSTALL"
   then
     echo "WARNING! ENABLE_INSTALL is deprecated and will be removed in future"
-    echo "WARNING! ENABLE_INSTALL is a no op, it will be do nothing"
+    echo "WARNING! ENABLE_INSTALL is a no op, it will do nothing"
     unset ENABLE_INSTALL
   fi
   check_boolean_var DISABLE_BENCH
