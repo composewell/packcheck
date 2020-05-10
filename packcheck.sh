@@ -221,6 +221,8 @@ SAFE_ENVVARS="\
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT_COMMANDS \
+  HLINT_OPTIONS \
+  HLINT_TARGETS \
   CHECK_ENV \
   LANG \
   LC_ALL \
@@ -397,7 +399,9 @@ show_help() {
   help_envvar COVERAGE "[y] Just generate coverage information"
 
   show_step1 "hlint options"
-  help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
+  #help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
+  help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=. lint'"
+  help_envvar HLINT_TARGETS "target directories to run hlint on"
 
   show_step1 "Diagnostics options"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
@@ -1446,7 +1450,37 @@ build_hlint() {
     fi
   fi
   show_step "Running hlint commands..."
-  run_verbose_errexit "$HLINT_COMMANDS"
+
+  # Old method
+  if test -n "$HLINT_COMMANDS"
+  then
+    run_verbose_errexit "$HLINT_COMMANDS"
+  elif test -f .hlint.ignore
+  then
+    local files
+    local found
+    local i
+    local target
+    for target in $HLINT_TARGETS
+    do
+      files=$(find $target -name "*.hs")
+      for i in $files
+      do
+        # ignore whitespace at the end
+        found=$(grep "^$i$" .hlint.ignore) || true
+        if test -z "$found"
+        then
+          run_verbose_errexit "hlint $HLINT_OPTIONS $i"
+        fi
+      done
+    done
+  else
+    local target
+    for target in $HLINT_TARGETS
+    do
+      run_verbose_errexit "hlint $HLINT_OPTIONS $target"
+    done
+  fi
 }
 
 # We run it only after a stack or cabal build so we are sure that stack or
@@ -1684,7 +1718,7 @@ unset GHC_PACKAGE_PATH
 # stack does not work well with empty STACK_YAML env var
 test -n "$STACK_YAML" || unset STACK_YAML
 
-if test -n "$HLINT_COMMANDS"
+if test -n "$HLINT_COMMANDS" -o -n "$HLINT_TARGETS"
 then
   build_hlint
 else
