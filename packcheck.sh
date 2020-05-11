@@ -220,6 +220,7 @@ SAFE_ENVVARS="\
   CABAL_NEWBUILD_TARGETS \
   COVERAGE \
   COVERALLS_OPTIONS \
+  HLINT_BUILD \
   HLINT_COMMANDS \
   HLINT_OPTIONS \
   HLINT_TARGETS \
@@ -401,7 +402,7 @@ show_help() {
   show_step1 "hlint options"
   #help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
   help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=. lint'"
-  help_envvar HLINT_TARGETS "target directories to run hlint on"
+  help_envvar HLINT_TARGETS "target directories to run hlint on e.g. 'src test'"
 
   show_step1 "Diagnostics options"
   # To catch spelling mistakes in envvar names passed, otherwise they will be
@@ -1429,31 +1430,81 @@ install_test() {
   esac
 }
 
-build_hlint() {
-  if test -z "$(which_cmd hlint)"
-  then
-    show_step "Installing hlint..."
-    if test -n "$(need_stack)"
-    then
-      ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
-      ensure_ghc
-      stack_install_tool hlint
-    else
-      ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
-      ensure_cabal_config
-      ensure_ghc
-      case "$BUILD" in
-        cabal-v1) run_verbose_errexit cabal v1-install hlint ;;
-        cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
-        *) echo "Bug: unknown build type: $BUILD" ;;
-      esac
-    fi
+# hlint install from Neil Mitchell's github repo, script taken from
+# https://raw.githubusercontent.com/ndmitchell/neil/master/misc/run.sh
+install_hlint() {
+  show_step "Downloading hlint..."
+  case "$(uname)" in
+      "Darwin")
+          OS=osx;;
+      MINGW*|MSYS*)
+          OS=windows;;
+      Linux)
+          OS=linux;;
+      *) die "install_hlint: unknown os";;
+  esac
+
+  if [ "$OS" = "windows" ]; then
+      EXT=.zip
+      ESCEXT=\.zip
+  else
+      EXT=.tar.gz
+      ESCEXT=\.tar\.gz
   fi
-  show_step "Running hlint commands..."
+
+  local PACKAGE=hlint
+  # Don't go for the API since it hits the Appveyor GitHub API limit and fails
+  RELEASES=$(curl --silent --show-error https://github.com/ndmitchell/$PACKAGE/releases)
+  URL=https://github.com/$(echo $RELEASES | grep -o '\"[^\"]*-x86_64-'$OS$ESCEXT'\"' | sed s/\"//g | head -n1)
+  VERSION=$(echo $URL | sed -n 's@.*-\(.*\)-x86_64-'$OS$ESCEXT'@\1@p')
+  TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
+
+  cleanup(){
+      rm -r $TEMP
+  }
+  trap cleanup EXIT
+
+  echo $URL
+  retry_cmd curl --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
+  mkdir -p ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+  if [ "$OS" = "windows" ]; then
+      7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
+      mv ${TEMP}/hlint-${VERSION}/hlint.exe ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+  elif [ "$OS" = "osx" ]; then
+      tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --include '*/hlint'
+      mv ${TEMP}/hlint-${VERSION}/hlint ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+  else
+      tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --wildcards '*/hlint'
+      mv ${TEMP}/hlint-${VERSION}/hlint ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+  fi
+}
+
+build_hlint() {
+  show_step "Installing hlint..."
+  if test -n "$(need_stack)"
+  then
+    ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+    ensure_ghc
+    stack_install_tool hlint
+  else
+    ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+    ensure_cabal_config
+    ensure_ghc
+    case "$BUILD" in
+      cabal-v1) run_verbose_errexit cabal v1-install hlint ;;
+      cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
+      *) echo "Bug: unknown build type: $BUILD" ;;
+    esac
+  fi
+}
+
+run_hlint() {
+  show_step "Running hlint ..."
 
   # Old method
   if test -n "$HLINT_COMMANDS"
   then
+    echo "DEPRECATED env var HLINT_COMMANDS! Please use HLINT_OPTIONS and HLINT_TARGETS instead."
     run_verbose_errexit "$HLINT_COMMANDS"
   elif test -f .hlint.ignore
   then
@@ -1466,7 +1517,7 @@ build_hlint() {
       files=$(find $target -name "*.hs")
       for i in $files
       do
-        # ignore whitespace at the end
+        # XXX ignore whitespace at the end
         found=$(grep "^$i$" .hlint.ignore) || true
         if test -z "$found"
         then
@@ -1720,7 +1771,16 @@ test -n "$STACK_YAML" || unset STACK_YAML
 
 if test -n "$HLINT_COMMANDS" -o -n "$HLINT_TARGETS"
 then
-  build_hlint
+  if test -z "$(which_cmd hlint)"
+  then
+    if test -n "$HLINT_BUILD"
+    then
+      build_hlint
+    else
+      install_hlint
+    fi
+  fi
+  run_hlint
 else
   build_compile
 fi

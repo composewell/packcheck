@@ -151,7 +151,7 @@ $ stack exec ./packcheck.sh cabal RESOLVER=lts-11
 
 Run hlint commands on the directories `src` and `test`:
 ```
-$ ./packcheck.sh stack HLINT_COMMANDS="hlint lint src; hlint lint test"
+$ ./packcheck.sh cabal-v2 HLINT_OPTIONS="lint" HLINT_TARGETS="src test"
 ```
 
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
@@ -295,7 +295,8 @@ COVERAGE                : [y] Just generate coverage information
 --------------------------------------------------
 hlint options
 --------------------------------------------------
-HLINT_COMMANDS          : hlint commands e.g.'hlint lint src; hlint lint test'
+HLINT_OPTIONS           : hlint arguments e.g.'--datadir=. lint'
+HLINT_TARGETS           : target directories to run hlint on e.g. 'src test'
 
 --------------------------------------------------
 Diagnostics options
