@@ -1,4 +1,4 @@
-# packcheck-0.5.0
+# packcheck-0.5.1
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -62,7 +62,7 @@ env: &env
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "b92970febc2d66e0ed0202254c97c13392461821"
+      PACKCHECK_GITHUB_COMMIT: "91d76691e5cb82e77564be55d0126906b16d76bc"
 
     docker:
       - image: debian:buster
