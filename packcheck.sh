@@ -1310,7 +1310,7 @@ create_and_unpack_pkg_dist() {
     echo ".git directory found, assuming git repo"
     echo "Comparing distribution contents against git ls-files..."
     tar -ztf $tarpath \
-      | sed -e 's%^packcheck-0\.4\.3/%%' \
+      | sed -e "s%^$PACKAGE_FULL_NAME/%%" \
       | grep -v '/$' \
       | grep -v '^$' \
       > .packcheck/tar-ztf.txt
@@ -1322,13 +1322,13 @@ create_and_unpack_pkg_dist() {
       mv .packcheck/tar-ztf.txt .packcheck/tar-ztf1.txt
     fi
     git ls-files | grep -v '^$' > .packcheck/git-ls-files.txt
-    diff .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt ||
+    diff -B --suppress-common-lines .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt ||
       { echo "WARNING! Source distribution tar and git repo contents differ."
         if test -z "$DISABLE_SDIST_GIT_CHECK"
         then
           echo "Exiting. Use DISABLE_SDIST_GIT_CHECK=y to disable this check."
           echo "Or put the exceptions in .packcheck.ignore file."
-          exit
+          exit 1
         fi
       }
 

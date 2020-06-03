@@ -1,3 +1,20 @@
+## Unreleased
+
+### Bug Fixes
+
+* Fix breakage due to `DISABLE_SDIST_GIT_CHECK` option. Due to this bug,
+  build was always failing by default and reported as success.
+
+### Deprecations
+
+* `HLINT_COMMANDS` is deprecated and replaced by
+  `HLINT_OPTIONS`/`HLINT_TARGETS`
+
+### Enhancements
+
+* New `HLINT_OPTIONS`/`HLINT_TARGETS` env vars to specify hlint commands in
+  a better way.
+
 ## 0.5.0
 
 ### Bug Fixes
