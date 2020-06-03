@@ -1319,9 +1319,10 @@ create_and_unpack_pkg_dist() {
       cat .packcheck.ignore .packcheck/tar-ztf.txt \
         | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
     else
-      mv .packcheck/tar-ztf.txt .packcheck/tar-ztf1.txt
+      cat .packcheck/tar-ztf.txt \
+        | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
     fi
-    git ls-files | grep -v '^$' > .packcheck/git-ls-files.txt
+    git ls-files | sort | grep -v '^$' > .packcheck/git-ls-files.txt
     diff -B --suppress-common-lines .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt ||
       { echo "WARNING! Source distribution tar and git repo contents differ."
         if test -z "$DISABLE_SDIST_GIT_CHECK"
