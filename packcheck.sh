@@ -1687,7 +1687,6 @@ get_rel_time() {
 
 set -e
 set -o pipefail
-test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
@@ -1730,6 +1729,7 @@ echo
 rewrite_deprecated CABAL_NEWBUILD_OPTIONS CABAL_BUILD_OPTIONS
 rewrite_deprecated CABAL_NEWBUILD_TARGETS CABAL_BUILD_TARGETS
 
+test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 show_step "Build command"
 show_build_command
 
