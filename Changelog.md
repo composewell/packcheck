@@ -1,5 +1,11 @@
 ## Unreleased
 
+## Breaking changes
+
+* `packcheck.sh cabal` is now same as `packcheck.sh cabal-v2`
+
+## Enhancements
+
 * Deprecate `CABAL_REINIT_CONFIG`, use `CABAL_CONFIG_FILE` instead
 * New env var `CABAL_CONFIG_FILE` to specify the cabal.config to be used.
 

@@ -335,10 +335,10 @@ show_help() {
   echo "n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value."
 
   show_step1 "Commands and flags"
-  help_cmd cabal-v2 "build using cabal v2-build"
+  #help_cmd cabal-v2 "build using cabal v2-build"
   #help_cmd cabal-new "Deprecated alias to cabal-v2"
   #help_cmd cabal-v1 "Deprecated: build using cabal v1-build"
-  #help_cmd cabal "Deprecated alias to cabal-v1"
+  help_cmd cabal "build using cabal v2-build"
   help_cmd stack "build using stack"
   # TODO add hlint as a tool
   help_cmd clean "remove the .packcheck directory"
@@ -1702,12 +1702,12 @@ test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
 
 case $1 in
-  cabal) shift; eval_env "$@"; BUILD=cabal-v1; \
-    echo "DEPRECATED! please use cabal-v1 instead";;
+  cabal) shift; eval_env "$@"; BUILD=cabal-v2; \
+    echo "NOTE! using cabal-v2";;
   cabal-v1) shift; eval_env "$@"; BUILD=cabal-v1; \
-    echo "DEPRECATED! please use cabal-v2 instead";;
+    echo "DEPRECATED! please use cabal instead";;
   cabal-new) shift; eval_env "$@"; BUILD=cabal-v2; \
-    echo "DEPRECATED! please use cabal-v2 instead";;
+    echo "DEPRECATED! please use cabal instead";;
   cabal-v2) shift; eval_env "$@"; BUILD=cabal-v2;;
   stack) shift; eval_env "$@"; BUILD=stack;;
   clean) rm -rf .packcheck; exit;;
