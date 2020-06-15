@@ -256,7 +256,6 @@ Specifying common tool options
 --------------------------------------------------
 GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Arguments to stack/cabal sdist command
-CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatibility issues
 
 --------------------------------------------------
 Specifying what to build
@@ -279,6 +278,7 @@ STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 cabal options
 --------------------------------------------------
 CABAL_PROJECT           : Alternative cabal project config, cannot be a path, just the file name
+CABAL_CONFIG_FILE       : Use an alternative cabal config file
 CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to defaults
 CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
 CABAL_CONFIGURE_OPTIONS : ADDITIONAL cabal v1-configure options to append to defaults

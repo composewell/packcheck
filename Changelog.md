@@ -1,3 +1,8 @@
+## Unreleased
+
+* Deprecate `CABAL_REINIT_CONFIG`, use `CABAL_CONFIG_FILE` instead
+* New env var `CABAL_CONFIG_FILE` to specify the cabal.config to be used.
+
 ## 0.5.1
 
 ### Bug Fixes

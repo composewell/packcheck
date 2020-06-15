@@ -218,6 +218,7 @@ SAFE_ENVVARS="\
   CABAL_NEWBUILD_OPTIONS \
   CABAL_BUILD_TARGETS \
   CABAL_NEWBUILD_TARGETS \
+  CABAL_CONFIG_FILE \
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT_BUILD \
@@ -364,7 +365,7 @@ show_help() {
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
   # XXX this applies to both stack and cabal builds
-  help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
+  # help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
 
   show_step1 "Specifying what to build"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
@@ -382,6 +383,7 @@ show_help() {
 
   show_step1 "cabal options"
   help_envvar CABAL_PROJECT "Alternative cabal project config, cannot be a path, just the file name"
+  help_envvar CABAL_CONFIG_FILE "Use an alternative cabal config file"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
   help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
@@ -418,6 +420,10 @@ check_all_boolean_vars () {
   check_boolean_var DISABLE_SDIST_GIT_CHECK
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
+  if test -n "$CABAL_REINIT_CONFIG"
+  then
+    echo "WARNING! CABAL_REINIT_CONFIG is deprecated. Please use CABAL_CONFIG_FILE instead."
+  fi
   check_boolean_var CABAL_CHECK_RELAX
   check_boolean_var CABAL_NO_SANDBOX
   if test -n "$TEST_INSTALL"
@@ -983,8 +989,7 @@ ensure_ghc() {
 # XXX/TODO this may not work for cabal 1.24 config
 # $1: mirror URL
 cabal_use_mirror() {
-  local CABAL_CONFIG=${OS_APP_HOME}/${OS_CABAL_DIR}/config
-  if test -f $CABAL_CONFIG
+  if test -f $CABAL_CONFIG_FILE
   then
     local inplace
     if [ `uname` = "Darwin" ]
@@ -993,10 +998,10 @@ cabal_use_mirror() {
     else
       inplace="--in-place"
     fi
-    echo "Adding hackage mirror [$1] to [$CABAL_CONFIG]"
-    sed $inplace -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
+    echo "Adding hackage mirror [$1] to [$CABAL_CONFIG_FILE]"
+    sed $inplace -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG_FILE
   else
-    die "cabal config file [$CABAL_CONFIG] not found."
+    die "cabal config file [$CABAL_CONFIG_FILE] not found."
   fi
 }
 
@@ -1052,10 +1057,15 @@ ensure_cabal() {
   test -z "$CABALVER" || check_version_die cabal $CABALVER
   # Set the real version of cabal
   CABALVER=$(cabal --numeric-version) || exit 1
+  if test -n "${CABAL_CONFIG_FILE}"
+  then
+    CABALCMD="cabal --config-file=${CABAL_CONFIG_FILE}"
+  else
+    CABALCMD=cabal
+  fi
 }
 
 ensure_cabal_project() {
-  CABALCMD=cabal
   SDIST_CABALCMD=$CABALCMD
 
   if test -n "$CABAL_PROJECT"
@@ -1115,7 +1125,7 @@ get_pkg_full_name() {
   local pkgname
   local full_name
   pkgname=$(get_pkg_name) || exit 1
-  full_name=$(cabal info . | awk '{ if ($1 == "*") {print $2; exit}}') || true
+  full_name=$($CABALCMD info . | awk '{ if ($1 == "*") {print $2; exit}}') || true
   if test -z "$full_name"
   then
     if test -n "$ENABLE_INSTALL"
@@ -1200,7 +1210,7 @@ ensure_cabal_config() {
   # We rely on the cabal info command to create the config.
   if test ! -e $cfg
   then
-    run_verbose cabal user-config init || cabal info . > /dev/null || true
+    run_verbose ${CABALCMD} user-config init || ${CABALCMD} info . > /dev/null || true
   fi
 
   if test "$BUILD" = "cabal-v1" -o "$BUILD" = "cabal-v2"
@@ -1214,10 +1224,10 @@ ensure_cabal_config() {
     if test "$BUILD" = "cabal-v1"
     then
       echo "cabal v1-update"
-      retry_cmd cabal update
+      retry_cmd ${CABALCMD} update
     else
-      echo "cabal v2-update"
-      retry_cmd cabal new-update
+      echo "${CABALCMD} v2-update"
+      retry_cmd ${CABALCMD} v2-update
     fi
   fi
 }
@@ -1226,7 +1236,7 @@ ensure_cabal_config() {
 remove_pkg_executables() {
   test -n "$(which_cmd cabal)" || return 0
 
-  exes=$(cabal info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
+  exes=$($CABALCMD info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
   echo "Remove installed binaries"
   for i in $exes
   do
@@ -1239,15 +1249,15 @@ remove_pkg_executables() {
 install_cabal_v1_deps() {
   if test "$CABAL_NO_SANDBOX" != "y"
   then
-    run_verbose_errexit cabal v1-sandbox init
+    run_verbose_errexit $CABALCMD v1-sandbox init
   fi
   echo
-  run_verbose_errexit cabal v1-install $CABAL_DEP_OPTIONS
+  run_verbose_errexit $CABALCMD v1-install $CABAL_DEP_OPTIONS
 }
 
 cabal_v1_configure() {
     echo
-    run_verbose_errexit cabal v1-configure $CABAL_CONFIGURE_OPTIONS
+    run_verbose_errexit $CABALCMD v1-configure $CABAL_CONFIGURE_OPTIONS
 }
 
 # $1: package full name (name + ver)
@@ -1346,7 +1356,7 @@ create_and_unpack_pkg_dist() {
 
   cd ${1}
   show_step "Package info [sdist $SDIST_OPTIONS]"
-  run_verbose cabal info . || true
+  run_verbose $CABALCMD info . || true
 
   if test -f "./configure.ac"
   then
@@ -1385,11 +1395,11 @@ build_and_test() {
     cabal-v1)
       cabal_v1_configure
       echo
-      run_verbose_errexit cabal v1-build
+      run_verbose_errexit $CABALCMD v1-build
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit cabal v1-haddock
+      test -n "$DISABLE_DOCS" || run_verbose_errexit $CABALCMD v1-haddock
       echo
-      test -n "$DISABLE_TEST" || run_verbose_errexit cabal v1-test --show-details=always ;;
+      test -n "$DISABLE_TEST" || run_verbose_errexit $CABALCMD v1-test --show-details=always ;;
   esac
 }
 
@@ -1399,7 +1409,7 @@ dist_checks() {
     cabal-v1|cabal-v2)
       if test "$BUILD" != "cabal-v2"
       then
-        run_verbose_errexit cabal v1-sdist
+        run_verbose_errexit $CABALCMD v1-sdist
       else
         run_verbose_errexit $CABALCMD v2-sdist $CABAL_BUILD_TARGETS
       fi
@@ -1407,9 +1417,9 @@ dist_checks() {
       echo
       if test "$CABAL_CHECK_RELAX" = y
       then
-        run_verbose cabal check || true
+        run_verbose $CABALCMD check || true
       else
-        run_verbose_errexit cabal check
+        run_verbose_errexit $CABALCMD check
       fi ;;
   esac
 }
@@ -1422,8 +1432,8 @@ install_test() {
       # TODO test if the dist can be installed by cabal
       remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
     cabal-v1)
-      run_verbose_errexit cabal copy
-      (cd dist && run_verbose_errexit cabal install "${1}.tar.gz")
+      run_verbose_errexit $CABALCMD copy
+      (cd dist && run_verbose_errexit $CABALCMD install "${1}.tar.gz")
       remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
     cabal-v2)
       run_verbose_errexit $CABALCMD v2-install $CABAL_BUILD_TARGETS
@@ -1492,7 +1502,7 @@ build_hlint() {
     ensure_cabal_config
     ensure_ghc
     case "$BUILD" in
-      cabal-v1) run_verbose_errexit cabal v1-install hlint ;;
+      cabal-v1) run_verbose_errexit $CABALCMD v1-install hlint ;;
       cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
       *) echo "Bug: unknown build type: $BUILD" ;;
     esac
@@ -1545,7 +1555,7 @@ coveralls_io() {
       stack_install_tool hpc-coveralls
     else
       case "$BUILD" in
-        cabal-v1) run_verbose_errexit cabal v1-install hpc-coveralls ;;
+        cabal-v1) run_verbose_errexit $CABALCMD v1-install hpc-coveralls ;;
         cabal-v2) run_verbose_errexit $CABALCMD v2-install hpc-coveralls ;;
         *) echo "Bug: unknown build type: $BUILD" ;;
       esac
@@ -1760,6 +1770,11 @@ fi
 export PATH=$OS_APP_HOME/$OS_LOCAL_DIR/bin:$PATH
 echo
 echo "PATH is now set to [$PATH]"
+
+if test -z "$CABAL_CONFIG_FILE"
+then
+  CABAL_CONFIG_FILE="$OS_APP_HOME/$OS_CABAL_DIR/cabal.config"
+fi
 
 verify_build_config
 
