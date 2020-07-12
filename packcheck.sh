@@ -838,7 +838,7 @@ find_binary () {
   # If we did not find the binary, restore the PATH for better error reporting
   PATH=$path
 
-  if test -n "$TOOLS_DIR" 
+  if test -n "$TOOLS_DIR"
   then
     echo "Looking for binary [$1] in [$TOOLS_DIR]..."
     # Find if we have a binary in TOOLS_DIR
@@ -870,7 +870,7 @@ find_binary () {
 
   STACK_ROOT_PATH="~/.stack"
   if test -n "$STACK_ROOT"
-  then 
+  then
     STACK_ROOT_PATH=$STACK_ROOT
   fi
   # XXX what if there are multiple arch dirs in programs?
@@ -1395,7 +1395,7 @@ build_and_test() {
 
 dist_checks() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD sdist ;;
+    stack) run_verbose_errexit $STACKCMD sdist --ignore-check ;;
     cabal-v1|cabal-v2)
       if test "$BUILD" != "cabal-v2"
       then
