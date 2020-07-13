@@ -1395,13 +1395,13 @@ build_and_test() {
 
 dist_checks() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD sdist --ignore-check ;;
+    stack) run_verbose_errexit $STACKCMD sdist $SDIST_OPTIONS ;;
     cabal-v1|cabal-v2)
       if test "$BUILD" != "cabal-v2"
       then
-        run_verbose_errexit cabal v1-sdist
+        run_verbose_errexit cabal v1-sdist $SDIST_OPTIONS
       else
-        run_verbose_errexit $CABALCMD v2-sdist $CABAL_BUILD_TARGETS
+        run_verbose_errexit $CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
       fi
 
       echo
