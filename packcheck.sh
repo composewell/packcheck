@@ -215,6 +215,7 @@ SAFE_ENVVARS="\
   CABAL_USE_STACK_SDIST \
   CABAL_CONFIGURE_OPTIONS \
   CABAL_BUILD_OPTIONS \
+  CABAL_DISABLE_DEPS \
   CABAL_NEWBUILD_OPTIONS \
   CABAL_BUILD_TARGETS \
   CABAL_NEWBUILD_TARGETS \
@@ -384,6 +385,7 @@ show_help() {
   help_envvar CABAL_PROJECT "Alternative cabal project config, cannot be a path, just the file name"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
+  help_envvar CABAL_DISABLE_DEPS "Do not install dependencies, do not do cabal update"
   help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
   help_envvar CABAL_CONFIGURE_OPTIONS "ADDITIONAL cabal v1-configure options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
@@ -634,6 +636,7 @@ EOF
       cabal_only_var CABAL_HACKAGE_MIRROR
 
       cabal_only_var CABAL_BUILD_OPTIONS
+      cabal_only_var CABAL_DISABLE_DEPS
       cabal_only_var CABAL_BUILD_TARGETS
 
       cabal_only_var CABAL_CONFIGURE_OPTIONS
@@ -1210,14 +1213,17 @@ ensure_cabal_config() {
       cabal_use_mirror $CABAL_HACKAGE_MIRROR
     fi
 
-    echo
-    if test "$BUILD" = "cabal-v1"
+    if test -z "$CABAL_DISABLE_DEPS"
     then
-      echo "cabal v1-update"
-      retry_cmd cabal update
-    else
-      echo "cabal v2-update"
-      retry_cmd cabal new-update
+      echo
+      if test "$BUILD" = "cabal-v1"
+      then
+        echo "cabal v1-update"
+        retry_cmd cabal update
+      else
+        echo "cabal v2-update"
+        retry_cmd cabal new-update
+      fi
     fi
   fi
 }
@@ -1609,7 +1615,7 @@ build_compile () {
   fi
 
   show_step "Install package dependencies"
-  install_deps
+  test -n "$CABAL_DISABLE_DEPS" || install_deps
 
   show_step "Build and test"
   build_and_test
