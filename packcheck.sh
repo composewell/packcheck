@@ -175,7 +175,7 @@ show_machine_info() {
       #  echo "Running inside Docker (found /.dockerenv)";
       #fi
       #run_verbose head -n 1 /proc/1/cgroup
-      sudo cat /proc/1/environ | tr '\0' '\n' | grep "^container=" || true
+      sudo -n cat /proc/1/environ | tr '\0' '\n' | grep "^container=" || true
       run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_period_us || true
       run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us || true
       run_verbose cat /sys/fs/cgroup/memory/memory.limit_in_bytes || true ;;
