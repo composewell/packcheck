@@ -1311,7 +1311,10 @@ create_and_unpack_pkg_dist() {
   # Unpack the tar inside .packcheck directory
   mkdir -p .packcheck || exit 1
 
-  if test -d ".git" -a -n $(which_cmd git) -a -n $(which_cmd tar)
+  local gitcmd="$(which_cmd git)"
+  test -n "$gitcmd" || echo "WARNING! git command not found skipping source distribution comparison with git repo"
+
+  if test -d ".git" -a -n "$gitcmd" -a -n "$(which_cmd tar)"
   then
     echo ".git directory found, assuming git repo"
     echo "Comparing distribution contents against git ls-files..."
