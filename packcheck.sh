@@ -1699,8 +1699,7 @@ test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
 
 case $1 in
-  cabal) shift; eval_env "$@"; BUILD=cabal-v1; \
-    echo "DEPRECATED! please use cabal-v1 instead";;
+  cabal) shift; eval_env "$@"; BUILD=cabal-v2;;
   cabal-v1) shift; eval_env "$@"; BUILD=cabal-v1; \
     echo "DEPRECATED! please use cabal-v2 instead";;
   cabal-new) shift; eval_env "$@"; BUILD=cabal-v2; \
