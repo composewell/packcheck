@@ -20,7 +20,7 @@ To use packcheck for CI testing of your repo:
 [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
 or
 [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
-to your package repo 
+to your package repo
 
 CI should work out of the box for most packages. Uncomment the relevant lines
 in the CI config files or change the values of the environment variables for
@@ -231,7 +231,7 @@ Commands and flags
 cabal-v2                : build using cabal v2-build
 stack                   : build using stack
 clean                   : remove the .packcheck directory
-cleanall                : remove .packcheck, .stack-work, .cabal-sandbox directories
+cleanall                : remove .packcheck, .stack-work directories
 help | --help | -h      : show this help message
 --version               : show packcheck version
 
@@ -281,9 +281,7 @@ cabal options
 CABAL_PROJECT           : Alternative cabal project config, cannot be a path, just the file name
 CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to defaults
 CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
-CABAL_CONFIGURE_OPTIONS : ADDITIONAL cabal v1-configure options to append to defaults
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
-CABAL_NO_SANDBOX        : [y] DESTRUCTIVE! Clobber (force install) global cabal ghc package db
 CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
 
 --------------------------------------------------

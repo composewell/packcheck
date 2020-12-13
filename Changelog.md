@@ -8,6 +8,12 @@
 ### Breaking Changes
 
 * "packcheck cabal" now defaults to "packcheck cabal-v2"
+* Support for `cabal-v1` is removed
+  * CI now fails if `cabal-v1` is used as a command
+  * `CABAL_CONFIGURE_OPTIONS` is removed
+  * `CABAL_NO_SANDBOX` is removed
+  * `packcheck cleanall` does not remove `.cabal-sandbox/` and
+    `.cabal.sandbox.config` anymore
 
 ## 0.5.1
 
