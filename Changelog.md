@@ -14,6 +14,10 @@
   * `CABAL_NO_SANDBOX` is removed
   * `packcheck cleanall` does not remove `.cabal-sandbox/` and
     `.cabal.sandbox.config` anymore
+* Support for `cabal-new` is removed
+  * CI now fails if `cabal-new` is used as a command
+  * `CABAL_NEWBUILD_OPTIONS` is removed
+  * `CABAL_NEWBUILD_TARGETS` is removed
 
 ## 0.5.1
 

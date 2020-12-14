@@ -215,9 +215,7 @@ SAFE_ENVVARS="\
   CABAL_USE_STACK_SDIST \
   CABAL_BUILD_OPTIONS \
   CABAL_DISABLE_DEPS \
-  CABAL_NEWBUILD_OPTIONS \
   CABAL_BUILD_TARGETS \
-  CABAL_NEWBUILD_TARGETS \
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT_BUILD \
@@ -1164,7 +1162,7 @@ ensure_cabal_config() {
     then
       echo
       echo "cabal v2-update"
-      retry_cmd cabal new-update
+      retry_cmd cabal v2-update
     fi
   fi
 }
@@ -1602,8 +1600,7 @@ test -n "$1" \
 case $1 in
   cabal) shift; eval_env "$@"; BUILD=cabal-v2;;
   cabal-v1) die "cabal-v1 is not supported, please use cabal-v2 instead";;
-  cabal-new) shift; eval_env "$@"; BUILD=cabal-v2; \
-    echo "DEPRECATED! please use cabal-v2 instead";;
+  cabal-new) die "cabal-new is not supported, please use cabal-v2 instead";;
   cabal-v2) shift; eval_env "$@"; BUILD=cabal-v2;;
   stack) shift; eval_env "$@"; BUILD=stack;;
   clean) rm -rf .packcheck; exit;;
@@ -1621,11 +1618,6 @@ test -z "$CHECK_ENV" || check_clean_env
 
 echo
 bash --version
-
-# Rewrite deprecated environment variables
-echo
-rewrite_deprecated CABAL_NEWBUILD_OPTIONS CABAL_BUILD_OPTIONS
-rewrite_deprecated CABAL_NEWBUILD_TARGETS CABAL_BUILD_TARGETS
 
 show_step "Build command"
 show_build_command
