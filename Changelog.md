@@ -4,6 +4,7 @@
 
 * CABAL_DISABLE_DEPS env var to disable dependencies install by cabal. This can
   be useful when we have dependencies already installed e.g. in a nix shell.
+* Add support for github CI
 
 ### Breaking Changes
 
