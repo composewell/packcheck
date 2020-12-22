@@ -720,6 +720,13 @@ use_stack_paths() {
 # Ensure ghc, cabal are available and the right versions when requested
 #------------------------------------------------------------------------------
 
+# $1: version to compare
+# $2: version to compare with
+# true (returns 0) if $1 <= $2
+verlte () {
+  [ "$1" = "$(echo -e "$1\n$2" | sort -V | head -n1)" ]
+}
+
 # $1: tool name (used only for ghc, cabal and stack)
 # $2: expected version
 check_version() {
@@ -1000,6 +1007,10 @@ ensure_cabal() {
   test -z "$CABALVER" || check_version_die cabal $CABALVER
   # Set the real version of cabal
   CABALVER=$(cabal --numeric-version) || exit 1
+
+  MIN_CABALVER="1.24.0.0"
+  verlte $MIN_CABALVER $CABALVER || \
+      die "Cabal version should at least be $MIN_CABALVER"
 }
 
 ensure_cabal_project() {
@@ -1144,11 +1155,9 @@ ensure_cabal_config() {
     run_verbose_errexit rm -f "$cfg"
   fi
 
-  # cabal 1.22 and earlier do not support this command
-  # We rely on the cabal info command to create the config.
   if test ! -e $cfg
   then
-    run_verbose cabal user-config init || cabal info . > /dev/null || true
+    run_verbose cabal user-config init || true
   fi
 
   if test "$BUILD" = "cabal-v2"
@@ -1622,7 +1631,8 @@ bash --version
 show_step "Build command"
 show_build_command
 
-TOOLS="awk cat curl cut date env head mkdir printf rm sleep tr which $OS_HAS_TOOLS"
+TOOLS="awk cat curl cut date env head mkdir printf rm sleep tr which sort \
+$OS_HAS_TOOLS"
 
 show_step "Check basic tools"
 require_cmd bash
