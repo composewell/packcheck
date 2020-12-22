@@ -229,6 +229,9 @@ SAFE_ENVVARS="\
   LANG \
   LC_ALL \
   BASE_TIME \
+  GIT_SOURCE \
+  GIT_REV \
+  GIT_MERGE \
 "
 
 UNSAFE_ENVVARS="\
@@ -411,6 +414,12 @@ show_help() {
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "[y] Treat unknown env variables as error, used with env -i"
   help_envvar BASE_TIME "System time to be used as base for timeline reporting"
+
+  show_step1 "Remote options"
+  help_envvar GIT_SOURCE "The source repository to clone"
+  help_envvar GIT_REV "The base revision to checkout (defaults to 'origin/master')"
+  help_envvar GIT_MERGE "Revision to merge into the base revision"
+
 }
 
 check_all_boolean_vars () {
@@ -1256,6 +1265,49 @@ cabal_v1_configure() {
     run_verbose_errexit cabal v1-configure $CABAL_CONFIGURE_OPTIONS
 }
 
+# $1: Remote repository
+# $2: Revision to checkout
+# $3: Revision to merge into $2
+# Clone the remote repository into .packcheck.remote
+try_git_clone_and_merge() {
+
+    local remote="$1"
+    local rev="$2"
+    local merge="$3"
+    local dir=".packcheck.remote"
+
+    if test -z "$remote"
+    then
+        echo "No remote repository provided."
+        echo "Skipping cloning."
+        return
+    fi
+
+    if test -z "$rev"
+    then
+        echo "No revision given."
+        echo "Defaulting to 'origin/master'."
+        rev="origin/master"
+    fi
+
+    require_cmd git
+
+    test -d "$dir" && rm -rf "$dir" || exit 1
+
+    mkdir -p "$dir" || exit 1
+    run_verbose "git clone $remote $dir" || exit 1
+
+    cd "$dir" || exit 1
+    run_verbose "git branch $rev" || exit 1
+
+    if test -n "$merge"
+    then
+        # This will fail is there are any merge conflicts
+        run_verbose "git merge $merge --commit" || exit 1
+    fi
+
+}
+
 # $1: package full name (name + ver)
 create_and_unpack_pkg_dist() {
   local pkgtar=${1}.tar.gz
@@ -1591,6 +1643,9 @@ build_compile () {
 
   show_step "Effective build config"
   show_build_config
+
+  # --------------------Git clone & merge-------------------
+  try_git_clone_and_merge "$GIT_SOURCE" "$GIT_REV" "$GIT_MERGE"
 
   # ---------Create dist, unpack, install deps, test--------
   show_step "Build tools: package level and global configuration"

@@ -20,7 +20,7 @@ To use packcheck for CI testing of your repo:
 [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
 or
 [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
-to your package repo 
+to your package repo
 
 CI should work out of the box for most packages. Uncomment the relevant lines
 in the CI config files or change the values of the environment variables for
@@ -303,6 +303,13 @@ Diagnostics options
 --------------------------------------------------
 CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
 BASE_TIME               : System time to be used as base for timeline reporting
+
+--------------------------------------------------
+Remote options
+--------------------------------------------------
+GIT_SOURCE              : The source repository to clone
+GIT_REV                 : The base revision to checkout (defaults to 'origin/master')
+GIT_MERGE               : Revision to merge into the base revision
 ```
 
 Build fails if `DISABLE_SDIST_BUILD` is not set and the contents
@@ -327,6 +334,36 @@ when needed.
 For pure cabal builds i.e. when `BUILD=cabal-v2` and `RESOLVER` is not
 specified, `cabal` and `ghc` must be pre-installed on the system before
 building.
+
+## Remote repository
+
+Packcheck provides simple tools to work with a remote repository. If
+`GIT_SOURCE` is non-empty then packcheck tries to clone it into
+`.packckeck.remote`. All the work is now done inside `.packcheck.remote`.
+`.packcheck` is now created inside `.packcheck.remote`.
+
+To use packcheck on a specific revision you use `GIT_REV`. If `GIT_MERGE` is
+non-empty then packcheck will first try to merge `GIT_MERGE` into `GIT_REV`
+before continuing.
+
+`GIT_REV` can be omitted in most cases as it defaults to `origin/master`.
+
+### Examples
+
+To run packcheck on `origin/branch`,
+```
+./packcheck cabal-v2 GIT_SOURCE=https://github.com/user/repo GIT_REV=origin/branch
+```
+
+To run packcheck after merging `origin/branch` into `origin/branch-base`,
+```
+./packcheck cabal-v2 GIT_SOURCE=https://github.com/user/repo GIT_REV=origin/branch-base GIT_MERGE=origin/branch
+```
+
+To run packcheck after merging a branch with hash `0000` into `origin/master`,
+```
+./packcheck cabal-v2 GIT_SOURCE=https://github.com/user/repo GIT_MERGE=0000
+```
 
 ## Coveralls
 
