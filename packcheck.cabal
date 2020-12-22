@@ -48,6 +48,7 @@ extra-source-files:
     .ci/stack-8.0.yaml
     .travis.yml
     .circleci/config.yml
+    .github/workflows/packcheck.yml
     appveyor.yml
     cabal.project.coveralls
     cabal.project.ci
