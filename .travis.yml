@@ -39,7 +39,6 @@ env:
   # cabal options
   # ------------------------------------------------------------------------
   - CABAL_CHECK_RELAX=y
-  - CABAL_NO_SANDBOX=y
   - CABAL_HACKAGE_MIRROR=hackage.haskell.org:http://hackage.fpcomplete.com
 
   # ------------------------------------------------------------------------
