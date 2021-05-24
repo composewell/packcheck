@@ -197,6 +197,23 @@ well on the command line. For example,
 $ ./packcheck-safe.sh cabal-v2 PATH=/bin:/usr/bin:/opt/ghc/bin
 ```
 
+## packcheck-remote
+
+`packcheck-remote.sh` is a wrapper over `packcheck.sh`. It allows you to run
+packcheck on a remote repository by cloning it locally and optionally merging a
+branch into another branch (e.g. merging a PR branch into master).
+
+```
+$ ./packcheck-remote.sh --force \
+    --remote=https://github.com/user/repo \
+    --checkout=origin/master \
+    --merge=origin/branch \
+    --directory=./repo.packcheck \
+    -- cabal-v2 GHCVER=8.8.3
+```
+
+Use `./packcheck-remote.sh --help` for more information.
+
 ## Full Reference
 
 Please use `cabal` version 2.4 or later.

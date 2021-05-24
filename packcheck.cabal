@@ -53,6 +53,7 @@ extra-source-files:
     cabal.project.ci
     packcheck.sh
     packcheck-safe.sh
+    packcheck-remote.sh
     MAINTAINING.md
 
 source-repository head
