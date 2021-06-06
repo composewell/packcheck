@@ -611,19 +611,19 @@ EOF
 # Stack fetch and install etc.
 #------------------------------------------------------------------------------
 
-ensure_msys_tools() {
-  if [[ `uname` = MINGW* ]]
-  then
-    # retry??
-    for i in "$1"
-    do
-      if test -z "$(which_cmd $i)"
-      then
-        stack exec pacman -- -S --noconfirm $i
-      fi
-    done
-  fi
-}
+#ensure_msys_tools() {
+#  if [[ `uname` = MINGW* ]]
+#  then
+#    # retry??
+#    for i in "$1"
+#    do
+#      if test -z "$(which_cmd $i)"
+#      then
+#        stack exec pacman -- -S --noconfirm $i
+#      fi
+#    done
+#  fi
+#}
 
 fetch_stack_osx() {
   curl -sSkL https://www.stackage.org/stack/osx-x86_64 \
