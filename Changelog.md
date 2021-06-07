@@ -5,6 +5,11 @@
 * CABAL_DISABLE_DEPS env var to disable dependencies install by cabal. This can
   be useful when we have dependencies already installed e.g. in a nix shell.
 * Add support for github CI
+* Add packcheck-remote.sh, a wrapper over packcheck that allows you
+  to run packcheck on a remote repository by cloning it locally and
+  optionally merging a branch into another branch (e.g. merging a PR
+  branch into master).
+* Several fixes to make distribution builds safer and with more checks
 
 ### Breaking Changes
 
