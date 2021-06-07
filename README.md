@@ -14,12 +14,13 @@ Please use `cabal` version 2.4 or later.
 ### Build on CI (Travis/Appveyor/CircleCI)
 To use packcheck for CI testing of your repo:
 
-* Add your package repo to travis/appveyor/circleci
-* Copy
-[.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
+* Add your package repo to github/circleci/appveyor/travis as necessary
+* Copy the relevant CI config
+[.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml),
 [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
+[.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml),
 or
-[.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
+[.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
 to your package repo
 
 CI should work out of the box for most packages. Uncomment the relevant lines
@@ -58,8 +59,8 @@ $ packcheck.sh stack GHCVER=8.6
 | Linux         | OSX       | Windows       |
 |:-------------:|:---------:|:--------------|
 
-| Travis        | Appveyor  | CircleCI      | Local Machine |
-|:-------------:|:---------:|:--------------|:--------------|
+| Github        | Appveyor  | CircleCI      | Travis | Local Machine |
+|:-------------:|:---------:|:--------------|:------:|:--------------|
 
 The script can be easily adapted to any CI with a single line build command.
 
