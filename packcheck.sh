@@ -1368,7 +1368,13 @@ create_and_unpack_pkg_dist() {
 install_deps() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
-    cabal-v2) run_verbose_errexit $CABALCMD v2-build $GHCJS_FLAG $CABAL_DEP_OPTIONS $CABAL_BUILD_TARGETS ;;
+    cabal-v2)
+      if test -z "$CABAL_DISABLE_DEPS"
+      then
+        run_verbose_errexit $CABALCMD v2-build $GHCJS_FLAG $CABAL_DEP_OPTIONS $CABAL_BUILD_TARGETS
+      else
+        echo "Skipping. CABAL_DISABLE_DEPS is on."
+      fi ;;
   esac
 }
 
@@ -1599,7 +1605,7 @@ build_compile () {
   fi
 
   show_step "Install package dependencies"
-  test -n "$CABAL_DISABLE_DEPS" || install_deps
+  install_deps
 
   show_step "Build and test"
   build_and_test
