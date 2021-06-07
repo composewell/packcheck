@@ -317,6 +317,7 @@ short_help() {
   echo "Report issues: https://github.com/composewell/packcheck/issues/new"
 }
 
+# Please add the boolean options to check_boolean_var as well
 show_help() {
   show_step1 "Usage"
   short_help
@@ -381,10 +382,10 @@ show_help() {
   help_envvar CABAL_PROJECT "Alternative cabal project config, cannot be a path, just the file name"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
-  help_envvar CABAL_DISABLE_DEPS "Do not install dependencies, do not do cabal update"
+  help_envvar CABAL_DISABLE_DEPS "[y] Do not install dependencies, do not do cabal update"
   help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
-  help_envvar CABAL_HACKAGE_MIRROR "[y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
+  help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
 
   show_step1 "Coverage options"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
@@ -410,6 +411,7 @@ check_all_boolean_vars () {
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
+  check_boolean_var CABAL_DISABLE_DEPS
   if test -n "$TEST_INSTALL"
   then
     echo "WARNING! TEST_INSTALL is deprecated. Please use ENABLE_INSTALL instead"
@@ -428,6 +430,7 @@ check_all_boolean_vars () {
   check_boolean_var DISABLE_TEST
   check_boolean_var DISABLE_DOCS
   check_boolean_var COVERAGE
+  check_boolean_var CHECK_ENV
 }
 
 show_build_command() {
