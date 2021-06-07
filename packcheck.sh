@@ -101,7 +101,7 @@ require_cmd () {
 
 # $1: command
 function run_verbose() {
-  echo "$*"
+  echo "$*" 1>&2
   bash -c "$*"
 }
 
@@ -1013,45 +1013,79 @@ ensure_cabal() {
       die "Cabal version should at least be $MIN_CABALVER"
 }
 
+# Find a file in the parent/ancestor directories
+find_in_parents () {
+  local curdir="$1" # must be absolute path without ..
+  local file="$2"
+
+  if test -e "$curdir/$file"
+  then echo "$curdir/$file"
+  elif test "$curdir" != "/"
+  then find_in_parents "$(dirname "$curdir")" "$file"
+  fi
+}
+
 ensure_cabal_project() {
   CABALCMD=cabal
   SDIST_CABALCMD=$CABALCMD
 
   if test -n "$CABAL_PROJECT"
   then
-    require_file $CABAL_PROJECT
+    require_file "$CABAL_PROJECT"
     SDIST_CABALCMD="$CABALCMD --project-file=$CABAL_PROJECT"
+    echo "Using user specified cabal project file at [$CABAL_PROJECT]"
     if test -n "$DISABLE_SDIST_BUILD"
-    then
+    then # regular build
       CABALCMD="$SDIST_CABALCMD"
-    else
+    else # sdist build
       # We run the command from .packcheck/<package> dir after unpacking
       # sdist
       CABALCMD="$CABALCMD --project-file=../../$CABAL_PROJECT"
+      # XXX should return an error instead?
+      echo "WARNING!! You should not test a distribution build with a cabal" \
+           "project file. It may not be reproducible"
+    fi
+  else
+    local implicit_proj_file
+    implicit_proj_file=$(find_in_parents "$(pwd)" cabal.project)
+    if test -n "$implicit_proj_file"
+    then
+      echo "Implicit cabal project file found at [$implicit_proj_file]"
     fi
   fi
   echo "Using cabal command [$CABALCMD]"
 }
 
+# XXX update this too
 ensure_stack_yaml() {
-  if test -n "$STACK_YAML"
-  then
-    require_file $STACK_YAML
-  else
-    require_file stack.yaml
-  fi
-
   SDIST_STACKCMD=$STACKCMD
   if test -n "$STACK_YAML"
   then
+    require_file $STACK_YAML
     SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
+    echo "Using user specified stack.yaml file at [$STACK_YAML]"
     if test -n "$DISABLE_SDIST_BUILD"
-    then
+    then # regular build
       STACKCMD="$SDIST_STACKCMD"
-    else
+    else # sdist build
       # We run the stack command from .packcheck/<package> dir after unpacking
       # sdist
       STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
+      # XXX should return an error instead?
+      echo "WARNING!! You should not test a distribution build with a" \
+           "stack.yaml file. It may not be reproducible"
+    fi
+  else
+    local implicit_stack_yaml
+    implicit_stack_yaml=$(find_in_parents "$(pwd)" stack.yaml)
+    if test -n "$implicit_stack_yaml"
+    then
+      echo "Implicit stack.yaml file found at [$implicit_stack_yaml]"
+    else
+      if test -n "$DISABLE_SDIST_BUILD"
+      then # regular build
+        $STACKCMD init
+      fi
     fi
   fi
   echo "Using stack command [$STACKCMD]"
@@ -1202,6 +1236,7 @@ create_and_unpack_pkg_dist() {
   if test "$BUILD" = stack
   then
     # When custom setup is used we need to configure before we can use sdist.
+    test -e stack.yaml || $STACKCMD init
     run_verbose_errexit $SDIST_STACKCMD build --only-configure
     SDIST_CMD="$SDIST_STACKCMD sdist $opts"
     SDIST_DIR=$($SDIST_STACKCMD path --dist-dir) || exit 1
@@ -1277,8 +1312,46 @@ create_and_unpack_pkg_dist() {
   cd .packcheck || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
   $OS_UNGZTAR_CMD $tarpath
+  echo
 
   cd ${1}
+  if test "$BUILD" = stack
+  then
+    test -e stack.yaml \
+      && echo "WARNING! Avoid including stack.yaml in a distribution" \
+      && run_verbose rm -f stack.yaml
+    $STACKCMD init
+  else
+    # Is there a way in cabal to ignore project file?
+    # XXX how does cabal build dependencies with project files?
+    test -e cabal.project \
+      && echo "WARNING! Avoid including cabal.project in a distribution" \
+      && run_verbose rm -f cabal.project
+    test -e cabal.project.local \
+      && echo "WARNING! Avoid including cabal.project.local in a distribution" \
+      && run_verbose rm -f cabal.project.local
+    test -e cabal.project.freeze \
+      && echo "WARNING! Avoid including cabal.project.freeze in a distribution" \
+      && run_verbose rm -f cabal.prject.freeze
+
+    # We want to ensure that our build is not affected by the
+    # implicit cabal.project file. This is likely because the
+    # .packcheck directory is created inside the project repo which
+    # may have a cabal.project file.
+    local implicit_proj_file
+    implicit_proj_file=$(find_in_parents "$(pwd)" cabal.project)
+
+    if test -n "$implicit_proj_file"
+    then
+      echo "Implicit cabal.project found at [$implicit_proj_file]"
+      echo "Creating an explicit cabal.project file to ensure that we" \
+           "do not use the implicit one for a distribution build"
+      echo "packages: ." > cabal.project
+      run_verbose cat cabal.project
+      echo
+    fi
+  fi
+
   show_step "Package info [sdist $SDIST_OPTIONS]"
   run_verbose cabal info . || true
 
