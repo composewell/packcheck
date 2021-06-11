@@ -1295,19 +1295,48 @@ create_and_unpack_pkg_dist() {
         | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
     fi
     git ls-files | sort | grep -v '^$' > .packcheck/git-ls-files.txt
-    diff -B --suppress-common-lines .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt ||
+    local diff_res_file=".packcheck/tar-git-diff.txt"
+    local tar_minus_git
+    local git_minus_tar
+    diff -B --suppress-common-lines .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt > "$diff_res_file" ||
       { echo "WARNING! Source distribution tar and git repo contents differ."
+        tar_minus_git="$(awk '$0~/^< .+$/' "$diff_res_file")"
+        git_minus_tar="$(awk '$0~/^> .+$/' "$diff_res_file")"
+        if test -n "$tar_minus_git"
+        then
+            echo
+            echo "The following files exist in your source distribution but \
+are not committed to the git repository."
+            echo "$tar_minus_git"
+            echo "Please consider committing them to the git repository."
+            echo "Or clean the git workspace of unwanted files before creating \
+the source distribution."
+            echo "Wildcards in 'extra-sources-files' section and \
+'extra-doc-files' section of the cabal file may pickup any files lying around."
+        fi
+        if test -n "$git_minus_tar"
+        then
+            echo
+            echo "The following files are committed to the git repository \
+but do not exist in the source distribution."
+            echo "$git_minus_tar"
+            echo "Please consider adding them to your cabal file under \
+'extra-source-files' or 'extra-doc-files'."
+            echo "If you do not want to add them in the source distribution \
+then add them to .packcheck.ignore file at the root of the git repository."
+        fi
         if test -z "$DISABLE_SDIST_GIT_CHECK"
         then
+          echo
           echo "Exiting. Use DISABLE_SDIST_GIT_CHECK=y to disable this check."
-          echo "Or put the exceptions in .packcheck.ignore file."
           exit 1
         fi
       }
 
       rm -f .packcheck/tar-ztf.txt \
         .packcheck/tar-ztf1.txt \
-        .packcheck/git-ls-files.txt
+        .packcheck/git-ls-files.txt \
+        "$diff_res_file"
   fi
 
   echo
