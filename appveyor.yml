@@ -24,6 +24,7 @@ environment:
     # DISABLE_SDIST_BUILD: "y"
     # DISABLE_SDIST_GIT_CHECK: "y"
     # DISABLE_DIST_CHECKS: "y"
+    DISABLE_SDIST_PROJECT_CHECK: "y"
 
     # ------------------------------------------------------------------------
     # stack options

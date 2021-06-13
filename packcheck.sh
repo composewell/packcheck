@@ -199,6 +199,7 @@ SAFE_ENVVARS="\
   GHC_OPTIONS \
   SDIST_OPTIONS \
   DISABLE_SDIST_BUILD \
+  DISABLE_SDIST_PROJECT_CHECK \
   DISABLE_SDIST_GIT_CHECK \
   DISABLE_BENCH \
   DISABLE_TEST \
@@ -369,6 +370,7 @@ show_help() {
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
+  help_envvar DISABLE_SDIST_PROJECT_CHECK "[y] Ignore project file and continue"
   help_envvar DISABLE_SDIST_GIT_CHECK "[y] Do not compare source distribution with git repo"
   help_envvar DISABLE_DIST_CHECKS "[y] Do not perform source distribution checks"
   #help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
@@ -407,6 +409,7 @@ check_all_boolean_vars () {
   check_boolean_var STACK_UPGRADE
   check_boolean_var DISABLE_SDIST_BUILD
   check_boolean_var DISABLE_DIST_CHECKS
+  check_boolean_var DISABLE_SDIST_PROJECT_CHECK
   check_boolean_var DISABLE_SDIST_GIT_CHECK
   check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
@@ -1045,9 +1048,8 @@ ensure_cabal_project() {
       # We run the command from .packcheck/<package> dir after unpacking
       # sdist
       CABALCMD="$CABALCMD --project-file=../../$CABAL_PROJECT"
-      # XXX should return an error instead?
       echo "WARNING!! You should not test a distribution build with a cabal" \
-           "project file. It may not be reproducible"
+           "project file. It may not be reproducible."
     fi
   else
     local implicit_proj_file
@@ -1075,9 +1077,9 @@ ensure_stack_yaml() {
       # We run the stack command from .packcheck/<package> dir after unpacking
       # sdist
       STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
-      # XXX should return an error instead?
+      unset STACK_YAML
       echo "WARNING!! You should not test a distribution build with a" \
-           "stack.yaml file. It may not be reproducible"
+           "stack.yaml file. It may not be reproducible."
     fi
   else
     local implicit_stack_yaml
@@ -1228,6 +1230,16 @@ remove_pkg_executables() {
   done
 }
 
+sdist_remove_project_file () {
+    if test -e "$1"
+    then
+      echo "WARNING! Avoid including $1 in a distribution"
+      test -n "$DISABLE_SDIST_PROJECT_CHECK" || \
+        die "Use DISABLE_SDIST_PROJECT_CHECK=y to allow this"
+    fi
+    run_verbose rm -f "$1"
+}
+
 # $1: package full name (name + ver)
 create_and_unpack_pkg_dist() {
   local pkgtar=${1}.tar.gz
@@ -1350,22 +1362,14 @@ then add them to .packcheck.ignore file at the root of the git repository."
   cd ${1}
   if test "$BUILD" = stack
   then
-    test -e stack.yaml \
-      && echo "WARNING! Avoid including stack.yaml in a distribution" \
-      && run_verbose rm -f stack.yaml
+    sdist_remove_project_file stack.yaml
     $STACKCMD init
   else
     # Is there a way in cabal to ignore project file?
     # XXX how does cabal build dependencies with project files?
-    test -e cabal.project \
-      && echo "WARNING! Avoid including cabal.project in a distribution" \
-      && run_verbose rm -f cabal.project
-    test -e cabal.project.local \
-      && echo "WARNING! Avoid including cabal.project.local in a distribution" \
-      && run_verbose rm -f cabal.project.local
-    test -e cabal.project.freeze \
-      && echo "WARNING! Avoid including cabal.project.freeze in a distribution" \
-      && run_verbose rm -f cabal.prject.freeze
+    sdist_remove_project_file cabal.project
+    sdist_remove_project_file cabal.project.local
+    sdist_remove_project_file cabal.project.freeze
 
     # We want to ensure that our build is not affected by the
     # implicit cabal.project file. This is likely because the
@@ -1376,7 +1380,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
 
     if test -n "$implicit_proj_file"
     then
-      echo "Implicit cabal.project found at [$implicit_proj_file]"
+      echo "WARNING! Implicit cabal.project found at [$implicit_proj_file]"
       echo "Creating an explicit cabal.project file to ensure that we" \
            "do not use the implicit one for a distribution build"
       echo "packages: ." > cabal.project
