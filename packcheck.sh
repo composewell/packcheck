@@ -898,6 +898,7 @@ ensure_ghc() {
     compiler=$($STACKCMD path --compiler-exe)
   fi
 
+  export COMPILER_EXE_PATH="$compiler"
   echo "Using $COMPILER at $compiler"
   echo "$($compiler --version) [$($compiler --print-project-git-commit-id 2> /dev/null || echo '?')]"
   # Use the real version, the user might have specified a version prefix in
@@ -1400,7 +1401,9 @@ install_deps() {
     cabal-v2)
       if test -z "$CABAL_DISABLE_DEPS"
       then
-        run_verbose_errexit $CABALCMD v2-build $GHCJS_FLAG $CABAL_DEP_OPTIONS $CABAL_BUILD_TARGETS
+        run_verbose_errexit $CABALCMD v2-build \
+          --with-compiler "$COMPILER_EXE_PATH" \
+          $GHCJS_FLAG $CABAL_DEP_OPTIONS $CABAL_BUILD_TARGETS
       else
         echo "Skipping. CABAL_DISABLE_DEPS is on."
       fi ;;
@@ -1411,9 +1414,14 @@ build_and_test() {
   case "$BUILD" in
     stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-v2)
-      run_verbose_errexit $CABALCMD v2-build $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      run_verbose_errexit $CABALCMD v2-build \
+        --with-compiler "$COMPILER_EXE_PATH" \
+        $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       echo
-      test -n "$DISABLE_DOCS" || run_verbose_errexit $CABALCMD v2-haddock $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      test -n "$DISABLE_DOCS" || \
+        run_verbose_errexit $CABALCMD v2-haddock \
+          --with-compiler "$COMPILER_EXE_PATH" \
+          $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       if test -z "$DISABLE_TEST"
       then
         local version
@@ -1424,7 +1432,9 @@ build_and_test() {
           SHOW_DETAILS="--test-show-details=streaming"
         fi
         echo
-        run_verbose_errexit $CABALCMD v2-test $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+        run_verbose_errexit $CABALCMD v2-test \
+          --with-compiler "$COMPILER_EXE_PATH" \
+          $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       fi ;;
   esac
 }
