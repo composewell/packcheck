@@ -1455,11 +1455,12 @@ dist_checks() {
       run_verbose_errexit $CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
 
       echo
-      if test "$CABAL_CHECK_RELAX" = y
+      if test -n "$CABAL_CHECK_RELAX"
       then
         run_verbose cabal check || true
       else
-        run_verbose_errexit cabal check
+        run_verbose cabal check || \
+          die "Use CABAL_CHECK_RELAX=y to ignore this error"
       fi ;;
   esac
 }
