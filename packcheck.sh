@@ -898,7 +898,7 @@ ensure_ghc() {
 
   if test -n "$(need_stack)"
   then
-    compiler=$($STACKCMD path --compiler-exe)
+    compiler=$($STACKCMD path --compiler-exe) || exit 1
   fi
 
   export COMPILER_EXE_PATH="$compiler"
@@ -1236,8 +1236,8 @@ sdist_remove_project_file () {
       echo "WARNING! Avoid including $1 in a distribution"
       test -n "$DISABLE_SDIST_PROJECT_CHECK" || \
         die "Use DISABLE_SDIST_PROJECT_CHECK=y to allow this"
+      run_verbose rm -f "$1"
     fi
-    run_verbose rm -f "$1"
 }
 
 # $1: package full name (name + ver)
