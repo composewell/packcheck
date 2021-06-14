@@ -1376,27 +1376,30 @@ then add them to .packcheck.ignore file at the root of the git repository."
       run_verbose_errexit $SDIST_STACKCMD init
     fi
   else
-    # Is there a way in cabal to ignore project file?
-    # XXX how does cabal build dependencies with project files?
-    sdist_remove_project_file cabal.project
-    sdist_remove_project_file cabal.project.local
-    sdist_remove_project_file cabal.project.freeze
-
-    # We want to ensure that our build is not affected by the
-    # implicit cabal.project file. This is likely because the
-    # .packcheck directory is created inside the project repo which
-    # may have a cabal.project file.
-    local implicit_proj_file
-    implicit_proj_file=$(find_in_parents "$(pwd)" cabal.project)
-
-    if test -n "$implicit_proj_file"
+    if test -z "$CABAL_PROJECT"
     then
-      echo "WARNING! Implicit cabal.project found at [$implicit_proj_file]"
-      echo "Creating an explicit cabal.project file to ensure that we" \
-           "do not use the implicit one for a distribution build"
-      echo "packages: ." > cabal.project
-      run_verbose cat cabal.project
-      echo
+      # Is there a way in cabal to ignore project file?
+      # XXX how does cabal build dependencies with project files?
+      sdist_remove_project_file cabal.project
+      sdist_remove_project_file cabal.project.local
+      sdist_remove_project_file cabal.project.freeze
+
+      # We want to ensure that our build is not affected by the
+      # implicit cabal.project file. This is likely because the
+      # .packcheck directory is created inside the project repo which
+      # may have a cabal.project file.
+      local implicit_proj_file
+      implicit_proj_file=$(find_in_parents "$(pwd)" cabal.project)
+
+      if test -n "$implicit_proj_file"
+      then
+        echo "WARNING! Implicit cabal.project found at [$implicit_proj_file]"
+        echo "Creating an explicit cabal.project file to ensure that we" \
+             "do not use the implicit one for a distribution build"
+        echo "packages: ." > cabal.project
+        run_verbose cat cabal.project
+        echo
+      fi
     fi
   fi
 
