@@ -381,7 +381,7 @@ show_help() {
   help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
 
   show_step1 "cabal options"
-  help_envvar CABAL_PROJECT "Alternative cabal project config, cannot be a path, just the file name"
+  help_envvar CABAL_PROJECT "Alternative cabal project file, path relative to project root"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
   help_envvar CABAL_DISABLE_DEPS "[y] Do not install dependencies, do not do cabal update"
@@ -1039,24 +1039,24 @@ find_in_parents () {
 
 ensure_cabal_project() {
   CABALCMD=cabal
-  SDIST_CABALCMD=$CABALCMD
 
   if test -n "$CABAL_PROJECT"
   then
     require_file "$CABAL_PROJECT"
-    SDIST_CABALCMD="$CABALCMD --project-file=$CABAL_PROJECT"
     echo "Using user specified cabal project file at [$CABAL_PROJECT]"
     if test -n "$DISABLE_SDIST_BUILD"
     then # regular build
-      CABALCMD="$SDIST_CABALCMD"
+      SDIST_CABALCMD="$CABALCMD --project-file=$CABAL_PROJECT"
     else # sdist build
       # We run the command from .packcheck/<package> dir after unpacking
       # sdist
-      CABALCMD="$CABALCMD --project-file=../../$CABAL_PROJECT"
+      SDIST_CABALCMD="$CABALCMD --project-file=../../$CABAL_PROJECT"
       echo "WARNING!! You should not test a distribution build with a cabal" \
            "project file. It may not be reproducible."
     fi
+    CABALCMD="$CABALCMD --project-file=$CABAL_PROJECT"
   else
+    SDIST_CABALCMD="$CABALCMD"
     local implicit_proj_file
     implicit_proj_file=$(find_in_parents "$(pwd)" cabal.project)
     if test -n "$implicit_proj_file"
@@ -1065,28 +1065,27 @@ ensure_cabal_project() {
     fi
   fi
   echo "Using cabal command [$CABALCMD]"
+  echo "Using sdist cabal command [$SDIST_CABALCMD]"
 }
 
-# XXX update this too
 ensure_stack_yaml() {
-  SDIST_STACKCMD=$STACKCMD
   if test -n "$STACK_YAML"
   then
     require_file $STACK_YAML
-    SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
     echo "Using user specified stack.yaml file at [$STACK_YAML]"
     if test -n "$DISABLE_SDIST_BUILD"
     then # regular build
-      STACKCMD="$SDIST_STACKCMD"
+      SDIST_STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
     else # sdist build
       # We run the stack command from .packcheck/<package> dir after unpacking
       # sdist
-      STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
-      unset STACK_YAML
+      SDIST_STACKCMD="$STACKCMD --stack-yaml ../../$STACK_YAML"
       echo "WARNING!! You should not test a distribution build with a" \
            "stack.yaml file. It may not be reproducible."
     fi
+    STACKCMD="$STACKCMD --stack-yaml $STACK_YAML"
   else
+    SDIST_STACKCMD="$STACKCMD"
     local implicit_stack_yaml
     implicit_stack_yaml=$(find_in_parents "$(pwd)" stack.yaml)
     if test -n "$implicit_stack_yaml"
@@ -1095,11 +1094,12 @@ ensure_stack_yaml() {
     else
       if test -n "$DISABLE_SDIST_BUILD"
       then # regular build
-        $STACKCMD init
+        run_verbose_errexit $STACKCMD init
       fi
     fi
   fi
   echo "Using stack command [$STACKCMD]"
+  echo "Using sdist stack command [$SDIST_STACKCMD]"
 }
 
 #------------------------------------------------------------------------------
@@ -1257,22 +1257,25 @@ create_and_unpack_pkg_dist() {
   if test "$BUILD" = stack
   then
     # When custom setup is used we need to configure before we can use sdist.
-    test -e stack.yaml || $STACKCMD init
-    run_verbose_errexit $SDIST_STACKCMD build --only-configure
-    SDIST_CMD="$SDIST_STACKCMD sdist $opts"
-    SDIST_DIR=$($SDIST_STACKCMD path --dist-dir) || exit 1
+    if test -z "$STACK_YAML"
+    then
+      test -e stack.yaml || run_verbose_errexit $STACKCMD init
+    fi
+    run_verbose_errexit $STACKCMD build --only-configure
+    SDIST_CMD="$STACKCMD sdist $opts"
+    SDIST_DIR=$($STACKCMD path --dist-dir) || exit 1
   elif test -n "$CABAL_USE_STACK_SDIST"
   then
     # When custom setup is used we need to configure before we can use sdist.
-    run_verbose_errexit $SDIST_STACKCMD --compiler=$COMPILER-$GHCVER build --only-configure
-    SDIST_CMD="$SDIST_STACKCMD --compiler=$COMPILER-$GHCVER sdist $opts"
-    SDIST_DIR=$($SDIST_STACKCMD --compiler=$COMPILER-$GHCVER path --dist-dir) || exit 1
+    run_verbose_errexit $STACKCMD --compiler=$COMPILER-$GHCVER build --only-configure
+    SDIST_CMD="$STACKCMD --compiler=$COMPILER-$GHCVER sdist $opts"
+    SDIST_DIR=$($STACKCMD --compiler=$COMPILER-$GHCVER path --dist-dir) || exit 1
   else
     # XXX We need to configure to use sdist and we need to install
     # dependencies to configure. So to just create the sdist we will
     # have to go through the whole process once and then again after
     # unpacking the sdist and to build it.
-    SDIST_CMD="$SDIST_CABALCMD v2-sdist $opts"
+    SDIST_CMD="$CABALCMD v2-sdist $opts"
     SDIST_DIR=dist-newstyle/sdist
   fi
 
@@ -1367,8 +1370,11 @@ then add them to .packcheck.ignore file at the root of the git repository."
   cd ${1}
   if test "$BUILD" = stack
   then
-    sdist_remove_project_file stack.yaml
-    $STACKCMD init
+    if test -z "$STACK_YAML"
+    then
+      sdist_remove_project_file stack.yaml
+      run_verbose_errexit $SDIST_STACKCMD init
+    fi
   else
     # Is there a way in cabal to ignore project file?
     # XXX how does cabal build dependencies with project files?
@@ -1406,11 +1412,11 @@ then add them to .packcheck.ignore file at the root of the git repository."
 
 install_deps() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD build $STACK_DEP_OPTIONS ;;
+    stack) run_verbose_errexit $SDIST_STACKCMD build $STACK_DEP_OPTIONS ;;
     cabal-v2)
       if test -z "$CABAL_DISABLE_DEPS"
       then
-        run_verbose_errexit $CABALCMD v2-build \
+        run_verbose_errexit $SDIST_CABALCMD v2-build \
           --with-compiler "$COMPILER_EXE_PATH" \
           $GHCJS_FLAG $CABAL_DEP_OPTIONS $CABAL_BUILD_TARGETS
       else
@@ -1421,14 +1427,14 @@ install_deps() {
 
 build_and_test() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD build $STACK_BUILD_OPTIONS ;;
+    stack) run_verbose_errexit $SDIST_STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-v2)
-      run_verbose_errexit $CABALCMD v2-build \
+      run_verbose_errexit $SDIST_CABALCMD v2-build \
         --with-compiler "$COMPILER_EXE_PATH" \
         $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       echo
       test -n "$DISABLE_DOCS" || \
-        run_verbose_errexit $CABALCMD v2-haddock \
+        run_verbose_errexit $SDIST_CABALCMD v2-haddock \
           --with-compiler "$COMPILER_EXE_PATH" \
           $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       if test -z "$DISABLE_TEST"
@@ -1441,7 +1447,7 @@ build_and_test() {
           SHOW_DETAILS="--test-show-details=streaming"
         fi
         echo
-        run_verbose_errexit $CABALCMD v2-test \
+        run_verbose_errexit $SDIST_CABALCMD v2-test \
           --with-compiler "$COMPILER_EXE_PATH" \
           $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       fi ;;
@@ -1450,9 +1456,9 @@ build_and_test() {
 
 dist_checks() {
   case "$BUILD" in
-    stack) run_verbose_errexit $STACKCMD sdist $SDIST_OPTIONS ;;
+    stack) run_verbose_errexit $SDIST_STACKCMD sdist $SDIST_OPTIONS ;;
     cabal-v2)
-      run_verbose_errexit $CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
+      run_verbose_errexit $SDIST_CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
 
       echo
       if test -n "$CABAL_CHECK_RELAX"
@@ -1638,6 +1644,10 @@ build_compile () {
   fi
   test -z "$(need_stack)" || ensure_stack_yaml
 
+  # Note: from here on we should be using SDIST_CABALCMD or SDIST_STACKCMD to
+  # invoke cabal or stack unless we want to use the command without
+  # cabal-project or stack.yaml argument in which case CABALCMD or STACKCMD
+  # should be used.
   if test -z "$DISABLE_SDIST_BUILD"
   then
     if test -f "./configure.ac"
