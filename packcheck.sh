@@ -1456,10 +1456,8 @@ build_and_test() {
 
 dist_checks() {
   case "$BUILD" in
-    stack) run_verbose_errexit $SDIST_STACKCMD sdist $SDIST_OPTIONS ;;
+    stack) run_verbose $SDIST_STACKCMD sdist $SDIST_OPTIONS ;;
     cabal-v2)
-      run_verbose_errexit $SDIST_CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
-
       echo
       if test -n "$CABAL_CHECK_RELAX"
       then
@@ -1467,7 +1465,9 @@ dist_checks() {
       else
         run_verbose cabal check || \
           die "Use CABAL_CHECK_RELAX=y to ignore this error"
-      fi ;;
+      fi
+      run_verbose $SDIST_CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
+      ;;
   esac
 }
 
@@ -1678,7 +1678,7 @@ build_compile () {
   if test -z "$DISABLE_DIST_CHECKS"
   then
     show_step "Package distribution checks"
-    dist_checks
+    dist_checks || die "Use DISABLE_DIST_CHECKS=y to disable this check"
   fi
 
   if test "$ENABLE_INSTALL" = y
