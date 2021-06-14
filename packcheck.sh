@@ -376,7 +376,7 @@ show_help() {
   #help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
   show_step1 "stack options"
-  help_envvar STACK_YAML "Alternative stack config, cannot be a path, just the file name"
+  help_envvar STACK_YAML "Alternative stack config file path relative to project root"
   help_envvar STACK_OPTIONS "ADDITIONAL stack global options (e.g. -v) to append"
   help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
 
@@ -667,6 +667,11 @@ ensure_stack() {
   fi
   require_cmd stack
 
+  # Empty STACK_YAML variable does not go well
+  if test -z "$STACK_YAML"
+  then
+    unset STACK_YAML
+  fi
   if test -n "$STACK_UPGRADE"
   then
     echo "Upgrading stack to the required version"
