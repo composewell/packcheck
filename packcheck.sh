@@ -1295,6 +1295,7 @@ create_and_unpack_pkg_dist() {
   # Unpack the tar inside .packcheck directory
   mkdir -p .packcheck || exit 1
 
+  # XXX Move the git repo comparison code to a separate function
   local gitcmd="$(which_cmd git)"
   test -n "$gitcmd" || echo "WARNING! git command not found skipping source distribution comparison with git repo"
 
@@ -1367,6 +1368,11 @@ then add them to .packcheck.ignore file at the root of the git repository."
   $OS_UNGZTAR_CMD $tarpath
   echo
 
+  # NOTE: We are entering the sdist directory inside .packcheck now. The
+  # original tree is intact. When we remove the cabal.project or stack.yaml
+  # files here, it is removed from the sdist copy not from the original tree.
+  # However, the CABAL_PROJECT and STACK_YAML variables are pointing to a path
+  # relative to the original tree root.
   cd ${1}
   if test "$BUILD" = stack
   then
