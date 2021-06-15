@@ -1,3 +1,10 @@
+## PR Checklist
+
+The commit-id of packcheck in the CI configs must be updated after any
+change in `packcheck.sh` otherwise CIs would be passing because they
+will be happily using an old version of packcheck. This should be the last
+commit in the PR.
+
 ## Release Process
 
 * See [the streamly maintanenace
