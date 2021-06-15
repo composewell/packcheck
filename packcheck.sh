@@ -894,6 +894,8 @@ ensure_ghc() {
 
   if test -n "$GHCVER"
   then
+    echo "GHCVER is specified, using '$STACKCMD --system-ghc'."
+    echo "Clear GHCVER to use stack supplied ghc."
     check_version_die $COMPILER $GHCVER
     # If the user specified GHCVER then use it as system-ghc
     # Stack will still silently choose its own ghc if the ghc does not match
