@@ -58,7 +58,7 @@ env:
   # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
   # then it is automatically pulled from this URL.
   - PACKCHECK_GITHUB_URL="https://raw.githubusercontent.com/composewell/packcheck"
-  - PACKCHECK_GITHUB_COMMIT="91d76691e5cb82e77564be55d0126906b16d76bc"
+  - PACKCHECK_GITHUB_COMMIT="acc3d3e8ba2e70bdb08cbfd5985b2d392e7fc1ab"
 
 notifications:
   email:
