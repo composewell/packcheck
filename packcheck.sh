@@ -512,12 +512,6 @@ dont_need_cabal() {
     return 1
   fi
 
-  if test -n "$ENABLE_INSTALL"
-  then
-    test -z "$1" || echo "Need cabal-install because 'ENABLE_INSTALL=$ENABLE_INSTALL'"
-    return 1
-  fi
-
   return 0
 }
 
@@ -1126,10 +1120,6 @@ get_pkg_full_name() {
   full_name=$(cabal info . | awk '{ if ($1 == "*") {print $2; exit}}') || true
   if test -z "$full_name"
   then
-    if test -n "$ENABLE_INSTALL"
-    then
-      die "'cabal info' command failed to determine package name.\nPlease disable install test by using 'ENABLE_INSTALL=' to avoid this issue."
-    fi
     if test -z "$DISABLE_SDIST_BUILD"
     then
       die "'cabal info' command failed to determine package name.\nPlease use 'DISABLE_SDIST_BUILD=y' to avoid this issue."
@@ -1162,20 +1152,18 @@ determine_build_type() {
       if test $BUILD = "stack" -a -f "stack.yaml"
       then
         echo "No cabal file found but a stack.yaml file found, assuming a multipackage project."
-        echo "Setting DISABLE_SDIST_BUILD=y, DISABLE_DIST_CHECKS=y, and clearing ENABLE_INSTALL"
+        echo "Setting DISABLE_SDIST_BUILD=y and DISABLE_DIST_CHECKS=y"
         MULTI_PACKAGE_PROJECT=true
         DISABLE_SDIST_BUILD=y
         DISABLE_DIST_CHECKS=y
-        ENABLE_INSTALL=
       else
         if test $BUILD = "cabal-v2" -a -f "cabal.project"
         then
           echo "No cabal file found but a cabal.project file found, assuming a multipackage project."
-          echo "Setting DISABLE_SDIST_BUILD=y, DISABLE_DIST_CHECKS=y, and clearing ENABLE_INSTALL"
+          echo "Setting DISABLE_SDIST_BUILD=y and DISABLE_DIST_CHECKS=y"
           MULTI_PACKAGE_PROJECT=true
           DISABLE_SDIST_BUILD=y
           DISABLE_DIST_CHECKS=y
-          ENABLE_INSTALL=
         else
           echo "No valid build config file cabal/cabal.project/package.yaml/stack.yaml found."
           die "Make sure you are using BUILD=cabal-v2 if you are using a cabal.project file"
@@ -1507,19 +1495,6 @@ dist_checks() {
   esac
 }
 
-# $1 package name + ver
-install_test() {
-  case "$BUILD" in
-    stack)
-      run_verbose_errexit $STACKCMD install $STACK_BUILD_OPTIONS_ORIG
-      # TODO test if the dist can be installed by cabal
-      remove_pkg_executables $OS_APP_HOME/$OS_LOCAL_DIR/bin ;;
-    cabal-v2)
-      run_verbose_errexit $CABALCMD v2-install $CABAL_BUILD_TARGETS
-      remove_pkg_executables $OS_APP_HOME/$OS_CABAL_DIR/bin ;;
-  esac
-}
-
 # hlint install from Neil Mitchell's github repo, script taken from
 # https://raw.githubusercontent.com/ndmitchell/neil/master/misc/run.sh
 install_hlint() {
@@ -1696,7 +1671,7 @@ build_compile () {
   show_step "Build tools: package level and global configuration"
   dont_need_cabal || ensure_cabal_project
   dont_need_cabal || ensure_cabal_config
-  if test -z "$DISABLE_SDIST_BUILD" -o -n "$ENABLE_INSTALL"
+  if test -z "$DISABLE_SDIST_BUILD"
   then
     determine_package_full_name
   fi
@@ -1737,12 +1712,6 @@ build_compile () {
   then
     show_step "Package distribution checks"
     dist_checks || die "Use DISABLE_DIST_CHECKS=y to disable this check"
-  fi
-
-  if test "$ENABLE_INSTALL" = y
-  then
-    show_step "Package install test"
-    install_test $PACKAGE_FULL_NAME
   fi
 }
 
