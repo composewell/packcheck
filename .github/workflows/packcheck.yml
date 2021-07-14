@@ -129,7 +129,7 @@ jobs:
           #   runner: macos-latest
 
           - name: hlint
-            command: cabal-v2
+            command: hlint
             runner: ubuntu-latest
             pack_options: >-
               HLINT_OPTIONS="lint"
