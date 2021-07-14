@@ -1595,6 +1595,28 @@ run_hlint() {
     run_verbose_errexit "$HLINT_COMMANDS"
   elif test -f .hlint.ignore
   then
+
+    # Check if all files mentioned in .hlint.ignore exist.
+    local hi_files_exist=""
+    local hi_files_n_exist=""
+    while read p; do
+        if test -f "$p"
+        then
+            hi_files_exist="$p\n$hi_files_exist"
+        else
+            if test -n "$p"
+            then
+                hi_files_n_exist="$p\n$hi_files_n_exist"
+            fi
+        fi
+    done <.hlint.ignore
+    if test -n "$hi_files_n_exist"
+    then
+        echo "WARNING: The following files don't exist but are mentioned in \
+yourhlint.ignore file."
+        printf "$hi_files_n_exist"
+    fi
+
     local files
     local found
     local i
