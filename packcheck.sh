@@ -313,6 +313,7 @@ short_help() {
   echo "For example:"
   echo "$script cabal-v2 GHCVER=8.6.5"
   echo "$script stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
+  echo "$script hlint"
   echo
   echo "Ask questions: https://gitter.im/composewell/packcheck"
   echo "Report issues: https://github.com/composewell/packcheck/issues/new"
@@ -338,6 +339,7 @@ show_help() {
   #help_cmd cabal-v1 "Deprecated: build using cabal v1-build"
   #help_cmd cabal "Deprecated alias to cabal-v1"
   help_cmd stack "build using stack"
+  help_cmd hlint "run hlint"
   # TODO add hlint as a tool
   help_cmd clean "remove the .packcheck directory"
   help_cmd cleanall "remove .packcheck, .stack-work directories"
@@ -1809,6 +1811,7 @@ case $1 in
   cabal-new) die "cabal-new is not supported, please use cabal-v2 instead";;
   cabal-v2) shift; eval_env "$@"; BUILD=cabal-v2;;
   stack) shift; eval_env "$@"; BUILD=stack;;
+  hlint) shift; eval_env "$@"; BUILD=hlint;;
   clean) rm -rf .packcheck; exit;;
   cleanall)
     rm -rf .packcheck .stack-work
@@ -1851,13 +1854,11 @@ echo
 echo "Adding usual utility locations to PATH [$PATH]..."
 if test "$BUILD" = "cabal-v2"
 then
-  export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
+    export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
 export PATH=$OS_APP_HOME/$OS_LOCAL_DIR/bin:$PATH
 echo
 echo "PATH is now set to [$PATH]"
-
-verify_build_config
 
 # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
 # cabal does not complain
@@ -1866,20 +1867,26 @@ unset GHC_PACKAGE_PATH
 # stack does not work well with empty STACK_YAML env var
 test -n "$STACK_YAML" || unset STACK_YAML
 
-if test -n "$HLINT_COMMANDS" -o -n "$HLINT_TARGETS"
+if test "$BUILD" = "hlint"
 then
-  if test -z "$(which_cmd hlint)"
-  then
-    if test -n "$HLINT_BUILD"
+
+    if test -z "$(which_cmd hlint)"
     then
-      build_hlint
-    else
-      install_hlint
+        if test -n "$HLINT_BUILD"
+        then
+            build_hlint
+        else
+            install_hlint
+        fi
     fi
-  fi
-  run_hlint
+    run_hlint
+
 else
-  build_compile
+
+    verify_build_config
+
+    build_compile
+
 fi
 
 show_step "Done"
