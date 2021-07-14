@@ -1312,7 +1312,29 @@ create_and_unpack_pkg_dist() {
       > .packcheck/tar-ztf.txt
     if test -f .packcheck.ignore
     then
-      cat .packcheck.ignore .packcheck/tar-ztf.txt \
+      # Remove non-existent files in .packcheck.ignore
+      local pi_files_exist=""
+      local pi_files_n_exist=""
+      while read p; do
+          if test -f "$p"
+          then
+              pi_files_exist="$p\n$pi_files_exist"
+          else
+              if test -n "$p"
+              then
+                  pi_files_n_exist="$p\n$pi_files_n_exist"
+              fi
+          fi
+      done <.packcheck.ignore
+      if test -n "$pi_files_n_exist"
+      then
+          echo "WARNING: The following files don't exist but are mentioned in \
+your .packcheck.ignore file."
+          printf "$pi_files_n_exist"
+      fi
+      local sane_ignore_file=".packcheck/sane-ignore"
+      printf "$pi_files_exist" > "$sane_ignore_file"
+      cat "$sane_ignore_file" .packcheck/tar-ztf.txt \
         | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
     else
       cat .packcheck/tar-ztf.txt \
@@ -1360,7 +1382,8 @@ then add them to .packcheck.ignore file at the root of the git repository."
       rm -f .packcheck/tar-ztf.txt \
         .packcheck/tar-ztf1.txt \
         .packcheck/git-ls-files.txt \
-        "$diff_res_file"
+        "$diff_res_file" \
+        "$sane_ignore_file"
   fi
 
   echo
