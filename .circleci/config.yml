@@ -72,6 +72,12 @@ env: &env
 
 preinstall: &preinstall
   run: |
+        # Check for PACKCHECK_GITHUB_COMMIT
+        if text -z "$PACKCHECK_GITHUB_COMMIT"
+        then
+            die "PACKCHECK_GITHUB_COMMIT is not specified."
+        fi
+
         apt-get update
         # required for https/cache save and restore
         apt-get install -y ca-certificates
