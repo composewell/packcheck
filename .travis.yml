@@ -163,10 +163,10 @@ matrix:
   #  os: osx
 
   # --------------------------------------------------------------------------
-  # Lint e.g. HLINT_COMMANDS="hlint lint src; hlint lint test"
+  # Lint
   # --------------------------------------------------------------------------
 
-  #- env: BUILD=stack RESOLVER=lts-15 HLINT_COMMANDS="hlint lint ."
+  #- env: BUILD=hlint HLINT_TARGETS="src test"
 
   # --------------------------------------------------------------------------
   # Build and send coverage report to coveralls.io using hpc-coveralls.  Add
@@ -187,7 +187,7 @@ matrix:
   allow_failures:
   - env: BUILD=cabal-v2 GHCVER=head
   - env: BUILD=stack RESOLVER=nightly
-  - env: BUILD=stack RESOLVER=lts-15 HLINT_COMMANDS="hlint lint ."
+  - env: BUILD=hlint HLINT_COMMANDS="src"
 
 # ------------------------------------------------------------------------
 #  Settings beyond this point are advanced and normally not tweaked
