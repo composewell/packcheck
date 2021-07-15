@@ -15,3 +15,4 @@ commit in the PR.
 * Test removing caching
 * Update the version number in config files
 * Update version number in the script
+* Update Changelog accordingly
