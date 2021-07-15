@@ -10,6 +10,8 @@
   optionally merging a branch into another branch (e.g. merging a PR
   branch into master).
 * Several fixes to make distribution builds safer and with more checks
+* Do a sanity check for the existence of files in .packcheck.ignore and
+  .hlint.ignore
 
 ### Breaking Changes
 
@@ -24,6 +26,9 @@
   * CI now fails if `cabal-new` is used as a command
   * `CABAL_NEWBUILD_OPTIONS` is removed
   * `CABAL_NEWBUILD_TARGETS` is removed
+* A new command `hlint` is introduced. The `hlint` build is only triggered by
+  using this command.
+* `ENABLE_INSTALL` option has been removed.
 
 ## 0.5.1
 
