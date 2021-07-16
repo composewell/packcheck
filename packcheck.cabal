@@ -44,14 +44,6 @@ cabal-version:       >= 1.10
 extra-source-files:
     Changelog.md
     README.md
-    stack.yaml
-    .ci/stack-8.0.yaml
-    .travis.yml
-    .circleci/config.yml
-    .github/workflows/packcheck.yml
-    appveyor.yml
-    cabal.project.coveralls
-    cabal.project.ci
     packcheck.sh
     packcheck-safe.sh
     packcheck-remote.sh
