@@ -27,6 +27,7 @@ jobs:
       ${{ matrix.command }}
       ${{ matrix.runner }}
       ${{ matrix.ghc_version }}
+      ${{ matrix.stack_resolver }}
     env:
       # ------------------------------------------------------------------------
       # Common options
@@ -46,6 +47,12 @@ jobs:
       # DISABLE_DIST_CHECKS: "y"
 
       # ------------------------------------------------------------------------
+      # Selecting tool versions
+      # ------------------------------------------------------------------------
+      GHCVER: ${{ matrix.ghc_version }}
+      RESOLVER: ${{ matrix.stack_resolver }}
+
+      # ------------------------------------------------------------------------
       # stack options
       # ------------------------------------------------------------------------
       # Note requiring a specific version of stack using STACKVER may fail due to
@@ -53,7 +60,6 @@ jobs:
       # version.
       #STACKVER: "1.6.5"
       #STACK_UPGRADE: "y"
-      #RESOLVER: "lts-12"
 
       # ------------------------------------------------------------------------
       # cabal options
@@ -114,12 +120,11 @@ jobs:
         include:
           # Additional ci matrix elements
           - name: ci
-            ghc_version: 8.8.3
+            stack_resolver: lts-18.2
             command: stack
             runner: ubuntu-latest
 
           - name: ci
-            ghc_version: 8.4.4
             command: stack
             runner: ubuntu-latest
 
@@ -128,7 +133,7 @@ jobs:
             command: cabal-v2
             runner: macos-latest
 
-          - name: hlint
+          - name: ci
             command: hlint
             runner: ubuntu-latest
             pack_options: >-
@@ -142,8 +147,9 @@ jobs:
       if: ${{ matrix.name != 'hlint' }}
       with:
         ghc-version: ${{ matrix.ghc_version }}
-        # We need not put this in the matrix. This will be fixed in most cases.
-        cabal-version: 3.2
+        enable-stack: true
+        stack-version: 'latest'
+        cabal-version: 'latest'
 
     - uses: actions/cache@v2
       name: Cache common directories
@@ -153,19 +159,7 @@ jobs:
           ~/.ghc
           ~/.local
           ~/.stack
-        key: ${{ matrix.ghc_version }}-${{ matrix.runner }}
-
-    - name: Run installer
-      if: ${{ matrix.installer != '' }}
-      run: ${{ matrix.installer }}
-
-    - name: Setup stack
-      if: ${{ matrix.command == 'stack' }}
-      run: |
-        # required for packcheck
-        sudo apt-get install -y curl
-        # required for outbound https for stack and for stack setup
-        sudo apt-get install -y netbase xz-utils make
+        key: ${{ matrix.ghc_version }}-${{ matrix.stack_resolver }}-${{ matrix.runner }}
 
     - name: Download packcheck
       run: |
