@@ -34,14 +34,16 @@ environment:
     # version.
     #STACKVER: "1.6.5"
     STACK_UPGRADE: "y"
-    RESOLVER: "lts-15"
+    # RESOLVER: "lts-15"
     STACK_ROOT: "c:\\sr"
+    STACK_YAML: "stack.yaml"
 
     # ------------------------------------------------------------------------
     # cabal options
     # ------------------------------------------------------------------------
     CABAL_CHECK_RELAX: "y"
     CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
+    CABAL_PROJECT: "cabal.project"
 
     # ------------------------------------------------------------------------
     # Where to find the required tools
