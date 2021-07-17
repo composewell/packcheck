@@ -27,7 +27,6 @@ jobs:
       ${{ matrix.command }}
       ${{ matrix.runner }}
       ${{ matrix.ghc_version }}
-      ${{ matrix.stack_resolver }}
     env:
       # ------------------------------------------------------------------------
       # Common options
@@ -50,7 +49,7 @@ jobs:
       # Selecting tool versions
       # ------------------------------------------------------------------------
       GHCVER: ${{ matrix.ghc_version }}
-      RESOLVER: ${{ matrix.stack_resolver }}
+      # RESOLVER: ${{ matrix.stack_resolver }}
 
       # ------------------------------------------------------------------------
       # stack options
@@ -60,12 +59,14 @@ jobs:
       # version.
       #STACKVER: "1.6.5"
       #STACK_UPGRADE: "y"
+      STACK_YAML: "stack.yaml"
 
       # ------------------------------------------------------------------------
       # cabal options
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: y
       CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
+      CABAL_PROJECT: "cabal.project"
 
       # ------------------------------------------------------------------------
       # Where to find the required tools
@@ -120,7 +121,6 @@ jobs:
         include:
           # Additional ci matrix elements
           # - name: ci
-          #   stack_resolver: lts-18.2
           #   command: stack
           #   runner: ubuntu-latest
 
@@ -155,7 +155,7 @@ jobs:
           ~/.ghc
           ~/.local
           ~/.stack
-        key: ${{ matrix.ghc_version }}-${{ matrix.stack_resolver }}-${{ matrix.runner }}
+        key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
 
     - name: Download packcheck
       run: |
