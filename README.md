@@ -11,23 +11,44 @@
 
 Please use `cabal` version 2.4 or later.
 
-### Build on CI (Travis/Appveyor/CircleCI)
+### Build on CI
+
 To use packcheck for CI testing of your repo:
 
-* Add your package repo to github/circleci/appveyor/travis as necessary
-* Copy the relevant CI config
-[.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml),
-[appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml),
-[.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml),
-or
+#### Travis
+* Add your package repo to Travis as necessary (See
+  https://docs.travis-ci.com/user/tutorial/)
+* Copy
 [.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
 to your package repo
+
+#### CircleCI
+* Add your package repo to CircleCI as necessary (See
+  https://circleci.com/docs/2.0/getting-started/)
+* Copy
+  [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
+  to your package repo
+
+#### Appveyor
+* Add your package repo to Appveyor as necessary (See
+  https://www.appveyor.com/docs/server/)
+* Copy
+  [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml)
+  to your package repo
+
+#### Github Actions
+* Add your package repo to Github as necessary (See
+  https://docs.github.com/en/actions/quickstart)
+* Copy
+  [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml)
+  to your package repo
 
 CI should work out of the box for most packages. Uncomment the relevant lines
 in the CI config files or change the values of the environment variables for
 fine grained control or custom configuration.
 
 ### Build on Local Machine
+
 You can use packcheck to build or CI test a package on your local machine as
 well.  For local use, copy
 [packcheck.sh](https://github.com/composewell/packcheck/blob/master/packcheck.sh)
@@ -74,7 +95,7 @@ The script can be easily adapted to any CI with a single line build command.
   options, time taken by each build step etc. You can even copy the commands
   from the output and paste them on your local host to reproduce the build or
   failure and debug quickly. [See here for a sample
-  output](https://travis-ci.org/composewell/packcheck).
+  output](https://travis-ci.com/composewell/packcheck).
 * _Same tests everywhere:_ You can run exact same tests with same options or
   flags, in the same way, on all CI platforms.
 * _Choose options:_ Conveniently control all aspects of build through command
@@ -88,8 +109,8 @@ The script can be easily adapted to any CI with a single line build command.
   what you release and don't miss adding a file to the distribution. Also,
   checks if any file in the git repo is missing in the source distribution.
 * _Upload coverage:_ To send coverage info to
-  [coveralls.io](https://coveralls.io) just uncomment a line in your
-  `.travis.yml`.
+  [coveralls.io](https://coveralls.io) just uncomment a line in your respective
+  ci config file.
 * _Non-destructive_: By default the script does not change any config or
   upgrade any tools on the host machine.
 * _Auto tool install_: For stack builds, `stack` and `ghc` can be installed
@@ -109,10 +130,9 @@ parameters to control the builds can either be passed on the script command
 line or as environment variables for convenient use on CI systems.
 
 `packcheck` is also a minimal yet complete "hello world" Haskell package with
-model `travis` and `appveyor` config files that can be used unmodified in any
-Haskell package. The CI configs can be modified **declaratively**, using
-environment variables, to adapt to **any** kind of build scenario you can
-imagine.
+model config files that can be used unmodified in any Haskell package. The CI
+configs can be modified **declaratively**, using environment variables, to adapt
+to **any** kind of build scenario you can imagine.
 
 This model package has everything that a Haskell package usually has; including
 tests, benchmarks and Linux/MacOS/Windows CI already working. It can be used as
@@ -127,9 +147,9 @@ roughly as follows:
 
 * Pick up the correct version of GHC/cabal/stack
 * create source distribution and unpack it to test from it
+* run `hlint`
 * build source, benchmarks and docs
 * run tests
-* run `hlint`
 * generate and upload coverage report (to coveralls.io)
 * perform distribution checks
 
@@ -152,7 +172,7 @@ $ stack exec ./packcheck.sh cabal RESOLVER=lts-11
 
 Run hlint commands on the directories `src` and `test`:
 ```
-$ ./packcheck.sh cabal-v2 HLINT_OPTIONS="lint" HLINT_TARGETS="src test"
+$ ./packcheck.sh hlint HLINT_OPTIONS="lint" HLINT_TARGETS="src test"
 ```
 
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
@@ -230,10 +250,15 @@ $ packcheck.sh --help
 --------------------------------------------------
 Usage
 --------------------------------------------------
-./packcheck.sh COMMAND [PARAMETER=VALUE ...]
+packcheck.sh COMMAND [PARAMETER=VALUE ...]
 
 For example:
-./packcheck.sh stack RESOLVER=lts-10.0 GHC_OPTIONS="-O0 -Werror"
+packcheck.sh cabal-v2 GHCVER=8.6.5
+packcheck.sh stack RESOLVER=lts GHC_OPTIONS="-O0 -Werror"
+packcheck.sh hlint
+
+Ask questions: https://gitter.im/composewell/packcheck
+Report issues: https://github.com/composewell/packcheck/issues/new
 
 Control parameters can either be passed on command line or exported
 as environment variables. Parameters marked DESTRUCTIVE may modify
@@ -248,6 +273,7 @@ Commands and flags
 --------------------------------------------------
 cabal-v2                : build using cabal v2-build
 stack                   : build using stack
+hlint                   : run hlint
 clean                   : remove the .packcheck directory
 cleanall                : remove .packcheck, .stack-work directories
 help | --help | -h      : show this help message
@@ -283,24 +309,26 @@ DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but n
 DISABLE_TEST            : [y] Do not run tests, default is to run tests
 DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
 DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
+DISABLE_SDIST_PROJECT_CHECK: [y] Ignore project file and continue
 DISABLE_SDIST_GIT_CHECK : [y] Do not compare source distribution with git repo
 DISABLE_DIST_CHECKS     : [y] Do not perform source distribution checks
 
 --------------------------------------------------
 stack options
 --------------------------------------------------
-STACK_YAML              : Alternative stack config, cannot be a path, just the file name
+STACK_YAML              : Alternative stack config file path relative to project root
 STACK_OPTIONS           : ADDITIONAL stack global options (e.g. -v) to append
 STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 
 --------------------------------------------------
 cabal options
 --------------------------------------------------
-CABAL_PROJECT           : Alternative cabal project config, cannot be a path, just the file name
+CABAL_PROJECT           : Alternative cabal project file, path relative to project root
 CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to defaults
+CABAL_DISABLE_DEPS      : [y] Do not install dependencies, do not do cabal update
 CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
-CABAL_HACKAGE_MIRROR    : [y] DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
+CABAL_HACKAGE_MIRROR    : DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
 
 --------------------------------------------------
 Coverage options
