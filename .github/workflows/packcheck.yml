@@ -85,7 +85,7 @@ jobs:
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "fa1374027e64a28254b4ac457f968f21fc689c7f"
+      PACKCHECK_GITHUB_COMMIT: "v0.6.0"
 
       # ------------------------------------------------------------------------
       # Final build variables
