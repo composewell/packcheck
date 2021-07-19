@@ -148,7 +148,7 @@ jobs:
     - name: Download packcheck
       run: |
         # Check for PACKCHECK_GITHUB_COMMIT
-        if text -z "$PACKCHECK_GITHUB_COMMIT"
+        if test -z "$PACKCHECK_GITHUB_COMMIT"
         then
             die "PACKCHECK_GITHUB_COMMIT is not specified."
         fi
