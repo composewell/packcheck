@@ -123,9 +123,14 @@ function run_help() {
     script=$(basename "$0")
 
     echo
-    echo "USAGE: --option[=value]"
+    echo "USAGE: $script --remote=url"
+    echo "               [--force]"
+    echo "               [--checkout=base_branch] [--merge=merge_branch]"
+    echo "               [--directory=path]"
+    echo "               -- [...packcheck_arguments]"
     echo
-    echo "-f (or) --force: Puts the script in force mode. This is ideal for CIs."
+    echo "-f (or) --force: Puts the script in force mode. In this mode, the \
+script forcefully replaces existing work created by packcheck and friends."
     echo "-h (or) --help:  Print help."
     echo "--remote:        Repository to clone."
     echo "--checkout:      Revision to checkout. Defaults to 'origin/master'."
@@ -188,6 +193,12 @@ do
             ;;
     esac
 done
+
+if test -z "$REMOTE"
+then
+    run_help
+    exit 1
+fi
 
 for i in "${PACKCHECK_CLI_OPTS_ARR[@]}"
 do
