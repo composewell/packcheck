@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-PACKCHECK_DIR=$(dirname "$0")
+PACKCHECK_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 PACKCHECK_EXE="$PACKCHECK_DIR/packcheck.sh"
 PWD="$(pwd)"
 DEFAULT_DIRECTORY_NAME="packcheck-remote-work"
