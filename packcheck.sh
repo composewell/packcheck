@@ -311,7 +311,7 @@ short_help() {
   echo "$script COMMAND [PARAMETER=VALUE ...]"
   echo
   echo "For example:"
-  echo "$script cabal-v2 GHCVER=8.6.5"
+  echo "$script cabal GHCVER=8.6.5"
   echo "$script stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
   echo "$script hlint"
   echo
@@ -335,9 +335,9 @@ show_help() {
 
   show_step1 "Commands and flags"
   help_cmd cabal-v2 "build using cabal v2-build"
+  help_cmd cabal "alias for cabal-v2"
   #help_cmd cabal-new "Deprecated alias to cabal-v2"
   #help_cmd cabal-v1 "Deprecated: build using cabal v1-build"
-  #help_cmd cabal "Deprecated alias to cabal-v1"
   help_cmd stack "build using stack"
   help_cmd hlint "run hlint"
   # TODO add hlint as a tool
