@@ -57,9 +57,9 @@ from your package directory. You can pass the same evironment variables that
 are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
-$ packcheck.sh cabal-v2
-$ packcheck.sh cabal-v2 GHCVER=8.6.5
-$ packcheck.sh cabal-v2 ENABLE_GHCJS=y
+$ packcheck.sh cabal
+$ packcheck.sh cabal GHCVER=8.6.5
+$ packcheck.sh cabal ENABLE_GHCJS=y
 $ packcheck.sh stack GHCVER=8.6
 ```
 
@@ -159,7 +159,7 @@ You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
-$ ./packcheck.sh cabal-v2 GHCVER=8.6.5
+$ ./packcheck.sh cabal GHCVER=8.6.5
 ```
 
 ```
@@ -178,7 +178,7 @@ $ ./packcheck.sh hlint HLINT_OPTIONS="lint" HLINT_TARGETS="src test"
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.
 ```
-$ ./packcheck.sh cabal-v2 GHCVER=8.8.3 COVERALLS_OPTIONS="test1 test2"
+$ ./packcheck.sh cabal GHCVER=8.8.3 COVERALLS_OPTIONS="test1 test2"
 ```
 
 ## Picking GHC versions
@@ -215,7 +215,7 @@ recognized. Since it uses a clean environment you will have to specify PATH as
 well on the command line. For example,
 
 ```
-$ ./packcheck-safe.sh cabal-v2 PATH=/bin:/usr/bin:/opt/ghc/bin
+$ ./packcheck-safe.sh cabal PATH=/bin:/usr/bin:/opt/ghc/bin
 ```
 
 ## packcheck-remote
@@ -230,7 +230,7 @@ $ ./packcheck-remote.sh --force \
     --checkout=origin/master \
     --merge=origin/branch \
     --directory=./repo.packcheck \
-    -- cabal-v2 GHCVER=8.8.3
+    -- cabal GHCVER=8.8.3
 ```
 
 Use `./packcheck-remote.sh --help` for more information.
@@ -253,7 +253,7 @@ Usage
 packcheck.sh COMMAND [PARAMETER=VALUE ...]
 
 For example:
-packcheck.sh cabal-v2 GHCVER=8.6.5
+packcheck.sh cabal GHCVER=8.6.5
 packcheck.sh stack RESOLVER=lts GHC_OPTIONS="-O0 -Werror"
 packcheck.sh hlint
 
@@ -272,6 +272,7 @@ n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value.
 Commands and flags
 --------------------------------------------------
 cabal-v2                : build using cabal v2-build
+cabal                   : alias for cabal-v2
 stack                   : build using stack
 hlint                   : run hlint
 clean                   : remove the .packcheck directory
@@ -364,11 +365,11 @@ files or build artifacts inside `.packcheck` directory. See the `clean` and
 `cleanall` commands to release the temporary space.
 
 `stack` is automatically installed and can be used to do cabal builds as well.
-If you specify `BUILD=cabal-v2` and `RESOLVER` at the same time then the cabal
+If you specify `BUILD=cabal` and `RESOLVER` at the same time then the cabal
 build uses stack installed `cabal` and `ghc`, both are installed automatically
 when needed.
 
-For pure cabal builds i.e. when `BUILD=cabal-v2` and `RESOLVER` is not
+For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not
 specified, `cabal` and `ghc` must be pre-installed on the system before
 building.
 
