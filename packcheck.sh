@@ -1208,7 +1208,12 @@ ensure_cabal_config() {
     then
       echo
       echo "cabal v2-update"
-      retry_cmd cabal v2-update
+      if test -n "$CABAL_PROJECT"
+      then
+        retry_cmd cabal v2-update --project-file "$CABAL_PROJECT"
+      else
+        retry_cmd cabal v2-update
+      fi
     fi
   fi
 }
