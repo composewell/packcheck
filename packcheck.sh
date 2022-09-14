@@ -1337,12 +1337,15 @@ your .packcheck.ignore file."
     fi
     git ls-files | sort | grep -v '^$' > .packcheck/git-ls-files.txt
     local diff_res_file=".packcheck/tar-git-diff.txt"
+    local diff_res_file2=".packcheck/tar-git-diff.txt2"
     local tar_minus_git
     local git_minus_tar
+    cat $diff_res_file grep -v '^core/' > $diff_res_file2
+
     diff -B --suppress-common-lines .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt > "$diff_res_file" ||
       { echo "WARNING! Source distribution tar and git repo contents differ."
         tar_minus_git="$(awk '$0~/^< .+$/' "$diff_res_file")"
-        git_minus_tar="$(awk '$0~/^> .+$/' "$diff_res_file")"
+        git_minus_tar="$(awk '$0~/^> .+$/' "$diff_res_file2")"
         if test -n "$tar_minus_git"
         then
             echo
