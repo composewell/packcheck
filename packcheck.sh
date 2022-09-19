@@ -1311,15 +1311,8 @@ create_and_unpack_pkg_dist() {
       local pi_files_exist=""
       local pi_files_n_exist=""
       while read p; do
-          if (test -f "$p" || test -d "$p")
-          then
-              pi_files_exist="$p\n$pi_files_exist"
-          else
-              if test -n "$p"
-              then
-                  pi_files_n_exist="$p\n$pi_files_n_exist"
-              fi
-          fi
+          x=`git ls-files $p`
+          pi_files_exist="$x\n$pi_files_exist"
       done <.packcheck.ignore
       if test -n "$pi_files_n_exist"
       then
@@ -1337,98 +1330,13 @@ your .packcheck.ignore file."
     fi
     git ls-files | sort | grep -v '^$' > .packcheck/git-ls-files.txt
     local diff_res_file=".packcheck/tar-git-diff.txt"
-    local diff_git_minus_tar=".packcheck/tar-git-diff.txt2"
-    local diff_res_file3=".packcheck/tar-git-diff.txt3"
-    local dir_listing=".packcheck/dir-list.txt"
-    local diff_git_minus_tar3=".packcheck/tar-git-diff.txt5"
-    local diff_tar_minus_git=".packcheck/tar_minus_git.txt"
-    local diff_tar_minus_git2=".packcheck/tar_minus_git.txt2"
-    local diff_tar_minus_git3=".packcheck/tar_minus_git.txt3"
-    local dir_ignore=""
-    local diff_ignore=""
     local tar_minus_git
     local git_minus_tar
-
-    while read p; do
-        if (test -d "$p")
-        then
-            dir_ignore="$p\n$dir_ignore"
-        fi
-    done <.packcheck.ignore
-    printf "$dir_ignore" > "$dir_listing"
-
     diff -B --suppress-common-lines .packcheck/tar-ztf1.txt .packcheck/git-ls-files.txt > "$diff_res_file" ||
-      { echo "WARNING! Source distribution tar and git repo contents may differ."
+      { echo "WARNING! Source distribution tar and git repo contents differ."
         tar_minus_git="$(awk '$0~/^< .+$/' "$diff_res_file")"
         git_minus_tar="$(awk '$0~/^> .+$/' "$diff_res_file")"
-        printf "$git_minus_tar" > "$diff_git_minus_tar"
-        printf "$tar_minus_git" > "$diff_tar_minus_git"
-
-        sed 's/> //g' $diff_git_minus_tar | grep -v '^$' > $diff_res_file3 || echo "Left side empty....."
-        sed 's/< //g' $diff_tar_minus_git | grep -v '^$' > $diff_tar_minus_git2 || echo "Right side empty....."
-
-        for i in `cat $dir_listing` ;  do
-            cat "$diff_res_file3" | grep -v "^$i" > "$diff_git_minus_tar3" || echo "Empty git_minus_tar..."
-            diff_res_file3="$diff_git_minus_tar3"
-        done
-
-        for i in `cat $dir_listing` ;  do
-            cat "$diff_tar_minus_git2" | grep -v "^$i" > "$diff_tar_minus_git3" || echo "Empty tar_minus_git..."
-            diff_tar_minus_git2="$diff_tar_minus_git3"
-        done
-
-        if test -s $dir_listing
-        then
-          diff_ignore="Diff1"
-          if test -s $diff_git_minus_tar3
-          then
-              echo "The following files are committed to the git repository \
-but do not exist in the source distribution."
-              cat $diff_git_minus_tar3
-              diff_ignore="Diff2"
-               echo "Please consider adding them to your cabal file under \
-'extra-source-files' or 'extra-doc-files'."
-            echo "If you do not want to add them in the source distribution \
-then add them to .packcheck.ignore file at the root of the git repository."
-              if test -z "$DISABLE_SDIST_GIT_CHECK"
-              then
-                echo
-                echo "Exiting. Use DISABLE_SDIST_GIT_CHECK=y to disable this check."
-                exit 1
-              fi
-          fi
-        fi
-
-        if test -s $dir_listing
-        then
-          diff_ignore="Diff1"
-          if test -s $diff_tar_minus_git3
-          then
-              echo "The following files exist in your source distribution but \
-are not committed to the git repository."
-              cat $diff_tar_minus_git3
-              diff_ignore="Diff2"
-              echo "Please consider committing them to the git repository."
-              echo "Or clean the git workspace of unwanted files before creating \
-the source distribution."
-              echo "Wildcards in 'extra-sources-files' section and \
-'extra-doc-files' section of the cabal file may pickup any files lying around."
-              if test -z "$DISABLE_SDIST_GIT_CHECK"
-              then
-                echo
-                echo "Exiting. Use DISABLE_SDIST_GIT_CHECK=y to disable this check."
-                exit 1
-              fi
-          fi
-        fi
-
-        if test "$diff_ignore" = "Diff1"
-        then
-          echo "All matched..............."
-          exit 0
-        fi
-
-        if  test -n "$tar_minus_git"
+        if test -n "$tar_minus_git"
         then
             echo
             echo "The following files exist in your source distribution but \
@@ -1462,13 +1370,6 @@ then add them to .packcheck.ignore file at the root of the git repository."
       rm -f .packcheck/tar-ztf.txt \
         .packcheck/tar-ztf1.txt \
         .packcheck/git-ls-files.txt \
-        .packcheck/tar-git-diff.txt2 \
-        .packcheck/tar-git-diff.txt3 \
-        .packcheck/dir-list.txt \
-        .packcheck/tar-git-diff.txt5 \
-        .packcheck/tar_minus_git.txt \
-        .packcheck/tar_minus_git.txt2 \
-        .packcheck/tar_minus_git.txt3 \
         "$diff_res_file" \
         "$sane_ignore_file"
   fi
