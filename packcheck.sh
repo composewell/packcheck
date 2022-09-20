@@ -1307,23 +1307,19 @@ create_and_unpack_pkg_dist() {
       > .packcheck/tar-ztf.txt
     if test -f .packcheck.ignore
     then
-      # Remove non-existent files in .packcheck.ignore
       local pi_files_exist=""
       local pi_files_n_exist=""
       while read p; do
-          if test -f "$p"
+          if [ ! -f "$p" -a ! -d "$p" ]
           then
-              pi_files_exist="$p\n$pi_files_exist"
-          else
-              if test -n "$p"
-              then
-                  pi_files_n_exist="$p\n$pi_files_n_exist"
-              fi
+              pi_files_n_exist="$p\n$pi_files_n_exist"
           fi
+          x=`git ls-files $p`
+          pi_files_exist="$x\n$pi_files_exist"
       done <.packcheck.ignore
       if test -n "$pi_files_n_exist"
       then
-          echo "WARNING: The following files don't exist but are mentioned in \
+          echo "WARNING: The following files or directories don't exist but are mentioned in \
 your .packcheck.ignore file."
           printf "$pi_files_n_exist"
       fi
