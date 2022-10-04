@@ -16,3 +16,9 @@ commit in the PR.
 * Update the version number in config files
 * Update version number in the script
 * Update Changelog accordingly
+
+## Post release tasks
+
+* Update the version number in config files to the next release target
+* Update version number in the script to the next release target
+* Add an unreleased section in the Changelog titled with the next release target

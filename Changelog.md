@@ -1,4 +1,4 @@
-## Unreleased
+## 0.7.0 (Unreleased)
 
 ### Breaking Changes
 
