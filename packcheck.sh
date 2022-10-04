@@ -21,6 +21,7 @@
 #------------------------------------------------------------------------------
 
 PACKCHECK_VERSION=0.7.0
+HLINT_VERSION=3.5
 
 show_version() {
   echo "packcheck version $PACKCHECK_VERSION"
@@ -222,6 +223,8 @@ SAFE_ENVVARS="\
   HLINT_BUILD \
   HLINT_COMMANDS \
   HLINT_OPTIONS \
+  HLINT_VERSION \
+  HLINT_USE_LOCAL \
   HLINT_TARGETS \
   CHECK_ENV \
   LANG \
@@ -397,6 +400,8 @@ show_help() {
 
   show_step1 "hlint options"
   #help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
+  help_envvar HLINT_VERSION "The version of hlint (defaults to $HLINT_VERSION)"
+  help_envvar HLINT_USE_LOCAL "Use the local hlint found on \$PATH"
   help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=. lint'"
   help_envvar HLINT_TARGETS "target directories to run hlint on e.g. 'src test'"
 
@@ -436,6 +441,7 @@ check_all_boolean_vars () {
   check_boolean_var DISABLE_DOCS
   check_boolean_var COVERAGE
   check_boolean_var CHECK_ENV
+  check_boolean_var HLINT_USE_LOCAL
 }
 
 show_build_command() {
@@ -1519,10 +1525,11 @@ install_hlint() {
   fi
 
   local PACKAGE=hlint
-  # Don't go for the API since it hits the Appveyor GitHub API limit and fails
-  RELEASES=$(curl --silent --show-error https://github.com/ndmitchell/$PACKAGE/releases)
-  URL=https://github.com/$(echo $RELEASES | grep -o '\"[^\"]*-x86_64-'$OS$ESCEXT'\"' | sed s/\"//g | head -n1)
-  VERSION=$(echo $URL | sed -n 's@.*-\(.*\)-x86_64-'$OS$ESCEXT'@\1@p')
+  VERSION=$HLINT_VERSION
+
+  echo "Installing hlint version $HLINT_VERSION"
+
+  URL="https://github.com/ndmitchell/$PACKAGE/releases/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
   TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
 
   cleanup(){
@@ -1840,7 +1847,7 @@ test -n "$STACK_YAML" || unset STACK_YAML
 if test "$BUILD" = "hlint"
 then
 
-    if test -z "$(which_cmd hlint)"
+    if test -z "$HLINT_USE_LOCAL"
     then
         if test -n "$HLINT_BUILD"
         then
