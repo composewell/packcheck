@@ -1,5 +1,5 @@
 name:               packcheck
-version:            0.6.0
+version:            0.7.0
 synopsis:           Universal build and CI testing for Haskell packages
 description:
   This package contains a universal CI/build script @packcheck.sh@ and config
