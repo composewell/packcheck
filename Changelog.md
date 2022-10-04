@@ -1,3 +1,12 @@
+## Unreleased
+
+### Breaking Changes
+
+* Explicit `hlint` command was added. Use
+  `packcheck hlint HLINT_OPTIONS="lint" ...` instead of
+  `packcheck cabal-v2 HLINT_OPTIONS="lint" ...` to run hlint on the package.
+
+
 ## 0.6.0
 
 ### Enhancements
