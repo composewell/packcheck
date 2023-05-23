@@ -1506,6 +1506,7 @@ dist_checks() {
 # https://raw.githubusercontent.com/ndmitchell/neil/master/misc/run.sh
 install_hlint() {
   show_step "Downloading hlint..."
+  echo "before  case...."
   case "$(uname)" in
       "Darwin")
           OS=osx;;
@@ -1515,7 +1516,7 @@ install_hlint() {
           OS=linux;;
       *) die "install_hlint: unknown os";;
   esac
-
+  echo "After case...."
   if [ "$OS" = "windows" ]; then
       EXT=.zip
       ESCEXT=\.zip
@@ -1523,7 +1524,7 @@ install_hlint() {
       EXT=.tar.gz
       ESCEXT=\.tar\.gz
   fi
-
+  echo "Before  Version...."
   local PACKAGE=hlint
   VERSION=$HLINT_VERSION
 
@@ -1537,7 +1538,7 @@ install_hlint() {
   }
   trap cleanup EXIT
 
-  echo $URL
+  echo "url = $URL"
   retry_cmd curl --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
   mkdir -p ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
   if [ "$OS" = "windows" ]; then
