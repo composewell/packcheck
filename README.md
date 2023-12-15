@@ -53,7 +53,7 @@ You can use packcheck to build or CI test a package on your local machine as
 well.  For local use, copy
 [packcheck.sh](https://github.com/composewell/packcheck/blob/master/packcheck.sh)
 to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
-from your package directory. You can pass the same evironment variables that
+from your package directory. You can pass the same environment variables that
 are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
@@ -132,7 +132,7 @@ to **any** kind of build scenario you can imagine.
 This model package has everything that a Haskell package usually has; including
 tests, benchmarks and Linux/MacOS/Windows CI already working. It can be used as
 a starting point to develop a new package. Beginners can use it to learn about
-haskell package metadata structure.
+Haskell package metadata structure.
 
 ## What all does it do?
 
