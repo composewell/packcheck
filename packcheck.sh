@@ -392,7 +392,8 @@ show_help() {
   help_envvar CABAL_DISABLE_DEPS "[y] Do not install dependencies, do not do cabal update"
   help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
-  help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
+  # XXX Unsupported, should be removed
+  #help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
 
   show_step1 "Coverage options"
   help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
@@ -1801,6 +1802,9 @@ esac
 
 test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
 test -z "$CHECK_ENV" || check_clean_env
+
+# XXX This is broken, not used
+unset CABAL_HACKAGE_MIRROR
 
 echo
 bash --version

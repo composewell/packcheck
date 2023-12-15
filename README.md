@@ -329,7 +329,6 @@ CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to default
 CABAL_DISABLE_DEPS      : [y] Do not install dependencies, do not do cabal update
 CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
-CABAL_HACKAGE_MIRROR    : DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
 
 --------------------------------------------------
 Coverage options
