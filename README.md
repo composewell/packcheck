@@ -175,11 +175,13 @@ Run hlint commands on the directories `src` and `test`:
 $ ./packcheck.sh hlint HLINT_OPTIONS="lint" HLINT_TARGETS="src test"
 ```
 
+<!--
 Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
 using `hpc-coveralls`.
 ```
 $ ./packcheck.sh cabal GHCVER=8.8.3 COVERALLS_OPTIONS="test1 test2"
 ```
+-->
 
 ## Picking GHC versions
 
@@ -334,7 +336,6 @@ CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 --------------------------------------------------
 Coverage options
 --------------------------------------------------
-COVERALLS_OPTIONS       : hpc-coveralls args and options, usually just test suite names
 COVERAGE                : [y] Just generate coverage information
 
 --------------------------------------------------

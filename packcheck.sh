@@ -394,11 +394,12 @@ show_help() {
   help_envvar CABAL_DISABLE_DEPS "[y] Do not install dependencies, do not do cabal update"
   help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
-  # XXX Unsupported, should be removed
+  # XXX Untested/Unsupported, should be removed
   #help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
 
   show_step1 "Coverage options"
-  help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
+  # Untested/unsupported should be removed
+  #help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
   help_envvar COVERAGE "[y] Just generate coverage information"
 
   show_step1 "hlint options"
