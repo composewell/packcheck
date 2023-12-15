@@ -1,4 +1,4 @@
-# packcheck-0.6.0
+# packcheck-0.7.0
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -63,7 +63,7 @@ env: &env
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "3db46664f5eeadcd6fbe18b0ff6e9a31c41e4fbe"
+      PACKCHECK_GITHUB_COMMIT: "v0.7.0"
 
     # ubuntu seems to have better support than debian on CI systems
     docker:

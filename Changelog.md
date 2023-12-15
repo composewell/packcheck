@@ -1,4 +1,8 @@
-## 0.7.0 (Unreleased)
+## 0.7.0 (Dec 2023)
+
+### Enhancements
+* Now supports using ghcup to install ghc automatically if GHCUPVER env var is
+  specified.
 
 ### Breaking Changes
 
@@ -10,15 +14,11 @@
 * Removed GHCJS, coveralls support
 * Removed `CABAL_HACKAGE_MIRROR` env var
 
-### Enhancements
-* Now supports using ghcup to install ghc automatically if GHCUPVER env var is
-  specified.
-
 ## 0.6.0
 
 ### Enhancements
 
-* CABAL_DISABLE_DEPS env var to disable dependencies install by cabal. This can
+* `CABAL_DISABLE_DEPS` env var to disable dependencies install by cabal. This can
   be useful when we have dependencies already installed e.g. in a nix shell.
 * Add support for github CI
 * Add packcheck-remote.sh, a wrapper over packcheck that allows you

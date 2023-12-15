@@ -15,7 +15,6 @@ commit in the PR.
 * Test removing caching
 * Update the version number in config files
 * Update version number in the script
-* Update `$HLINT_VERSION` to the latest hlint version in the script
 * Update Changelog accordingly
 
 ## Post release tasks
