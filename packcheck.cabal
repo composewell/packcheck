@@ -3,13 +3,14 @@ version:            0.7.0
 synopsis:           Universal build and CI testing for Haskell packages
 description:
   This package contains a universal CI/build script @packcheck.sh@ and config
-  files designed such that you can just copy over @.travis.yml@, @appveyor.yml@
-  or @.circleci/config.yml@ to your package repo and your package is CI ready
+  files designed such that you can just copy over
+  @.github/workflows/packcheck.yml@, @appveyor.yml@ or @.circleci/config.yml@ 
+  to your package repo and your package is CI ready
   in a jiffy.  You can build and test packages on local machine as well. For
   local testing, copy @packcheck.sh@ to your local machine, put it in your
   PATH, and run it from your package directory:
   .
-  > $ packcheck.sh cabal-v2
+  > $ packcheck.sh cabal
   > $ packcheck.sh stack
   .
   You can try the script on this package itself. It builds and comprehensively
@@ -28,11 +29,12 @@ homepage:            https://github.com/composewell/packcheck
 bug-reports:         https://github.com/composewell/packcheck/issues
 license:             BSD3
 license-file:        LICENSE
-tested-with:           GHC==7.10.3
-                     , GHC==8.4.3
-                     , GHC==8.6.5
-                     , GHC==8.8.3
-                     , GHC==8.10.1
+tested-with:           GHC==9.8.1
+                     , GHC==9.6.3
+                     , GHC==9.4.8
+                     , GHC==9.2.8
+                     , GHC==9.0.1
+                     , GHC==8.10.7
 author:              Harendra Kumar
 maintainer:          harendra.kumar@gmail.com
 copyright:           2017 Harendra Kumar
@@ -46,7 +48,6 @@ extra-source-files:
     README.md
     stack.yaml
     .ci/stack-8.0.yaml
-    .travis.yml
     .circleci/config.yml
     .github/workflows/packcheck.yml
     appveyor.yml
