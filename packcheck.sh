@@ -349,8 +349,9 @@ show_help() {
   help_cmd "--version" "show packcheck version"
 
   show_step1 "Selecting tool versions"
-  help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
-  help_envvar GHCUPVER "[a.b.c.d] GHCUP version"
+  # untested/unsupported
+  #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
+  help_envvar GHCUPVER "[a.b.c.d] GHCUP version to install GHCVER if needed"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
@@ -359,7 +360,8 @@ show_help() {
 
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
-  help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin"
+  # Untested/unsupported
+  #help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin"
 
   show_step1 "Specifying common tool options"
   # TODO

@@ -2,10 +2,8 @@
 
 [![Hackage](https://img.shields.io/hackage/v/packcheck.svg?style=flat)](https://hackage.haskell.org/package/packcheck)
 [![Gitter chat](https://badges.gitter.im/composewell/gitter.svg)](https://gitter.im/composewell/packcheck)
-[![Build Status](https://travis-ci.com/composewell/packcheck.svg?branch=master)](https://travis-ci.com/composewell/packcheck)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)
-[![Coverage Status](https://coveralls.io/repos/composewell/packcheck/badge.svg?branch=master&service=github)](https://coveralls.io/github/composewell/packcheck?branch=master)
 
 ## Quick Start
 
@@ -15,12 +13,14 @@ Please use `cabal` version 2.4 or later.
 
 To use packcheck for CI testing of your repo:
 
+<!--
 #### Travis
 * Add your package repo to Travis as necessary (See
   https://docs.travis-ci.com/user/tutorial/)
 * Copy
 [.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
 to your package repo
+-->
 
 #### CircleCI
 * Add your package repo to CircleCI as necessary (See
@@ -58,21 +58,16 @@ are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
 $ packcheck.sh cabal
-$ packcheck.sh cabal GHCVER=8.6.5
-$ packcheck.sh cabal ENABLE_GHCJS=y
-$ packcheck.sh stack GHCVER=8.6
+$ packcheck.sh cabal GHCUPVER=0.1.20.0 GHCVER=9.8.1
+$ packcheck.sh stack GHCVER=9.4
 ```
 
 `packcheck` can automatically pick the requested version of GHC from:
 
 * multiple GHC path components in your PATH environment variable
-* [hvr ghc PPA](https://launchpad.net/~hvr/+archive/ubuntu/ghc) install directory
 * stack installed ghc binaries
 
 ### Out of the box support
-
-| GHC           | GHCJS     |
-|:-------------:|:---------:|
 
 | cabal         | stack     |
 |:-------------:|:---------:|
@@ -80,8 +75,8 @@ $ packcheck.sh stack GHCVER=8.6
 | Linux         | OSX       | Windows       |
 |:-------------:|:---------:|:--------------|
 
-| Github        | Appveyor  | CircleCI      | Travis | Local Machine |
-|:-------------:|:---------:|:--------------|:------:|:--------------|
+| Github        | Appveyor  | CircleCI      | Local Machine |
+|:-------------:|:---------:|:--------------|:--------------|
 
 The script can be easily adapted to any CI with a single line build command.
 
@@ -94,27 +89,27 @@ The script can be easily adapted to any CI with a single line build command.
   know, tool paths being used, their versions, how they are invoked, build
   options, time taken by each build step etc. You can even copy the commands
   from the output and paste them on your local host to reproduce the build or
-  failure and debug quickly. [See here for a sample
-  output](https://travis-ci.com/composewell/packcheck).
+  failure and debug quickly.
 * _Same tests everywhere:_ You can run exact same tests with same options or
   flags, in the same way, on all CI platforms.
 * _Choose options:_ Conveniently control all aspects of build through command
   line or environment variables, including tool options or whether to enable
   benchmarks, haddock, coverage, test etc.
-* _Picking GHC:_ Right GHC is picked up automatically from PATH or TOOLS_DIR
-  (`hvr ghc PPA` installation dir) based on GHCVER. Stack installed GHC
-  binaries can be picked automatically when available.
+* _Picking GHC:_ Right GHC is picked up automatically from PATH or installed
+  using ghcup by specifying GHCUPVER and GHCVER env vars.  Stack
+  installed GHC binaries can be picked automatically when available.
 * _Test source distribution:_ `packcheck` creates the source distribution and
   builds the package from the generated tarball to make sure that you build
   what you release and don't miss adding a file to the distribution. Also,
   checks if any file in the git repo is missing in the source distribution.
+<!--
 * _Upload coverage:_ To send coverage info to
   [coveralls.io](https://coveralls.io) just uncomment a line in your respective
   ci config file.
+-->
 * _Non-destructive_: By default the script does not change any config or
   upgrade any tools on the host machine.
-* _Auto tool install_: For stack builds, `stack` and `ghc` can be installed
-  automatically
+* _Auto tool install_: `stack` and `ghc` can be installed automatically
 
 ## Introduction
 
@@ -150,7 +145,7 @@ roughly as follows:
 * run `hlint`
 * build source, benchmarks and docs
 * run tests
-* generate and upload coverage report (to coveralls.io)
+* generate coverage report
 * perform distribution checks
 
 ## Usage Examples
@@ -159,15 +154,15 @@ You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
-$ ./packcheck.sh cabal GHCVER=8.6.5
+$ ./packcheck.sh cabal GHCUPVER=0.1.20.0 GHCVER=9.8.1
 ```
 
 ```
-$ ./packcheck.sh stack RESOLVER=lts-13
+$ ./packcheck.sh stack RESOLVER=lts-21
 $ ./packcheck.sh stack GHCVER=8.6.5
-$ ./packcheck.sh stack RESOLVER=lts-7.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=1.24
+$ ./packcheck.sh stack RESOLVER=lts-21.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=3.10
 # You can also do a cabal build using stack installed ghc:
-$ stack exec ./packcheck.sh cabal RESOLVER=lts-11
+$ stack exec ./packcheck.sh cabal RESOLVER=lts-21
 ```
 
 Run hlint commands on the directories `src` and `test`:
@@ -194,11 +189,17 @@ When `GHCVER` parameter is specified, it looks for `ghc` in the `PATH` and if
 `ghc` binary is used. Otherwise, `packcheck` tries to look for another `ghc`
 binary in the next PATH components until it finds a matching `ghc` version.
 
+If `GHCUPVER` is specified packcheck tries to use the existing `ghcup`
+to install the ghc, if `ghcup` is not found it installs the requested
+version and then installs the `GHCVER` using it.
+
+<!--
 When both `GHCVER` and `TOOLS_DIR` are specified then in addition to searching
 in `PATH` environment variable, `packcheck` also looks for ghc in
 `${TOOLS_DIR}/ghc/${GHCVER}*/bin`. This is to facilitate selecting any GHC
 version from an `hvr/ghc` ubuntu PPA installation without putting all the
 myriad GHC version directories explicitly in your `PATH`.
+-->
 
 If all of the above fails `packcheck` looks for ghc in the `stack` install
 locations.
@@ -210,8 +211,8 @@ trust or use any environment variables, all environment needs to be specified
 explicitly on the command line. Therefore, it ensures better reproducibility.
 
 It also catches any misspelled command line parameter names. For example,
-`packcheck.sh` won't catch it if you typed `GHCVWR=8.4` instead of
-`GHCVER=8.4`, it just assumes that `GHCVER` is not specified.
+`packcheck.sh` won't catch it if you typed `GHCVWR=9.8` instead of
+`GHCVER=9.8`, it just assumes that `GHCVER` is not specified.
 `packcheck-safe.sh` would generate an error saying that `GHCVWR` is not
 recognized. Since it uses a clean environment you will have to specify PATH as
 well on the command line. For example,
@@ -232,7 +233,7 @@ $ ./packcheck-remote.sh --force \
     --checkout=origin/master \
     --merge=origin/branch \
     --directory=./repo.packcheck \
-    -- cabal GHCVER=8.8.3
+    -- cabal GHCVER=9.8.1
 ```
 
 Use `./packcheck-remote.sh --help` for more information.
@@ -255,11 +256,11 @@ Usage
 packcheck.sh COMMAND [PARAMETER=VALUE ...]
 
 For example:
-packcheck.sh cabal GHCVER=8.6.5
+packcheck.sh cabal GHCVER=9.8.1
 packcheck.sh stack RESOLVER=lts GHC_OPTIONS="-O0 -Werror"
 packcheck.sh hlint
 
-Ask questions: https://gitter.im/composewell/packcheck
+Ask questions: https://app.gitter.im/#/room/#composewell_streamly:gitter.im
 Report issues: https://github.com/composewell/packcheck/issues/new
 
 Control parameters can either be passed on command line or exported
@@ -285,8 +286,7 @@ help | --help | -h      : show this help message
 --------------------------------------------------
 Selecting tool versions
 --------------------------------------------------
-ENABLE_GHCJS            : [y] Use GHCJS instead of GHC to build
-GHCUPVER                : [a.b.c.d] GHCUP version
+GHCUPVER                : [a.b.c.d] GHCUP version to install GHCVER if needed
 GHCVER                  : [a.b.c] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
@@ -297,7 +297,6 @@ STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 Where to find the required tools
 --------------------------------------------------
 PATH                    : [path] Set PATH explicitly for predictable builds
-TOOLS_DIR               : [dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin
 
 --------------------------------------------------
 Specifying common tool options
@@ -341,6 +340,8 @@ COVERAGE                : [y] Just generate coverage information
 --------------------------------------------------
 hlint options
 --------------------------------------------------
+HLINTVER                : Download a specific version binary of hlint instead of using one in PATH
+HLINT_BUILD             : Build latest hlint from hackage source
 HLINT_OPTIONS           : hlint arguments e.g.'--datadir=. lint'
 HLINT_TARGETS           : target directories to run hlint on e.g. 'src test'
 
@@ -374,6 +375,7 @@ For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not
 specified, `cabal` and `ghc` must be pre-installed on the system before
 building.
 
+<!--
 ## Coveralls
 
 Please pick the updated version of `hpc-coveralls` from
@@ -389,6 +391,7 @@ source-repository-package
   location: https://github.com/composewell/hpc-coveralls
   tag: d9e20179579f0638f6e978816355d18568e6a1f0
 ```
+-->
 
 ## Diagnostics
 
