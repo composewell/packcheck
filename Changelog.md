@@ -5,12 +5,14 @@
 * Explicit `hlint` command was added. Use
   `packcheck hlint HLINT_OPTIONS="lint" ...` instead of
   `packcheck cabal-v2 HLINT_OPTIONS="lint" ...` to run hlint on the package.
-* The following options are introduced:
-  - `HLINT_USE_LOCAL`
-  - `HLINT_VERSION`
-* Packcheck will not use the local hlint unless `HLINT_USE_LOCAL` is explicitly
-  set.
+* `HLINTVER` env var can be used to install a specific version of hlint instead
+  of using one in PATH.
+* Removed GHCJS, coveralls support
+* Removed `CABAL_HACKAGE_MIRROR` env var
 
+### Enhancements
+* Now supports using ghcup to install ghc automatically if GHCUPVER env var is
+  specified.
 
 ## 0.6.0
 
