@@ -195,6 +195,7 @@ show_machine_info() {
 SAFE_ENVVARS="\
   RESOLVER \
   ENABLE_GHCJS \
+  GHCUPVER \
   GHCVER \
   CABALVER \
   GHC_OPTIONS \
@@ -314,11 +315,11 @@ short_help() {
   echo "$script COMMAND [PARAMETER=VALUE ...]"
   echo
   echo "For example:"
-  echo "$script cabal GHCVER=8.6.5"
+  echo "$script cabal GHCVER=9.8.1"
   echo "$script stack RESOLVER=lts GHC_OPTIONS=\"-O0 -Werror\""
   echo "$script hlint"
   echo
-  echo "Ask questions: https://gitter.im/composewell/packcheck"
+  echo "Ask questions: https://app.gitter.im/#/room/#composewell_streamly:gitter.im"
   echo "Report issues: https://github.com/composewell/packcheck/issues/new"
 }
 
@@ -351,6 +352,7 @@ show_help() {
 
   show_step1 "Selecting tool versions"
   help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
+  help_envvar GHCUPVER "[a.b.c.d] GHCUP version"
   help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
@@ -635,17 +637,17 @@ EOF
 #}
 
 fetch_stack_osx() {
-  curl -sSkL https://www.stackage.org/stack/osx-x86_64 \
+  curl --fail -sSkL https://www.stackage.org/stack/osx-x86_64 \
     | tar xz --strip-components=1 -C $1 --include '*/stack'
 }
 
 fetch_stack_linux() {
-  curl -sSkL https://www.stackage.org/stack/linux-x86_64 \
+  curl --fail -sSkL https://www.stackage.org/stack/linux-x86_64 \
     | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
 }
 
 fetch_stack_windows() {
-  curl -sSkL http://www.stackage.org/stack/windows-i386 \
+  curl --fail -sSkL http://www.stackage.org/stack/windows-i386 \
     | 7z x -si stack.exe
 }
 
@@ -748,7 +750,7 @@ check_version() {
 
   # Match that the expected version is a prefix of real
   # Do not check when the expected version is head
-  if test "${real_ver#$2}" != ${real_ver} -o $2 = head
+  if test "${real_ver#$2}" != "${real_ver}" -o "$2" = head
   then
     return 0
   else
@@ -864,23 +866,83 @@ find_binary () {
     fi
     echo "Not found."
   fi
-  # This command never fails even if we could not find the binary.
-  return 0
+  return 1
+}
+
+ghcup_install() {
+  local tool=$1
+  local tool_ver=$2
+  local GHCUP_BIN="${HOME}/.ghcup/bin"
+  local GHCUP_PATH="${GHCUP_BIN}/ghcup"
+  local GHCUP_ARCH
+  if test ! -e "$GHCUP_PATH"
+  then
+    # Determine GHCUP_ARCH
+    os=$(uname -s -m)
+    case "$os" in
+      "Linux x86_64") GHCUP_ARCH="x86_64-linux" ;;
+      "Darwin x86_64") GHCUP_ARCH="x86_64-apple-darwin" ;;
+      *) echo "Unknown OS/Arch: $os"; exit 1;;
+    esac
+
+    # Check available versions here: https://downloads.haskell.org/~ghcup/
+    mkdir -p $(dirname $GHCUP_PATH)
+    URL="https://downloads.haskell.org/~ghcup/$GHCUPVER/${GHCUP_ARCH}-ghcup-$GHCUPVER"
+    echo "Downloading $URL"
+    curl --fail -sL -o $GHCUP_PATH $URL
+    if test $? -ne 0
+    then
+      rm -f $GHCUP_PATH
+      echo "Failed to download ghcup"
+      exit 1
+    fi
+    chmod +x $GHCUP_PATH
+  fi
+
+  $GHCUP_PATH install $tool $tool_ver
+  # Avoid changing the user's setup
+  #$GHCUP_PATH set $tool $tool_ver
+  # XXX add only if not already on PATH
+  PATH=$GHCUP_BIN:$PATH
+  echo "PATH is now set to [$PATH]"
 }
 
 ensure_ghc() {
   local found
   local compiler
-  # If there is a ghc in PATH then use that otherwise install it using stack
+  # If there is a ghc in PATH then use that otherwise install it using
+  # ghcup or stack
   find_binary "$COMPILER" "$GHCVER"
-  found="$(which_cmd $COMPILER)"
-  if test -n "$(need_stack)" -a -z "$found"
+  found=$?
+  if test "$found" -ne 0
   then
-    # Use stack supplied ghc
-    echo "$STACKCMD setup"
-    retry_cmd $STACKCMD setup || die "stack setup falied"
-    use_stack_paths
-    echo
+    if test -n "$GHCVER"
+    then
+      find_binary "$COMPILER-$GHCVER" "$GHCVER"
+      found=$?
+      if test "$found" -eq 0
+      then
+        COMPILER="$COMPILER-$GHCVER"
+      fi
+    fi
+
+    if test "$found" -ne 0
+    then
+      if test -n "$(need_stack)"
+      then
+        # Use stack supplied ghc
+        echo "$STACKCMD setup"
+        retry_cmd $STACKCMD setup || die "stack setup falied"
+        use_stack_paths
+        echo
+      else
+        ghcup_install ghc $GHCVER
+        if test -n "$GHCVER"
+        then
+          COMPILER="$COMPILER-$GHCVER"
+        fi
+      fi
+    fi
   fi
 
   compiler="$(which_cmd $COMPILER)"
@@ -897,9 +959,13 @@ ensure_ghc() {
 
   if test -n "$GHCVER"
   then
-    echo "GHCVER is specified, using '$STACKCMD --system-ghc'."
-    echo "Clear GHCVER to use stack supplied ghc."
     check_version_die $COMPILER $GHCVER
+  fi
+
+  if test -n "$GHCVER" -a -n "$(need_stack)"
+  then
+    echo "GHCVER is specified, using '$STACKCMD --system-ghc'."
+    echo "Clear GHCVER if you want to use stack supplied ghc."
     # If the user specified GHCVER then use it as system-ghc
     # Stack will still silently choose its own ghc if the ghc does not match
     # the snapshot.
@@ -917,6 +983,18 @@ ensure_ghc() {
   # Use the real version, the user might have specified a version prefix in
   # GHCVER
   GHCVER=$($compiler --numeric-version) || exit 1
+
+  # cabal info command requires "ghc" to be in PATH
+  if test -z "$DISABLE_SDIST_BUILD"
+  then
+    local ghc
+    ghc="$(which_cmd ghc)"
+    if test -z "$ghc" -a -n "$GHCUPVER"
+    then
+      echo "No default ghc found in PATH. Setting it using ghcup because SDIST_BUILD needs it"
+      ghcup set ghc $GHCVER
+    fi
+  fi
 
   if test -n "$ENABLE_GHCJS"
   then
@@ -1013,17 +1091,41 @@ ensure_cabal() {
   # We need cabal to retrieve the package version
   # We are assuming CI cache will be per resolver so we can cache the bin
 
-  find_binary cabal "$CABALVER"
-  if test -z "$(which_cmd cabal)" -a -n "$(need_stack)"
+  find_binary $CABAL_BINARY_NAME "$CABALVER"
+  found=$?
+  if test "$found" -ne 0
   then
-    stack_install_tool cabal-install
+    if test -n "$CABALVER"
+    then
+      find_binary "$CABAL_BINARY_NAME-$CABALVER" "$CABALVER"
+      found=$?
+      if test "$found" -eq 0
+      then
+        CABAL_BINARY_NAME="$CABAL_BINARY_NAME-$CABALVER"
+      fi
+    fi
+
+    if test "$found" -ne 0
+    then
+      if test -n "$(need_stack)"
+      then
+        stack_install_tool cabal-install
+      elif test -n "$GHCUPVER"
+      then
+        ghcup_install cabal $CABALVER
+        if test -n "$CABALVER"
+        then
+          CABAL_BINARY_NAME="$CABAL_BINARY_NAME-$CABALVER"
+        fi
+      fi
+    fi
   fi
 
-  require_cmd cabal
-  cabal --version
-  test -z "$CABALVER" || check_version_die cabal $CABALVER
+  require_cmd $CABAL_BINARY_NAME
+  $CABAL_BINARY_NAME --version
+  test -z "$CABALVER" || check_version_die $CABAL_BINARY_NAME $CABALVER
   # Set the real version of cabal
-  CABALVER=$(cabal --numeric-version) || exit 1
+  CABALVER=$($CABAL_BINARY_NAME --numeric-version) || exit 1
 
   MIN_CABALVER="1.24.0.0"
   verlte $MIN_CABALVER $CABALVER || \
@@ -1043,7 +1145,7 @@ find_in_parents () {
 }
 
 ensure_cabal_project() {
-  CABALCMD=cabal
+  CABALCMD=$CABAL_BINARY_NAME
 
   if test -n "$CABAL_PROJECT"
   then
@@ -1124,7 +1226,7 @@ get_pkg_full_name() {
   local pkgname
   local full_name
   pkgname=$(get_pkg_name) || exit 1
-  full_name=$(cabal info . | awk '{ if ($1 == "*") {print $2; exit}}') || true
+  full_name=$($CABAL_BINARY_NAME info . | awk '{ if ($1 == "*") {print $2; exit}}') || true
   if test -z "$full_name"
   then
     if test -z "$DISABLE_SDIST_BUILD"
@@ -1201,7 +1303,7 @@ ensure_cabal_config() {
 
   if test ! -e $cfg
   then
-    run_verbose cabal user-config init || true
+    run_verbose $CABAL_BINARY_NAME user-config init || true
   fi
 
   if test "$BUILD" = "cabal-v2"
@@ -1217,9 +1319,9 @@ ensure_cabal_config() {
       echo "cabal v2-update"
       if test -n "$CABAL_PROJECT"
       then
-        retry_cmd cabal v2-update --project-file "$CABAL_PROJECT"
+        retry_cmd $CABAL_BINARY_NAME v2-update --project-file "$CABAL_PROJECT"
       else
-        retry_cmd cabal v2-update
+        retry_cmd $CABAL_BINARY_NAME v2-update
       fi
     fi
   fi
@@ -1227,9 +1329,9 @@ ensure_cabal_config() {
 
 # $1: dir where they are installed
 remove_pkg_executables() {
-  test -n "$(which_cmd cabal)" || return 0
+  test -n "$(which_cmd $CABAL_BINARY_NAME)" || return 0
 
-  exes=$(cabal info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
+  exes=$($CABAL_BINARY_NAME info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
   echo "Remove installed binaries"
   for i in $exes
   do
@@ -1433,7 +1535,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
   fi
 
   show_step "Package info [sdist $SDIST_OPTIONS]"
-  run_verbose cabal info . || true
+  run_verbose $CABAL_BINARY_NAME info . || true
 
   if test -f "./configure.ac"
   then
@@ -1473,7 +1575,7 @@ build_and_test() {
       then
         local version
         local SHOW_DETAILS
-        version=$(cabal --numeric-version|cut -f1,2 -d'.'|sed s/\\.//g)
+        version=$($CABAL_BINARY_NAME --numeric-version|cut -f1,2 -d'.'|sed s/\\.//g)
         if test $version -ge 25
         then
           SHOW_DETAILS="--test-show-details=streaming"
@@ -1493,9 +1595,9 @@ dist_checks() {
       echo
       if test -n "$CABAL_CHECK_RELAX"
       then
-        run_verbose cabal check || true
+        run_verbose $CABAL_BINARY_NAME check || true
       else
-        run_verbose cabal check || \
+        run_verbose $CABAL_BINARY_NAME check || \
           die "Use CABAL_CHECK_RELAX=y to ignore this error"
       fi
       run_verbose $SDIST_CABALCMD v2-sdist $CABAL_BUILD_TARGETS $SDIST_OPTIONS
@@ -1539,7 +1641,7 @@ install_hlint() {
   trap cleanup EXIT
 
   echo $URL
-  retry_cmd curl --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
+  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
   mkdir -p ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
   if [ "$OS" = "windows" ]; then
       7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
@@ -1776,7 +1878,9 @@ get_rel_time() {
 # Main flow of script starts here
 #------------------------------------------------------------------------------
 
-set -e
+# This leads to unexpected and undebuggable behavior especially when shell
+# functions are returning non-zero exit codes.
+#set -e
 set -o pipefail
 test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
@@ -1848,6 +1952,7 @@ unset GHC_PACKAGE_PATH
 # stack does not work well with empty STACK_YAML env var
 test -n "$STACK_YAML" || unset STACK_YAML
 
+CABAL_BINARY_NAME=cabal
 if test "$BUILD" = "hlint"
 then
 

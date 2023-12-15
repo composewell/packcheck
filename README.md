@@ -284,6 +284,7 @@ help | --help | -h      : show this help message
 Selecting tool versions
 --------------------------------------------------
 ENABLE_GHCJS            : [y] Use GHCJS instead of GHC to build
+GHCUPVER                : [a.b.c.d] GHCUP version
 GHCVER                  : [a.b.c] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack

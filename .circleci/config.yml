@@ -15,6 +15,7 @@ env: &env
       # Common options
       # ------------------------------------------------------------------------
       # GHC_OPTIONS: "-Werror"
+      GHCUPVER: 0.1.20.0
       CABAL_REINIT_CONFIG: "y"
       LC_ALL: "C.UTF-8"
 
@@ -36,7 +37,7 @@ env: &env
       # version.
       #STACKVER: "1.6.5"
       #STACK_UPGRADE: "y"
-      #RESOLVER: "lts-12"
+      #RESOLVER: "lts-21"
       STACK_YAML: "stack.yaml"
 
       # ------------------------------------------------------------------------
@@ -62,10 +63,11 @@ env: &env
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "v0.6.0"
+      PACKCHECK_GITHUB_COMMIT: "3db46664f5eeadcd6fbe18b0ff6e9a31c41e4fbe"
 
+    # ubuntu seems to have better support than debian on CI systems
     docker:
-      - image: debian:buster
+      - image: ubuntu:latest
 
 #-----------------------------------------------------------------------------
 # Common utility stuff, not to be modified usually
@@ -73,34 +75,54 @@ env: &env
 
 preinstall: &preinstall
   run: |
-        # Check for PACKCHECK_GITHUB_COMMIT
-        if test -z "$PACKCHECK_GITHUB_COMMIT"
-        then
-            die "PACKCHECK_GITHUB_COMMIT is not specified."
-        fi
-
         apt-get update
         # required for https/cache save and restore
         apt-get install -y ca-certificates
 
+        # NOTE: depends on specific debian version in the deb line below
         # For ghc and cabal-install packages from haskell.org
         # gnupg is required for apt-key to work
-        apt-get install -y gnupg
-        apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
-        echo "deb http://downloads.haskell.org/debian buster main" >> /etc/apt/sources.list
-        apt-get update
-
-        # required for packcheck
-        apt-get install -y curl
+        #apt-get install -y gnupg
+        #apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
+        #echo "deb http://downloads.haskell.org/debian buster main" >> /etc/apt/sources.list
+        #apt-get update
 
         # required for outbound https for stack and for stack setup
         apt-get install -y netbase xz-utils make
+        apt-get install -y zlib1g-dev
+
+        # For ghcup to install ghc
+        if test -n "$GHCUPVER"
+        then
+          apt-get install -y gcc
+          apt-get install -y g++
+        fi
+
+        # libgmp required by ghc for linking
+        apt-get install -y libgmp-dev
+        apt-get install -y libtinfo-dev
+
+        # Required by cabal when git URL is specified in project file
+        apt-get install -y git
+
+        # Required for and by packcheck
+        apt-get install -y curl
 
         # Get packcheck if needed
-        CURL=$(which curl)
-        PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
-        if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
-        chmod +x $PACKCHECK
+        if test ! -e "$PACKCHECK"
+        then
+          if test -z "$PACKCHECK_GITHUB_COMMIT"
+          then
+              die "PACKCHECK_GITHUB_COMMIT is not specified."
+          fi
+          CURL=$(which curl)
+          PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
+          $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL
+          chmod +x $PACKCHECK
+        elif test ! -x "$PACKCHECK"
+        then
+            chmod +x $PACKCHECK
+        fi
 
 restore: &restore
   # Needs to happen after installing ca-certificates
@@ -115,107 +137,75 @@ save: &save
         - ~/.ghc
         - ~/.local
         - ~/.stack
+        - ~/.ghcup
 
 #-----------------------------------------------------------------------------
 # Build matrix
 #-----------------------------------------------------------------------------
 
 jobs:
-  cabal-ghc-8-10-1:
+  cabal-ghc-9-8-1:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-              apt-get install -y ghc-8.10.1
-              apt-get install -y cabal-install-3.2
-              bash -c "$PACKCHECK cabal-v2"
+              bash -c "$PACKCHECK cabal GHCVER=9.8.1"
         - *save
-  cabal-ghc-8-8-3:
+  cabal-ghc-9-6-3:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-              apt-get install -y ghc-8.8.3
-              apt-get install -y cabal-install-3.2
-              bash -c "$PACKCHECK cabal-v2"
+              bash -c "$PACKCHECK cabal GHCVER=9.6.3"
         - *save
-  cabal-ghc-8-6-5:
+  cabal-ghc-9-4-8:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-              apt-get install -y ghc-8.6.5
-              apt-get install -y cabal-install-3.2
-              bash -c "$PACKCHECK cabal-v2"
+              bash -c "$PACKCHECK cabal GHCVER=9.4.8"
         - *save
-  cabal-ghc-8-4-4:
+  cabal-ghc-9-2-8:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-              apt-get install -y ghc-8.4.4
-              apt-get install -y cabal-install-3.2
-              bash -c "$PACKCHECK cabal-v2"
+              bash -c "$PACKCHECK cabal GHCVER=9.2.8"
         - *save
-  cabal-ghc-7-10-3:
+  cabal-ghc-9-0-1:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-              apt-get install -y ghc-7.10.3
-              apt-get install -y cabal-install-3.2
-              bash -c "$PACKCHECK cabal-v2"
+              bash -c "$PACKCHECK cabal GHCVER=9.0.1"
         - *save
-  stack-ghc-8-8:
+  cabal-ghc-8-10-7:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-            apt-get install -y ghc-8.8.3
-            apt-get install -y cabal-install-3.2
-            bash -c "$PACKCHECK stack RESOLVER=lts-15"
+              bash -c "$PACKCHECK cabal-v2 GHCVER=8.10.7"
         - *save
-  stack-ghc-8-4:
+  stack-lts-21:
       <<: *env
       steps:
         - checkout
-        - *preinstall
         - *restore
+        - *preinstall
         - run: |
-            apt-get install -y ghc-8.4.4
-            apt-get install -y cabal-install-3.2
-            bash -c "$PACKCHECK stack RESOLVER=lts-12"
-        - *save
-  coveralls-ghc-8-8-3:
-      <<: *env
-      steps:
-        - checkout
-        - *preinstall
-        - *restore
-        - run:
-            environment:
-              CABAL_PROJECT: "cabal.project.coveralls"
-              # Please change the repo token to your repo token
-              COVERALLS_OPTIONS: "--repo-token=YvxdfMiOmfq0limz6nLd4DxiC1RBQJ4dA --coverage-mode=StrictlyFullLines --exclude-dir=test test"
-            command: |
-              apt-get install -y ghc-8.8.3
-              apt-get install -y cabal-install-3.2
-              # required by hpc-coveralls
-              apt-get install -y libcurl4-gnutls-dev
-              apt-get install -y git
-              bash -c "$PACKCHECK cabal-v2"
+            bash -c "$PACKCHECK stack RESOLVER=lts-21"
         - *save
 
 workflows:
@@ -223,13 +213,10 @@ workflows:
   build:
     jobs:
       # Uncomment the configs that you want to enable
-      - cabal-ghc-8-10-1
-      #- cabal-ghc-8-8-3
-      #- cabal-ghc-8-6-5
-      #- cabal-ghc-8-4-4
-      #- cabal-ghc-7-10-3
-      #- stack-ghc-8-8
-      #- stack-ghc-8-4
-      # IMPORTANT: Please change the --repo-token to your repo token
-      # in COVERALLS_OPTIONS above before enabling this.
-      #- coveralls-ghc-8-8-3
+      - cabal-ghc-9-8-1
+      - cabal-ghc-9-6-3
+      - cabal-ghc-9-4-8
+      - cabal-ghc-9-2-8
+      - cabal-ghc-9-0-1
+      - cabal-ghc-8-10-7
+      - stack-lts-21

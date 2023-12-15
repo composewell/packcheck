@@ -48,6 +48,7 @@ jobs:
       # ------------------------------------------------------------------------
       # Selecting tool versions
       # ------------------------------------------------------------------------
+      GHCUPVER: 0.1.20.0
       GHCVER: ${{ matrix.ghc_version }}
       # RESOLVER: ${{ matrix.stack_resolver }}
 
@@ -84,37 +85,42 @@ jobs:
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "v0.6.0"
+      PACKCHECK_GITHUB_COMMIT: "3db46664f5eeadcd6fbe18b0ff6e9a31c41e4fbe"
 
       # ------------------------------------------------------------------------
       # Final build variables
       # ------------------------------------------------------------------------
       PACKCHECK_COMMAND: ${{ matrix.command }} ${{ matrix.pack_options }}
 
+    # ubuntu seems to have better support than debian on CI systems
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
-        # The reason we have name here is to force an additional config instead
-        # of adding to an existing config while adding additional configs.
+        # The name of the CI is built using the name and other info from CI,
+        # therefore, the "name" field is same for all tests here.
+        #
+        # The reason we have an explicit "name" field here is to force
+        # an additional config instead of adding to an existing config
+        # while adding additional configs.
         # Look at <https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix>
         # for more info about adding matrix elements.
         # Adding any element to the list will increase the number of matrix
-        # elemets proportional to the cross product.
+        # elements proportional to the cross product.
         include:
           - name: ci
-            command: cabal-v2
+            command: cabal
             runner: ubuntu-latest
-            ghc_version: 8.10.3
+            ghc_version: 9.8.1
 
-          # - name: ci
-          #   command: stack
-          #   runner: ubuntu-latest
+          - name: ci
+            command: stack
+            runner: ubuntu-latest
 
-          # - name: ci
-          #   ghc_version: 8.8.3
-          #   command: cabal-v2
-          #   runner: macos-latest
+          - name: ci
+            ghc_version: 9.8.1
+            command: cabal
+            runner: macos-latest
 
           - name: ci
             command: hlint
@@ -126,13 +132,13 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - uses: haskell/actions/setup@v1
-      if: ${{ matrix.name != 'hlint' }}
-      with:
-        ghc-version: ${{ matrix.ghc_version }}
-        enable-stack: true
-        stack-version: 'latest'
-        cabal-version: 'latest'
+      #- uses: haskell/actions/setup@v1
+      #  if: ${{ matrix.name != 'hlint' }}
+      #  with:
+      #    ghc-version: ${{ matrix.ghc_version }}
+      #    enable-stack: true
+      #    stack-version: 'latest'
+      #    cabal-version: 'latest'
 
     - uses: actions/cache@v2
       name: Cache common directories
@@ -142,21 +148,25 @@ jobs:
           ~/.ghc
           ~/.local
           ~/.stack
+          ~/.ghcup
         key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
 
     - name: Download packcheck
       run: |
-        # Check for PACKCHECK_GITHUB_COMMIT
-        if test -z "$PACKCHECK_GITHUB_COMMIT"
+        if test ! -e "$PACKCHECK"
         then
-            die "PACKCHECK_GITHUB_COMMIT is not specified."
+          if test -z "$PACKCHECK_GITHUB_COMMIT"
+          then
+              die "PACKCHECK_GITHUB_COMMIT is not specified."
+          fi
+          CURL=$(which curl)
+          PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
+          $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL
+          chmod +x $PACKCHECK
+        elif test ! -x "$PACKCHECK"
+        then
+            chmod +x $PACKCHECK
         fi
-
-        # Get packcheck if needed
-        CURL=$(which curl)
-        PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
-        if test ! -e "$PACKCHECK"; then $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL; fi;
-        chmod +x $PACKCHECK
 
     - name: Run packcheck
       run: |

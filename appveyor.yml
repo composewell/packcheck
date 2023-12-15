@@ -22,7 +22,8 @@ environment:
     # DISABLE_BENCH: "y"
     # DISABLE_DOCS: "y"
     # DISABLE_SDIST_BUILD: "y"
-    # DISABLE_SDIST_GIT_CHECK: "y"
+    # This requires the "diff" utility, disabling for now.
+    DISABLE_SDIST_GIT_CHECK: "y"
     # DISABLE_DIST_CHECKS: "y"
     DISABLE_SDIST_PROJECT_CHECK: "y"
 
@@ -61,7 +62,7 @@ environment:
     # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "v0.6.0"
+    PACKCHECK_GITHUB_COMMIT: "3db46664f5eeadcd6fbe18b0ff6e9a31c41e4fbe"
 
     # Override the temp directory to avoid sed escaping issues
     # See https://github.com/haskell/cabal/issues/5386
