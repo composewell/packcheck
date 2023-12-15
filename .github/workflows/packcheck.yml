@@ -126,20 +126,12 @@ jobs:
             command: hlint
             runner: ubuntu-latest
             pack_options: >-
+              HLINTVER=3.6.1
               HLINT_OPTIONS="lint"
               HLINT_TARGETS="src"
 
     steps:
     - uses: actions/checkout@v2
-
-      #- uses: haskell/actions/setup@v1
-      #  if: ${{ matrix.name != 'hlint' }}
-      #  with:
-      #    ghc-version: ${{ matrix.ghc_version }}
-      #    enable-stack: true
-      #    stack-version: 'latest'
-      #    cabal-version: 'latest'
-
     - uses: actions/cache@v2
       name: Cache common directories
       with:
