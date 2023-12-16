@@ -48,6 +48,7 @@ jobs:
       # ------------------------------------------------------------------------
       # Selecting tool versions
       # ------------------------------------------------------------------------
+      # For updating see: https://downloads.haskell.org/~ghcup/
       GHCUPVER: 0.1.20.0
       GHCVER: ${{ matrix.ghc_version }}
       # RESOLVER: ${{ matrix.stack_resolver }}

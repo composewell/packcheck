@@ -278,8 +278,7 @@ n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value.
 --------------------------------------------------
 Commands and flags
 --------------------------------------------------
-cabal-v2                : build using cabal v2-build
-cabal                   : alias for cabal-v2
+cabal                   : build using cabal
 stack                   : build using stack
 hlint                   : run hlint
 clean                   : remove the .packcheck directory
@@ -291,11 +290,12 @@ help | --help | -h      : show this help message
 Selecting tool versions
 --------------------------------------------------
 GHCUPVER                : [a.b.c.d] GHCUP version to install GHCVER if needed
-GHCVER                  : [a.b.c] GHC version prefix (may not be enforced when using stack)
+GHCVER                  : [a.b.c | head] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
-RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
 STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
+RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
+HLINTVER                : Download a specific version binary of hlint instead of using one in PATH
 
 --------------------------------------------------
 Where to find the required tools
@@ -305,9 +305,9 @@ PATH                    : [path] Set PATH explicitly for predictable builds
 --------------------------------------------------
 Specifying common tool options
 --------------------------------------------------
+GHCUP_OPTIONS           : Used as in "ghcup install ghc <GHCUP_OPTIONS> <version>"
 GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Arguments to stack/cabal sdist command
-CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatibility issues
 
 --------------------------------------------------
 Specifying what to build
@@ -321,15 +321,9 @@ DISABLE_SDIST_GIT_CHECK : [y] Do not compare source distribution with git repo
 DISABLE_DIST_CHECKS     : [y] Do not perform source distribution checks
 
 --------------------------------------------------
-stack options
---------------------------------------------------
-STACK_YAML              : Alternative stack config file path relative to project root
-STACK_OPTIONS           : ADDITIONAL stack global options (e.g. -v) to append
-STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
-
---------------------------------------------------
 cabal options
 --------------------------------------------------
+CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatibility issues
 CABAL_PROJECT           : Alternative cabal project file, path relative to project root
 CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to defaults
 CABAL_DISABLE_DEPS      : [y] Do not install dependencies, do not do cabal update
@@ -337,16 +331,22 @@ CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 
 --------------------------------------------------
-Coverage options
+stack options
 --------------------------------------------------
-COVERAGE                : [y] Just generate coverage information
+STACK_YAML              : Alternative stack config file path relative to project root
+STACK_OPTIONS           : ADDITIONAL stack global options (e.g. -v) to append
+STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 
 --------------------------------------------------
 hlint options
 --------------------------------------------------
-HLINTVER                : Download a specific version binary of hlint instead of using one in PATH
 HLINT_OPTIONS           : hlint arguments e.g.'--datadir=. lint'
 HLINT_TARGETS           : target directories to run hlint on e.g. 'src test'
+
+--------------------------------------------------
+Coverage options
+--------------------------------------------------
+COVERAGE                : [y] Just generate coverage information
 
 --------------------------------------------------
 Diagnostics options

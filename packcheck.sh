@@ -337,8 +337,8 @@ show_help() {
   echo "n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value."
 
   show_step1 "Commands and flags"
-  help_cmd cabal-v2 "build using cabal v2-build"
-  help_cmd cabal "alias for cabal-v2"
+  #help_cmd cabal-v2 "build using cabal v2-build"
+  help_cmd cabal "build using cabal"
   #help_cmd cabal-new "Deprecated alias to cabal-v2"
   #help_cmd cabal-v1 "Deprecated: build using cabal v1-build"
   help_cmd stack "build using stack"
@@ -352,12 +352,13 @@ show_help() {
   show_step1 "Selecting tool versions"
   # untested/unsupported
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
-  help_envvar GHCUPVER "[a.b.c.d] GHCUP version to install GHCVER if needed"
-  help_envvar GHCVER "[a.b.c] GHC version prefix (may not be enforced when using stack)"
+  help_envvar GHCUPVER "[a.b.c.d] GHCUP version (see https://downloads.haskell.org/~ghcup/)"
+  help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
-  help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
+  help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
+  help_envvar HLINTVER "Download a specific version binary of hlint instead of using one in PATH"
 
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
@@ -368,11 +369,9 @@ show_help() {
   # TODO
   # help_envvar TOOL_OPTIONS "Specify the tool specific (stack or cabal) options to use."
   # help_envvar BUILD_OPTIONS "Specify the tool specific build (stack build or cabal new-build) options to use."
+  help_envvar GHCUP_OPTIONS "Used as in \"ghcup install ghc <GHCUP_OPTIONS> <version>\""
   help_envvar GHC_OPTIONS "Specify GHC options to use"
-  help_envvar GHCUP_OPTIONS "Used as in \"ghcup install ghc GHCUP_OPTIONS version\""
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
-  # XXX this applies to both stack and cabal builds
-  help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
 
   show_step1 "Specifying what to build"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
@@ -384,12 +383,9 @@ show_help() {
   help_envvar DISABLE_DIST_CHECKS "[y] Do not perform source distribution checks"
   #help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
-  show_step1 "stack options"
-  help_envvar STACK_YAML "Alternative stack config file path relative to project root"
-  help_envvar STACK_OPTIONS "ADDITIONAL stack global options (e.g. -v) to append"
-  help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
-
   show_step1 "cabal options"
+  # XXX this applies to both stack and cabal builds
+  help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
   help_envvar CABAL_PROJECT "Alternative cabal project file, path relative to project root"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
@@ -399,18 +395,22 @@ show_help() {
   # XXX Untested/Unsupported, should be removed
   #help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
 
-  show_step1 "Coverage options"
-  # Untested/unsupported should be removed
-  #help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
-  help_envvar COVERAGE "[y] Just generate coverage information"
+  show_step1 "stack options"
+  help_envvar STACK_YAML "Alternative stack config file path relative to project root"
+  help_envvar STACK_OPTIONS "ADDITIONAL stack global options (e.g. -v) to append"
+  help_envvar STACK_BUILD_OPTIONS "ADDITIONAL stack build command options to append"
 
   show_step1 "hlint options"
   #help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
-  help_envvar HLINTVER "Download a specific version binary of hlint instead of using one in PATH"
   # XXX this is broken
   #help_envvar HLINT_BUILD "Build latest hlint from hackage source"
   help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=. lint'"
   help_envvar HLINT_TARGETS "target directories to run hlint on e.g. 'src test'"
+
+  show_step1 "Coverage options"
+  # Untested/unsupported should be removed
+  #help_envvar COVERALLS_OPTIONS "hpc-coveralls args and options, usually just test suite names"
+  help_envvar COVERAGE "[y] Just generate coverage information"
 
   show_step1 "Diagnostics options"
   # To catch spelling mistakes in envvar names passed, otherwise they will be

@@ -15,6 +15,7 @@ env: &env
       # Common options
       # ------------------------------------------------------------------------
       # GHC_OPTIONS: "-Werror"
+      # For updating see: https://downloads.haskell.org/~ghcup/
       GHCUPVER: 0.1.20.0
       CABAL_REINIT_CONFIG: "y"
       LC_ALL: "C.UTF-8"
@@ -87,6 +88,8 @@ preinstall: &preinstall
         #apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
         #echo "deb http://downloads.haskell.org/debian buster main" >> /etc/apt/sources.list
         #apt-get update
+        #apt-get install -y ghc-8.10.4
+        #apt-get install -y cabal-install-3.4
 
         # required for outbound https for stack and for stack setup
         apt-get install -y netbase xz-utils make
