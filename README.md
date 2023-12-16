@@ -184,10 +184,14 @@ When `GHCVER` parameter is not specified, `packcheck` looks for a binary named
 `ghc` in your `PATH` environment variable. It uses first such binary found in
 `PATH`.
 
-When `GHCVER` parameter is specified, it looks for `ghc` in the `PATH` and if
-`GHCVER` is a PREFIX of the actual version of `ghc` binary found then that
-`ghc` binary is used. Otherwise, `packcheck` tries to look for another `ghc`
-binary in the next PATH components until it finds a matching `ghc` version.
+When `GHCVER` parameter is specified and is not set to `head`, it looks
+for `ghc` in the `PATH` and if `GHCVER` is a PREFIX of the actual
+version of `ghc` binary found then that `ghc` binary is used. Otherwise,
+`packcheck` tries to look for another `ghc` binary in the next PATH
+components until it finds a matching `ghc` version.
+
+If `GHCVER` is set to `head`, packcheck looks for `ghc-head` as the
+compiler and does not check the numeric version of the compiler.
 
 If `GHCUPVER` is specified packcheck tries to use the existing `ghcup`
 to install the ghc, if `ghcup` is not found it installs the requested

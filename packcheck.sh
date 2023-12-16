@@ -198,6 +198,7 @@ SAFE_ENVVARS="\
   GHCVER \
   CABALVER \
   GHC_OPTIONS \
+  GHCUP_OPTIONS \
   SDIST_OPTIONS \
   DISABLE_SDIST_BUILD \
   DISABLE_SDIST_PROJECT_CHECK \
@@ -368,6 +369,7 @@ show_help() {
   # help_envvar TOOL_OPTIONS "Specify the tool specific (stack or cabal) options to use."
   # help_envvar BUILD_OPTIONS "Specify the tool specific build (stack build or cabal new-build) options to use."
   help_envvar GHC_OPTIONS "Specify GHC options to use"
+  help_envvar GHCUP_OPTIONS "Used as in \"ghcup install ghc GHCUP_OPTIONS version\""
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
   # XXX this applies to both stack and cabal builds
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
@@ -547,7 +549,12 @@ verify_build_config() {
     COMPILER=ghcjs
     GHCJS_FLAG=--ghcjs
   else
-    COMPILER=ghc
+    if test "$GHCVER" = "head"
+    then
+      COMPILER=ghc-head
+    else
+      COMPILER=ghc
+    fi
   fi
 
   if test "$BUILD" = stack
@@ -749,8 +756,8 @@ verlte () {
 check_version() {
   local real_ver=$($1 --numeric-version)
 
-  # Match that the expected version is a prefix of real
-  # Do not check when the expected version is head
+  # Match that the expected version is a prefix of the real version.
+  # Do not check when the expected version is head.
   if test "${real_ver#$2}" != "${real_ver}" -o "$2" = head
   then
     return 0
@@ -900,7 +907,7 @@ ghcup_install() {
     chmod +x $GHCUP_PATH
   fi
 
-  $GHCUP_PATH install $tool $tool_ver
+  $GHCUP_PATH install $tool $GHCUP_OPTIONS $tool_ver
   # Avoid changing the user's setup
   #$GHCUP_PATH set $tool $tool_ver
   # XXX add only if not already on PATH
@@ -938,7 +945,7 @@ ensure_ghc() {
         echo
       else
         ghcup_install ghc $GHCVER
-        if test -n "$GHCVER"
+        if test -n "$GHCVER" -a "$COMPILER" != "ghc-head"
         then
           COMPILER="$COMPILER-$GHCVER"
         fi
@@ -1958,6 +1965,9 @@ if test "$BUILD" = "hlint"
 then
     if test -n "$HLINT_BUILD"
     then
+        # XXX This is broken as it expects BUILD to be either stack or cabal.
+        # Also, we need to initialize COMPILER variable before this which is
+        # done in verify_build_config happening after this.
         build_hlint
     elif test -n "$HLINTVER"
     then
