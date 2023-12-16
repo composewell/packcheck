@@ -194,7 +194,7 @@ show_machine_info() {
 SAFE_ENVVARS="\
   RESOLVER \
   ENABLE_GHCJS \
-  GHCUPVER \
+  GHCUP_VERSION \
   GHCVER \
   CABALVER \
   GHC_OPTIONS \
@@ -354,7 +354,7 @@ show_help() {
   show_step1 "Selecting tool versions"
   # untested/unsupported
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
-  help_envvar GHCUPVER "[a.b.c.d] GHCUP version to install at $GHCUP_PATH (see https://downloads.haskell.org/~ghcup/)"
+  help_envvar GHCUP_VERSION "[a.b.c.d] GHCUP version to install at $GHCUP_PATH (see https://downloads.haskell.org/~ghcup/)"
   help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
@@ -895,7 +895,7 @@ ghcup_install() {
     esac
 
     # Check available versions here: https://downloads.haskell.org/~ghcup/
-    URL="https://downloads.haskell.org/~ghcup/$GHCUPVER/${GHCUP_ARCH}-ghcup-$GHCUPVER"
+    URL="https://downloads.haskell.org/~ghcup/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
     echo "Downloading $URL to $GHCUP_PATH"
     # XXX Download to a temp location and move when successful?
     #TEMP=$(mktemp -d .ghcup-XXXXXX)
@@ -1004,7 +1004,7 @@ ensure_ghc() {
   then
     local ghc
     ghc="$(which_cmd ghc)"
-    if test -z "$ghc" -a -n "$GHCUPVER"
+    if test -z "$ghc" -a -n "$GHCUP_VERSION"
     then
       echo "No default ghc found in PATH. Setting it using ghcup because SDIST_BUILD needs it"
       ghcup set ghc $GHCVER
@@ -1125,7 +1125,7 @@ ensure_cabal() {
       if test -n "$(need_stack)"
       then
         stack_install_tool cabal-install
-      elif test -n "$GHCUPVER"
+      elif test -n "$GHCUP_VERSION"
       then
         ghcup_install cabal $CABALVER
         if test -n "$CABALVER"

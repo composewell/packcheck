@@ -58,7 +58,7 @@ are used in CI files to run the exact same tests locally. Usage is as simple
 as:
 ```
 $ packcheck.sh cabal
-$ packcheck.sh cabal GHCUPVER=0.1.20.0 GHCVER=9.8.1
+$ packcheck.sh cabal GHCUP_VERSION=0.1.20.0 GHCVER=9.8.1
 $ packcheck.sh stack GHCVER=9.4
 ```
 
@@ -96,7 +96,7 @@ The script can be easily adapted to any CI with a single line build command.
   line or environment variables, including tool options or whether to enable
   benchmarks, haddock, coverage, test etc.
 * _Picking GHC:_ Right GHC is picked up automatically from PATH or installed
-  using ghcup by specifying GHCUPVER and GHCVER env vars.  Stack
+  using ghcup by specifying GHCUP_VERSION and GHCVER env vars.  Stack
   installed GHC binaries can be picked automatically when available.
 * _Test source distribution:_ `packcheck` creates the source distribution and
   builds the package from the generated tarball to make sure that you build
@@ -154,7 +154,7 @@ You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
-$ ./packcheck.sh cabal GHCUPVER=0.1.20.0 GHCVER=9.8.1
+$ ./packcheck.sh cabal GHCUP_VERSION=0.1.20.0 GHCVER=9.8.1
 ```
 
 ```
@@ -193,7 +193,7 @@ components until it finds a matching `ghc` version.
 If `GHCVER` is set to `head`, packcheck looks for `ghc-head` as the
 compiler and does not check the numeric version of the compiler.
 
-If `GHCUPVER` is specified packcheck tries to use the existing `ghcup`
+If `GHCUP_VERSION` is specified packcheck tries to use the existing `ghcup`
 to install the ghc, if `ghcup` is not found it installs the requested
 version and then installs the `GHCVER` using it.
 
@@ -289,7 +289,7 @@ help | --help | -h      : show this help message
 --------------------------------------------------
 Selecting tool versions
 --------------------------------------------------
-GHCUPVER                : [a.b.c.d] GHCUP version to install GHCVER if needed
+GHCUP_VERSION           : [a.b.c.d] GHCUP version to install GHCVER if needed
 GHCVER                  : [a.b.c | head] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 STACKVER                : [a.b.c.d] Stack version (prefix) to use

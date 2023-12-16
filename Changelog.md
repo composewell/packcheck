@@ -1,8 +1,8 @@
 ## 0.7.0 (Dec 2023)
 
 ### Enhancements
-* Now supports using ghcup to install ghc automatically if GHCUPVER env var is
-  specified.
+* Now supports using ghcup to install ghc automatically if `GHCUP_VERSION`
+  env var is specified.
 
 ### Breaking Changes
 
