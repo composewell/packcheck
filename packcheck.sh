@@ -226,6 +226,8 @@ SAFE_ENVVARS="\
   HLINT_COMMANDS \
   HLINT_OPTIONS \
   HLINT_TARGETS \
+  DOCSPEC_VERSION \
+  DOCSPEC_OPTIONS \
   CHECK_ENV \
   LANG \
   LC_ALL \
@@ -359,6 +361,7 @@ show_help() {
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
   help_envvar HLINTVER "Download a specific version binary of hlint instead of using one in PATH"
+  help_envvar DOCSPEC_VERSION "Download a specific version binary of docspec instead of using one in PATH"
 
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
@@ -1649,17 +1652,22 @@ install_hlint() {
   trap cleanup EXIT
 
   echo $URL
-  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
-  mkdir -p ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL 
+  if test "$?" -ne 0
+  then
+    cleanup
+    die "Failed to download $URL"
+  fi
+  mkdir -p ${LOCAL_BIN}
   if [ "$OS" = "windows" ]; then
       7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
-      mv ${TEMP}/hlint-${VERSION}/hlint.exe ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+      mv ${TEMP}/hlint-${VERSION}/hlint.exe ${LOCAL_BIN}
   elif [ "$OS" = "osx" ]; then
       tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --include '*/hlint'
-      mv ${TEMP}/hlint-${VERSION}/hlint ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+      mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
   else
       tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --wildcards '*/hlint'
-      mv ${TEMP}/hlint-${VERSION}/hlint ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin/
+      mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
   fi
 }
 
@@ -1667,11 +1675,11 @@ build_hlint() {
   show_step "Installing hlint..."
   if test -n "$(need_stack)"
   then
-    ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+    ensure_stack ${LOCAL_BIN}
     ensure_ghc
     stack_install_tool hlint
   else
-    ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+    ensure_cabal ${LOCAL_BIN}
     ensure_cabal_config
     ensure_ghc
     case "$BUILD" in
@@ -1768,7 +1776,7 @@ build_compile () {
   show_step "Check and install build tools"
 
   test -z "$(need_stack)" \
-    || ensure_stack ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin \
+    || ensure_stack ${LOCAL_BIN} \
     && echo
   # The tar installed by pacman does not seem to work. Maybe we need to have it
   # packed with msys itself.
@@ -1777,7 +1785,7 @@ build_compile () {
   # This may use STACKCMD so happens after stack install
   determine_build_type && echo
   ensure_ghc && echo
-  dont_need_cabal 'verbose' || ensure_cabal ${OS_APP_HOME}/${OS_LOCAL_DIR}/bin
+  dont_need_cabal 'verbose' || ensure_cabal ${LOCAL_BIN}
 
   # use the stack installed 7z instead. depends on ensure ghc where we setup
   # stack paths.
@@ -1949,7 +1957,8 @@ if test "$BUILD" = "cabal-v2"
 then
     export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
-export PATH=$OS_APP_HOME/$OS_LOCAL_DIR/bin:$PATH
+LOCAL_BIN=$OS_APP_HOME/$OS_LOCAL_DIR/bin
+export PATH=$LOCAL_BIN:$PATH
 echo
 echo "PATH is now set to [$PATH]"
 
