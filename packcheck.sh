@@ -354,7 +354,7 @@ show_help() {
   show_step1 "Selecting tool versions"
   # untested/unsupported
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
-  help_envvar GHCUPVER "[a.b.c.d] GHCUP version (see https://downloads.haskell.org/~ghcup/)"
+  help_envvar GHCUPVER "[a.b.c.d] GHCUP version to install at $GHCUP_PATH (see https://downloads.haskell.org/~ghcup/)"
   help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
@@ -883,8 +883,6 @@ find_binary () {
 ghcup_install() {
   local tool=$1
   local tool_ver=$2
-  local GHCUP_BIN="${HOME}/.ghcup/bin"
-  local GHCUP_PATH="${GHCUP_BIN}/ghcup"
   local GHCUP_ARCH
   if test ! -e "$GHCUP_PATH"
   then
@@ -897,10 +895,16 @@ ghcup_install() {
     esac
 
     # Check available versions here: https://downloads.haskell.org/~ghcup/
-    mkdir -p $(dirname $GHCUP_PATH)
     URL="https://downloads.haskell.org/~ghcup/$GHCUPVER/${GHCUP_ARCH}-ghcup-$GHCUPVER"
-    echo "Downloading $URL"
-    curl --fail -sL -o $GHCUP_PATH $URL
+    echo "Downloading $URL to $GHCUP_PATH"
+    # XXX Download to a temp location and move when successful?
+    #TEMP=$(mktemp -d .ghcup-XXXXXX)
+    #cleanup(){
+    #    rm -r $TEMP
+    #}
+    #trap cleanup EXIT
+    mkdir -p $(dirname $GHCUP_PATH)
+    retry_cmd curl --fail --progress-bar --location -o $GHCUP_PATH $URL
     if test $? -ne 0
     then
       rm -f $GHCUP_PATH
@@ -1616,6 +1620,9 @@ dist_checks() {
   esac
 }
 
+# XXX The downloading code is common among different tools (e.g. ghcup).
+# we can write a common function to do it.
+#
 # hlint install from Neil Mitchell's github repo, script taken from
 # https://raw.githubusercontent.com/ndmitchell/neil/master/misc/run.sh
 install_hlint() {
@@ -1903,6 +1910,21 @@ test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
 
+#------------------------------------------------------------------------------
+
+# Need these to produce help
+# Determine home independent of the environment
+export HOME=$(echo ~)
+set_os_specific_vars # depends on HOME
+
+LOCAL_BIN=$OS_APP_HOME/$OS_LOCAL_DIR/bin
+# XXX On windows this should be ghcup instead of .ghcup? See
+# set_os_specific_vars
+GHCUP_BIN="${OS_APP_HOME}/.ghcup/bin"
+GHCUP_PATH="${GHCUP_BIN}/ghcup"
+
+#------------------------------------------------------------------------------
+
 case $1 in
   cabal) shift; eval_env "$@"; BUILD=cabal-v2;;
   cabal-v1) die "cabal-v1 is not supported, please use cabal-v2 instead";;
@@ -1946,10 +1968,6 @@ show_machine_info
 show_step "Build environment"
 show_build_env
 
-# Determine home independent of the environment
-export HOME=$(echo ~)
-set_os_specific_vars # depends on HOME
-
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
 echo
 echo "Adding usual utility locations to PATH [$PATH]..."
@@ -1957,7 +1975,6 @@ if test "$BUILD" = "cabal-v2"
 then
     export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
-LOCAL_BIN=$OS_APP_HOME/$OS_LOCAL_DIR/bin
 export PATH=$LOCAL_BIN:$PATH
 echo
 echo "PATH is now set to [$PATH]"
