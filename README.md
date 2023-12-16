@@ -341,7 +341,6 @@ COVERAGE                : [y] Just generate coverage information
 hlint options
 --------------------------------------------------
 HLINTVER                : Download a specific version binary of hlint instead of using one in PATH
-HLINT_BUILD             : Build latest hlint from hackage source
 HLINT_OPTIONS           : hlint arguments e.g.'--datadir=. lint'
 HLINT_TARGETS           : target directories to run hlint on e.g. 'src test'
 

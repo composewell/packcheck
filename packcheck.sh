@@ -405,7 +405,8 @@ show_help() {
   show_step1 "hlint options"
   #help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
   help_envvar HLINTVER "Download a specific version binary of hlint instead of using one in PATH"
-  help_envvar HLINT_BUILD "Build latest hlint from hackage source"
+  # XXX this is broken
+  #help_envvar HLINT_BUILD "Build latest hlint from hackage source"
   help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=. lint'"
   help_envvar HLINT_TARGETS "target directories to run hlint on e.g. 'src test'"
 
