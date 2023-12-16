@@ -221,7 +221,7 @@ SAFE_ENVVARS="\
   CABAL_BUILD_TARGETS \
   COVERAGE \
   COVERALLS_OPTIONS \
-  HLINTVER \
+  HLINT_VERSION \
   HLINT_BUILD \
   HLINT_COMMANDS \
   HLINT_OPTIONS \
@@ -360,7 +360,7 @@ show_help() {
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
-  help_envvar HLINTVER "Download a specific version binary of hlint instead of using one in PATH"
+  help_envvar HLINT_VERSION "Download a specific version binary of hlint instead of using one in PATH"
   help_envvar DOCSPEC_VERSION "Download a specific version binary of docspec instead of using one in PATH"
 
   show_step1 "Where to find the required tools"
@@ -1646,9 +1646,9 @@ install_hlint() {
   fi
 
   local PACKAGE=hlint
-  VERSION=$HLINTVER
+  VERSION=$HLINT_VERSION
 
-  echo "Installing hlint version $HLINTVER"
+  echo "Installing hlint version $HLINT_VERSION"
 
   URL="https://github.com/ndmitchell/$PACKAGE/releases/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
   TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
@@ -1995,7 +1995,7 @@ then
         # Also, we need to initialize COMPILER variable before this which is
         # done in verify_build_config happening after this.
         build_hlint
-    elif test -n "$HLINTVER"
+    elif test -n "$HLINT_VERSION"
     then
         install_hlint
     fi

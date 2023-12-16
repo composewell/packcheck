@@ -127,7 +127,7 @@ jobs:
             command: hlint
             runner: ubuntu-latest
             pack_options: >-
-              HLINTVER=3.6.1
+              HLINT_VERSION=3.6.1
               HLINT_OPTIONS="lint"
               HLINT_TARGETS="src"
 

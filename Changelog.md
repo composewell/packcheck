@@ -9,7 +9,7 @@
 * Explicit `hlint` command was added. Use
   `packcheck hlint HLINT_OPTIONS="lint" ...` instead of
   `packcheck cabal-v2 HLINT_OPTIONS="lint" ...` to run hlint on the package.
-* `HLINTVER` env var can be used to install a specific version of hlint instead
+* `HLINT_VERSION` env var can be used to install a specific version of hlint instead
   of using one in PATH.
 * Removed GHCJS, coveralls support
 * Removed `CABAL_HACKAGE_MIRROR` env var

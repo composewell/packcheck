@@ -295,7 +295,7 @@ CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
 STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
-HLINTVER                : Download a specific version binary of hlint instead of using one in PATH
+HLINT_VERSION           : Download a specific version binary of hlint instead of using one in PATH
 
 --------------------------------------------------
 Where to find the required tools
