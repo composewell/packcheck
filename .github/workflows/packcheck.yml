@@ -151,9 +151,8 @@ jobs:
           then
               die "PACKCHECK_GITHUB_COMMIT is not specified."
           fi
-          CURL=$(which curl)
           PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
-          $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL
+          curl --fail -sL -o "$PACKCHECK" $PACKCHECK_URL || exit 1
           chmod +x $PACKCHECK
         elif test ! -x "$PACKCHECK"
         then

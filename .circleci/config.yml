@@ -79,8 +79,9 @@ preinstall: &preinstall
         # required for https/cache save and restore
         apt-get install -y ca-certificates
 
-        # NOTE: depends on specific debian version in the deb line below
-        # For ghc and cabal-install packages from haskell.org
+        # Alternative way of installing ghc and cabal, directly from
+        # haskell.org instead of using ghcup. NOTE: this is for Debian
+        # only and is debian release specific.
         # gnupg is required for apt-key to work
         #apt-get install -y gnupg
         #apt-key adv --keyserver keyserver.ubuntu.com  --recv-keys BA3CBA3FFE22B574
@@ -115,9 +116,8 @@ preinstall: &preinstall
           then
               die "PACKCHECK_GITHUB_COMMIT is not specified."
           fi
-          CURL=$(which curl)
           PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
-          $CURL -sL -o "$PACKCHECK" $PACKCHECK_URL
+          curl --fail -sL -o "$PACKCHECK" $PACKCHECK_URL || exit 1
           chmod +x $PACKCHECK
         elif test ! -x "$PACKCHECK"
         then
