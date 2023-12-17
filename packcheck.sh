@@ -1339,9 +1339,19 @@ ensure_cabal_config() {
     run_verbose_errexit rm -f "$cfg"
   fi
 
+  # this generates it in ~/.config which creates issues for cabal-docspec and
+  # some other issues.
   if test ! -e $cfg
   then
     run_verbose $CABAL_BINARY_NAME user-config init || true
+    if test ! -f $cfg
+    then
+      if test -f ${OS_APP_HOME}/.config/cabal/config
+      then
+        mkdir -p $(dirname $cfg)
+        run_verbose_errexit ln -s ${OS_APP_HOME}/.config/cabal/config $cfg
+      fi
+    fi
   fi
 
   if test "$BUILD" = "cabal-v2"
