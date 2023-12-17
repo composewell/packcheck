@@ -306,7 +306,7 @@ PATH                    : [path] Set PATH explicitly for predictable builds
 --------------------------------------------------
 Specifying common tool options
 --------------------------------------------------
-GHCUP_OPTIONS           : Used as in "ghcup install ghc <GHCUP_OPTIONS> <version>"
+GHCUP_GHC_OPTIONS       : Used as in "ghcup install ghc <GHCUP_GHC_OPTIONS> <version>"
 GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Arguments to stack/cabal sdist command
 

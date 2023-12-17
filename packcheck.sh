@@ -198,7 +198,7 @@ SAFE_ENVVARS="\
   GHCVER \
   CABALVER \
   GHC_OPTIONS \
-  GHCUP_OPTIONS \
+  GHCUP_GHC_OPTIONS \
   SDIST_OPTIONS \
   DISABLE_SDIST_BUILD \
   DISABLE_SDIST_PROJECT_CHECK \
@@ -373,7 +373,7 @@ show_help() {
   # TODO
   # help_envvar TOOL_OPTIONS "Specify the tool specific (stack or cabal) options to use."
   # help_envvar BUILD_OPTIONS "Specify the tool specific build (stack build or cabal new-build) options to use."
-  help_envvar GHCUP_OPTIONS "Used as in \"ghcup install ghc <GHCUP_OPTIONS> <version>\""
+  help_envvar GHCUP_GHC_OPTIONS "Used as in \"ghcup install ghc <GHCUP_GHC_OPTIONS> <version>\""
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
 
@@ -937,7 +937,12 @@ ghcup_install() {
     #$GHCUP_PATH set $tool $tool_ver
   fi
 
-  run_verbose_errexit ghcup install $tool $GHCUP_OPTIONS $tool_ver
+  if test "$tool" = "ghc"
+  then
+    run_verbose_errexit ghcup install ghc $GHCUP_GHC_OPTIONS $tool_ver
+  else
+    run_verbose_errexit ghcup install $tool $tool_ver
+  fi
 }
 
 ensure_ghc() {
