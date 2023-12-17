@@ -296,6 +296,7 @@ STACKVER                : [a.b.c.d] Stack version (prefix) to use
 STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
 HLINT_VERSION           : Download a specific version binary of hlint instead of using one in PATH
+DOCSPEC_VERSION         : cabal-docspec version to install at ~/.local/bin/cabal-docspec (see https://github.com/phadej/cabal-extras/releases/)
 
 --------------------------------------------------
 Where to find the required tools
@@ -315,6 +316,7 @@ Specifying what to build
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 DISABLE_TEST            : [y] Do not run tests, default is to run tests
 DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
+ENABLE_DOCSPEC          : [y] Run cabal-docspec after the cabal build
 DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
 DISABLE_SDIST_PROJECT_CHECK: [y] Ignore project file and continue
 DISABLE_SDIST_GIT_CHECK : [y] Do not compare source distribution with git repo

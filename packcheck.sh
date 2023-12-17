@@ -206,6 +206,7 @@ SAFE_ENVVARS="\
   DISABLE_BENCH \
   DISABLE_TEST \
   DISABLE_DOCS \
+  ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
   PATH \
   TOOLS_DIR \
@@ -361,7 +362,7 @@ show_help() {
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
   help_envvar HLINT_VERSION "hlint version to install at $HLINT_PATH (see $HLINT_URL_PREFIX)"
-  help_envvar DOCSPEC_VERSION "Download a specific version binary of docspec instead of using one in PATH"
+  help_envvar DOCSPEC_VERSION "cabal-docspec version to install at $DOCSPEC_PATH (see $DOCSPEC_URL_PREFIX)"
 
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
@@ -380,6 +381,7 @@ show_help() {
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
+  help_envvar ENABLE_DOCSPEC "[y] Run cabal-docspec after the cabal build"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
   help_envvar DISABLE_SDIST_PROJECT_CHECK "[y] Ignore project file and continue"
   help_envvar DISABLE_SDIST_GIT_CHECK "[y] Do not compare source distribution with git repo"
@@ -449,6 +451,7 @@ check_all_boolean_vars () {
   check_boolean_var DISABLE_BENCH
   check_boolean_var DISABLE_TEST
   check_boolean_var DISABLE_DOCS
+  check_boolean_var ENABLE_DOCSPEC
   check_boolean_var COVERAGE
   check_boolean_var CHECK_ENV
 }
@@ -886,6 +889,9 @@ ghcup_install() {
   local GHCUP_ARCH
   local ghcup_path
 
+  # XXX add only if not already on PATH
+  PATH=$GHCUP_BIN:$PATH
+  echo "Added $GHCUP_BIN to PATH [$PATH]"
   ghcup_path=$(which_cmd ghcup)
 
   if test -n "$ghcup_path"
@@ -896,8 +902,10 @@ ghcup_install() {
     # tool either as found in PATH or use GHCUP_PATH directly. We should
     # probably fix each tool's location as found and use that rather using it
     # from PATH.
-    test -e "$GHCUP_PATH" && \\
+    if test -e "$GHCUP_PATH"
+    then
       die "$GHCUP_PATH already exists, not overwriting."
+    fi
 
     # Determine GHCUP_ARCH
     os=$(uname -s -m)
@@ -927,9 +935,6 @@ ghcup_install() {
     chmod +x $GHCUP_PATH
     # Avoid changing the user's setup
     #$GHCUP_PATH set $tool $tool_ver
-    # XXX add only if not already on PATH
-    PATH=$GHCUP_BIN:$PATH
-    echo "PATH is now set to [$PATH]"
   fi
 
   ghcup install $tool $GHCUP_OPTIONS $tool_ver
@@ -1639,7 +1644,8 @@ dist_checks() {
 # hlint install from Neil Mitchell's github repo, script taken from
 # https://raw.githubusercontent.com/ndmitchell/neil/master/misc/run.sh
 install_hlint() {
-  show_step "Downloading hlint..."
+  show_step "Installing hlint version $HLINT_VERSION"
+
   case "$(uname)" in
       "Darwin")
           OS=osx;;
@@ -1661,9 +1667,7 @@ install_hlint() {
   local PACKAGE=hlint
   VERSION=$HLINT_VERSION
 
-  echo "Installing hlint version $HLINT_VERSION"
-
-  URL="$HLINT_URL_PREFIX/releases/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
+  URL="$HLINT_URL_PREFIX/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
   TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
 
   cleanup(){
@@ -1678,8 +1682,11 @@ install_hlint() {
     die "Failed to download $URL"
   fi
 
-  test -e "$HLINT_PATH" && \\
+  if test -e "$HLINT_PATH"
+  then
     die "$HLINT_PATH already exists, not overwriting."
+  fi
+
   mkdir -p ${LOCAL_BIN}
   if [ "$OS" = "windows" ]; then
       7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
@@ -1691,6 +1698,7 @@ install_hlint() {
       tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --wildcards '*/hlint'
       mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
   fi
+  chmod +x $HLINT_PATH
 }
 
 build_hlint() {
@@ -1721,7 +1729,6 @@ run_hlint() {
     run_verbose_errexit "$HLINT_COMMANDS"
   elif test -f .hlint.ignore
   then
-
     # Check if all files mentioned in .hlint.ignore exist.
     local hi_files_exist=""
     local hi_files_n_exist=""
@@ -1766,6 +1773,40 @@ your .hlint.ignore file."
     do
       run_verbose_errexit "hlint $HLINT_OPTIONS $target"
     done
+  fi
+}
+
+install_docspec() {
+  show_step "Installing docspec version $DOCSPEC_VERSION"
+  case "$(uname)" in
+      Linux)
+          OS=linux;;
+      *) die "install_docspec: unknown or unsupported os";;
+  esac
+
+  TEMP=$(mktemp -d docspec-XXXXXX)
+  cleanup(){
+      rm -r $TEMP
+  }
+  trap cleanup EXIT
+
+  URL="$DOCSPEC_URL_PREFIX/download/cabal-docspec-$DOCSPEC_VERSION/cabal-docspec-$DOCSPEC_VERSION-x86_64-$OS.xz"
+  echo "Downloading $URL ..."
+  retry_cmd curl --fail --progress-bar --location -o$TEMP/cabal-docspec.xz $URL
+  if test "$?" -ne 0
+  then
+    rm -f $TEMP/cabal-docspec.xz
+    die "Failed to download $URL"
+  fi
+
+  if test -e "$DOCSPEC_PATH"
+  then
+    die "$DOCSPEC_PATH already exists, not overwriting."
+  else
+    mkdir -p $(dirname ${DOCSPEC_PATH})
+    xz -d < $TEMP/cabal-docspec.xz > $DOCSPEC_PATH
+    rm -f $TEMP/cabal-docspec.xz
+    chmod +x $DOCSPEC_PATH
   fi
 }
 
@@ -1936,6 +1977,9 @@ LOCAL_BIN=$OS_APP_HOME/$OS_LOCAL_DIR/bin
 HLINT_PATH="${LOCAL_BIN}/hlint"
 HLINT_URL_PREFIX="https://github.com/ndmitchell/hlint/releases"
 
+DOCSPEC_PATH="${LOCAL_BIN}/cabal-docspec"
+DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
+
 # XXX On windows this should be ghcup instead of .ghcup? See
 # set_os_specific_vars
 GHCUP_BIN="${OS_APP_HOME}/.ghcup/bin"
@@ -1989,14 +2033,14 @@ show_build_env
 
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
 echo
-echo "Adding usual utility locations to PATH [$PATH]..."
+echo "Original PATH is [$PATH]..."
 if test "$BUILD" = "cabal-v2"
 then
     export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
 fi
 export PATH=$LOCAL_BIN:$PATH
 echo
-echo "PATH is now set to [$PATH]"
+echo "Added $LOCAL_BIN to PATH [$PATH]"
 
 # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
 # cabal does not complain
@@ -2008,28 +2052,48 @@ test -n "$STACK_YAML" || unset STACK_YAML
 CABAL_BINARY_NAME=cabal
 if test "$BUILD" = "hlint"
 then
-    if test -n "$HLINT_BUILD"
+    hlint_path=$(which_cmd hlint)
+    if test -n "$hlint_path"
     then
-        # XXX This is broken as it expects BUILD to be either stack or cabal.
-        # Also, we need to initialize COMPILER variable before this which is
-        # done in verify_build_config happening after this.
-        build_hlint
+      echo
+      echo "WARNING! Using hlint in PATH at $hlint_path"
     elif test -n "$HLINT_VERSION"
     then
-        local hlint_path
-        hlint_path=$(which_cmd hlint)
-        if test -n "$hlint_path"
-        then
-          echo "Using hlint in PATH at $hlint_path"
-          $hlint --version
-        else
-          install_hlint
-        fi
+      install_hlint
+    elif test -n "$HLINT_BUILD"
+    then
+      # XXX This is broken as it expects BUILD to be either stack or cabal.
+      # Also, we need to initialize COMPILER variable before this which is
+      # done in verify_build_config happening after this.
+      build_hlint
+    else
+        echo "hlint not found."
+        die "Use HLINT_VERSION option to install."
     fi
+    hlint --version
     run_hlint
 else
     verify_build_config
     build_compile
+    if test -n "$ENABLE_DOCSPEC"
+    then
+      if test $BUILD = "cabal-v2"
+      then
+          docspec_path=$(which_cmd cabal-docspec)
+          if test -n "$docspec_path"
+          then
+            echo "WARNING! Using cabal-docspec in PATH at $docspec_path"
+          elif test -n "$DOCSPEC_VERSION"
+          then
+            install_docspec
+          else
+            echo "cabal-docspec not found."
+            die "Use DOCSPEC_VERSION option to install."
+          fi
+      fi
+      cabal-docspec --version
+      cabal-docspec $DOCSPEC_OPTIONS
+    fi
 fi
 
 show_step "Done"

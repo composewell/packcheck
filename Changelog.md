@@ -1,16 +1,17 @@
 ## 0.7.0 (Dec 2023)
 
 ### Enhancements
-* Now supports using ghcup to install ghc automatically if `GHCUP_VERSION`
+* Supports using ghcup to install ghc automatically if `GHCUP_VERSION`
   env var is specified.
+* Supports running cabal-docspec (doctest) after cabal build on Linux using the
+  `ENABLE_DOCSPEC` option.
+* `HLINT_VERSION` env var can be used to install a specific version of hlint
 
 ### Breaking Changes
 
 * Explicit `hlint` command was added. Use
   `packcheck hlint HLINT_OPTIONS="lint" ...` instead of
   `packcheck cabal-v2 HLINT_OPTIONS="lint" ...` to run hlint on the package.
-* `HLINT_VERSION` env var can be used to install a specific version of hlint instead
-  of using one in PATH.
 * Removed GHCJS, coveralls support
 * Removed `CABAL_HACKAGE_MIRROR` env var
 
