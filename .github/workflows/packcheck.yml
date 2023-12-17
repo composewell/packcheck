@@ -137,9 +137,8 @@ jobs:
       name: Cache common directories
       with:
         path: |
-          ~/.cabal
-          ~/.ghc
           ~/.local
+          ~/.cabal
           ~/.stack
           ~/.ghcup
         key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
