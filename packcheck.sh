@@ -354,13 +354,13 @@ show_help() {
   show_step1 "Selecting tool versions"
   # untested/unsupported
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
-  help_envvar GHCUP_VERSION "[a.b.c.d] GHCUP version to install at $GHCUP_PATH (see https://downloads.haskell.org/~ghcup/)"
+  help_envvar GHCUP_VERSION "[a.b.c.d] ghcup version to install at $GHCUP_PATH (see $GHCUP_URL_PREFIX)"
   help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
-  help_envvar HLINT_VERSION "Download a specific version binary of hlint instead of using one in PATH"
+  help_envvar HLINT_VERSION "hlint version to install at $HLINT_PATH (see $HLINT_URL_PREFIX)"
   help_envvar DOCSPEC_VERSION "Download a specific version binary of docspec instead of using one in PATH"
 
   show_step1 "Where to find the required tools"
@@ -895,7 +895,7 @@ ghcup_install() {
     esac
 
     # Check available versions here: https://downloads.haskell.org/~ghcup/
-    URL="https://downloads.haskell.org/~ghcup/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
+    URL="$GHCUP_URL_PREFIX/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
     echo "Downloading $URL to $GHCUP_PATH"
     # XXX Download to a temp location and move when successful?
     #TEMP=$(mktemp -d .ghcup-XXXXXX)
@@ -1650,7 +1650,7 @@ install_hlint() {
 
   echo "Installing hlint version $HLINT_VERSION"
 
-  URL="https://github.com/ndmitchell/$PACKAGE/releases/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
+  URL="$HLINT_URL_PREFIX/releases/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
   TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
 
   cleanup(){
@@ -1659,12 +1659,14 @@ install_hlint() {
   trap cleanup EXIT
 
   echo $URL
-  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL 
+  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
   if test "$?" -ne 0
   then
-    cleanup
     die "Failed to download $URL"
   fi
+
+  test -e "$HLINT_PATH" && \\
+    die "$HLINT_PATH already exists, not overwriting."
   mkdir -p ${LOCAL_BIN}
   if [ "$OS" = "windows" ]; then
       7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
@@ -1724,7 +1726,7 @@ run_hlint() {
     if test -n "$hi_files_n_exist"
     then
         echo "WARNING: The following files don't exist but are mentioned in \
-yourhlint.ignore file."
+your .hlint.ignore file."
         printf "$hi_files_n_exist"
     fi
 
@@ -1918,10 +1920,14 @@ export HOME=$(echo ~)
 set_os_specific_vars # depends on HOME
 
 LOCAL_BIN=$OS_APP_HOME/$OS_LOCAL_DIR/bin
+HLINT_PATH="${LOCAL_BIN}/hlint"
+HLINT_URL_PREFIX="https://github.com/ndmitchell/hlint/releases"
+
 # XXX On windows this should be ghcup instead of .ghcup? See
 # set_os_specific_vars
 GHCUP_BIN="${OS_APP_HOME}/.ghcup/bin"
 GHCUP_PATH="${GHCUP_BIN}/ghcup"
+GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
 
 #------------------------------------------------------------------------------
 
@@ -1997,7 +2003,15 @@ then
         build_hlint
     elif test -n "$HLINT_VERSION"
     then
-        install_hlint
+        local hlint_path
+        hlint_path=$(which_cmd hlint)
+        if test -n "$hlint_path"
+        then
+          echo "Using hlint in PATH at $hlint_path"
+          $hlint --version
+        else
+          install_hlint
+        fi
     fi
     run_hlint
 else
