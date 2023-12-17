@@ -884,8 +884,21 @@ ghcup_install() {
   local tool=$1
   local tool_ver=$2
   local GHCUP_ARCH
-  if test ! -e "$GHCUP_PATH"
+  local ghcup_path
+
+  ghcup_path=$(which_cmd ghcup)
+
+  if test -n "$ghcup_path"
   then
+    echo "Using existing $ghcup_path in PATH"
+  else
+    # User can either add it in the PATH or we can use the full path of the
+    # tool either as found in PATH or use GHCUP_PATH directly. We should
+    # probably fix each tool's location as found and use that rather using it
+    # from PATH.
+    test -e "$GHCUP_PATH" && \\
+      die "$GHCUP_PATH already exists, not overwriting."
+
     # Determine GHCUP_ARCH
     os=$(uname -s -m)
     case "$os" in
@@ -912,14 +925,14 @@ ghcup_install() {
       exit 1
     fi
     chmod +x $GHCUP_PATH
+    # Avoid changing the user's setup
+    #$GHCUP_PATH set $tool $tool_ver
+    # XXX add only if not already on PATH
+    PATH=$GHCUP_BIN:$PATH
+    echo "PATH is now set to [$PATH]"
   fi
 
-  $GHCUP_PATH install $tool $GHCUP_OPTIONS $tool_ver
-  # Avoid changing the user's setup
-  #$GHCUP_PATH set $tool $tool_ver
-  # XXX add only if not already on PATH
-  PATH=$GHCUP_BIN:$PATH
-  echo "PATH is now set to [$PATH]"
+  ghcup install $tool $GHCUP_OPTIONS $tool_ver
 }
 
 ensure_ghc() {
