@@ -937,7 +937,7 @@ ghcup_install() {
     #$GHCUP_PATH set $tool $tool_ver
   fi
 
-  ghcup install $tool $GHCUP_OPTIONS $tool_ver
+  run_verbose_errexit ghcup install $tool $GHCUP_OPTIONS $tool_ver
 }
 
 ensure_ghc() {
@@ -2070,7 +2070,7 @@ then
         echo "hlint not found."
         die "Use HLINT_VERSION option to install."
     fi
-    hlint --version
+    run_verbose_errexit hlint --version
     run_hlint
 else
     verify_build_config
@@ -2091,8 +2091,8 @@ else
             die "Use DOCSPEC_VERSION option to install."
           fi
       fi
-      cabal-docspec --version
-      cabal-docspec $DOCSPEC_OPTIONS
+      run_verbose_errexit cabal-docspec --version
+      run_verbose_errexit cabal-docspec $DOCSPEC_OPTIONS
     fi
 fi
 
