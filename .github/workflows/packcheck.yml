@@ -67,6 +67,7 @@ jobs:
       # cabal options
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: y
+      CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
       CABAL_PROJECT: "cabal.project"
 
       # ------------------------------------------------------------------------
