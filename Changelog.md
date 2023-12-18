@@ -13,7 +13,6 @@
   `packcheck hlint HLINT_OPTIONS="lint" ...` instead of
   `packcheck cabal-v2 HLINT_OPTIONS="lint" ...` to run hlint on the package.
 * Removed GHCJS, coveralls support
-* Removed `CABAL_HACKAGE_MIRROR` env var
 
 ## 0.6.0
 
