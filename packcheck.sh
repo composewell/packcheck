@@ -227,7 +227,7 @@ SAFE_ENVVARS="\
   HLINT_COMMANDS \
   HLINT_OPTIONS \
   HLINT_TARGETS \
-  DOCSPEC_VERSION \
+  DOCSPEC_URL \
   DOCSPEC_OPTIONS \
   CHECK_ENV \
   LANG \
@@ -362,7 +362,7 @@ show_help() {
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
   help_envvar RESOLVER "Stack resolver to use for stack builds or cabal builds using stack"
   help_envvar HLINT_VERSION "hlint version to install at $HLINT_PATH (see $HLINT_URL_PREFIX)"
-  help_envvar DOCSPEC_VERSION "cabal-docspec version to install at $DOCSPEC_PATH (see $DOCSPEC_URL_PREFIX)"
+  help_envvar DOCSPEC_URL "cabal-docspec release URL to install at $DOCSPEC_PATH (see $DOCSPEC_URL_PREFIX)"
 
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
@@ -1792,7 +1792,7 @@ your .hlint.ignore file."
 }
 
 install_docspec() {
-  show_step "Installing docspec version $DOCSPEC_VERSION"
+  show_step "Installing docspec from $DOCSPEC_URL"
   case "$(uname)" in
       Linux)
           OS=linux;;
@@ -1805,13 +1805,15 @@ install_docspec() {
   }
   trap cleanup EXIT
 
-  URL="$DOCSPEC_URL_PREFIX/download/cabal-docspec-$DOCSPEC_VERSION/cabal-docspec-$DOCSPEC_VERSION-x86_64-$OS.xz"
-  echo "Downloading $URL ..."
-  retry_cmd curl --fail --progress-bar --location -o$TEMP/cabal-docspec.xz $URL
+  # docspec does not have consistent release naming, therefore, use URL
+  # directly instead of version.
+  #URL="$DOCSPEC_URL_PREFIX/download/cabal-docspec-$DOCSPEC_VERSION/cabal-docspec-$DOCSPEC_VERSION-x86_64-$OS.xz"
+  #echo "Downloading $URL ..."
+  retry_cmd curl --fail --progress-bar --location -o$TEMP/cabal-docspec.xz $DOCSPEC_URL
   if test "$?" -ne 0
   then
     rm -f $TEMP/cabal-docspec.xz
-    die "Failed to download $URL"
+    die "Failed to download $DOCSPEC_URL"
   fi
 
   if test -e "$DOCSPEC_PATH"
@@ -2098,12 +2100,12 @@ else
           if test -n "$docspec_path"
           then
             echo "WARNING! Using cabal-docspec in PATH at $docspec_path"
-          elif test -n "$DOCSPEC_VERSION"
+          elif test -n "$DOCSPEC_URL"
           then
             install_docspec
           else
             echo "cabal-docspec not found."
-            die "Use DOCSPEC_VERSION option to install."
+            die "Use DOCSPEC_URL option to install."
           fi
       fi
       run_verbose_errexit cabal-docspec --version
