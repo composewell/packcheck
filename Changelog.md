@@ -3,8 +3,8 @@
 ### Enhancements
 * Supports using ghcup to install ghc automatically if `GHCUP_VERSION`
   env var is specified.
-* Supports running cabal-docspec (doctest) after cabal build on Linux using the
-  `ENABLE_DOCSPEC` option.
+* Supports running cabal-docspec (doctest) in `cabal` build using the
+  `ENABLE_DOCSPEC` option (Linux only).
 * `HLINT_VERSION` env var can be used to install a specific version of hlint
 
 ### Breaking Changes
