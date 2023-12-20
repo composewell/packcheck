@@ -1,13 +1,15 @@
 # packcheck
 
 [![Hackage](https://img.shields.io/hackage/v/packcheck.svg?style=flat)](https://hackage.haskell.org/package/packcheck)
-[![Gitter chat](https://badges.gitter.im/composewell/gitter.svg)](https://gitter.im/composewell/packcheck)
+[![Gitter chat](https://badges.gitter.im/composewell/gitter.svg)](https://gitter.im/composewell/streamly)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)
 
 ## Quick Start
 
+<!--
 Please use `cabal` version 2.4 or later.
+-->
 
 ### Build on CI
 
@@ -140,13 +142,16 @@ An invocation of `packcheck.sh` performs a whole battery of tests, all aspects
 can be controlled via environment variables, command line. The flow goes
 roughly as follows:
 
-* Pick up the correct version of GHC/cabal/stack
-* create source distribution and unpack it to test from it
-* run `hlint`
-* build source, benchmarks and docs
-* run tests
-* generate coverage report
+* Pick or install the requested version of GHC/cabal/stack
+* create source distribution package, unpack and test from it
+* Check the differences in git repo and source distribution
 * perform distribution checks
+* build source
+* build benchmarks
+* build haddock docs
+* run tests
+* run `hlint`
+* generate coverage report
 
 ## Usage Examples
 
