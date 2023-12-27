@@ -1,3 +1,7 @@
+## Unreleased
+
+* Set default "ghc" in PATH for cabal-docspec to work
+
 ## 0.7.0 (Dec 2023)
 
 ### Enhancements

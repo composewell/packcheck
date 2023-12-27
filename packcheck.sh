@@ -944,6 +944,16 @@ ghcup_install() {
   fi
 }
 
+ensure_default_ghc() {
+  local ghc
+  ghc="$(which_cmd ghc)"
+  if test -z "$ghc" -a -n "$GHCUP_VERSION"
+  then
+    echo "No default ghc found in PATH. Setting it using ghcup"
+    ghcup set ghc $GHCVER
+  fi
+}
+
 ensure_ghc() {
   local found
   local compiler
@@ -1024,13 +1034,7 @@ ensure_ghc() {
   # cabal info command requires "ghc" to be in PATH
   if test -z "$DISABLE_SDIST_BUILD"
   then
-    local ghc
-    ghc="$(which_cmd ghc)"
-    if test -z "$ghc" -a -n "$GHCUP_VERSION"
-    then
-      echo "No default ghc found in PATH. Setting it using ghcup because SDIST_BUILD needs it"
-      ghcup set ghc $GHCVER
-    fi
+    ensure_default_ghc
   fi
 
   if test -n "$ENABLE_GHCJS"
@@ -2104,6 +2108,8 @@ else
             die "Use DOCSPEC_URL option to install."
           fi
       fi
+      # XXX Use the --with-compiler option instead
+      ensure_default_ghc
       run_verbose_errexit cabal-docspec --version
       run_verbose_errexit cabal-docspec $DOCSPEC_OPTIONS
     fi
