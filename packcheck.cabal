@@ -73,6 +73,28 @@ library
     default-language: Haskell2010
     build-depends: base >= 4.8   && < 5
 
+executable packcheck
+    hs-source-dirs:    app
+    main-is:   Packcheck.hs
+    other-modules: Packcheck.Hlint
+                 , Packcheck.Ghcup
+                 , Packcheck.Common
+    default-language: Haskell2010
+    default-extensions:
+        QuasiQuotes
+      , CPP
+      , ScopedTypeVariables
+      , RecordWildCards
+    build-depends: base >= 4.8   && < 5
+                 , streamly-core
+                 , streamly-coreutils
+                 , streamly-process
+                 , temporary
+                 , exceptions
+                 , filepath
+                 , cmdargs
+    ghc-options: -Wall
+
 test-suite test
   type: exitcode-stdio-1.0
   hs-source-dirs: test
