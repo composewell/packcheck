@@ -909,7 +909,7 @@ ghcup_install() {
     PATH=$GHCUP_BIN:$PATH
     echo "Added $GHCUP_BIN to PATH [$PATH]"
 
-    $PACKCHECK_EXE ghcup \
+    run_verbose_errexit $PACKCHECK_EXE ghcup \
         --url-prefix="$GHCUP_URL_PREFIX" \
         --ghcup-version="$GHCUP_VERSION" \
         --install-path="$GHCUP_PATH" \
@@ -1652,7 +1652,7 @@ run_hlint() {
 
     packcheck_sanity_check
 
-    $PACKCHECK_EXE hlint \
+    run_verbose_errexit $PACKCHECK_EXE hlint \
         --url-prefix="$HLINT_URL_PREFIX" \
         --hlint_version="$HLINT_VERSION" \
         --install-path="$HLINT_PATH" \
