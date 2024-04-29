@@ -882,66 +882,40 @@ find_binary () {
   return 1
 }
 
+# We'll prep our system with default cabal and default ghc to build out
+# executable until we manage a way to ship the executable properly.
+install_packcheck_hs() {
+    local currentLocation=$(pwd)
+    cd "$PACKCHECK_SRC_DIR"
+    # Currently unsafe as we replace the already existing executable.
+    # TODO: Match version and proceed if it already exists
+    cabal install --installdir=$PACKCHECK_INSTALL_DIR --overwrite-policy=always
+    require_cmd "packcheck"
+}
+
 ghcup_install() {
-  local tool=$1
-  local tool_ver=$2
-  local GHCUP_ARCH
-  local ghcup_path
+    local toolName=$1
+    local toolVersion=$2
+    local toolInstallOptions
 
-  # XXX add only if not already on PATH
-  PATH=$GHCUP_BIN:$PATH
-  echo "Added $GHCUP_BIN to PATH [$PATH]"
-  ghcup_path=$(which_cmd ghcup)
-
-  if test -n "$ghcup_path"
-  then
-    echo "Using existing $ghcup_path in PATH"
-  else
-    # User can either add it in the PATH or we can use the full path of the
-    # tool either as found in PATH or use GHCUP_PATH directly. We should
-    # probably fix each tool's location as found and use that rather using it
-    # from PATH.
-    if test -e "$GHCUP_PATH"
+    if test "$tool" = "ghc"
     then
-      die "$GHCUP_PATH already exists, not overwriting."
+        tool_install_options=$GHCUP_GHC_OPTIONS $tool_ver
+    else
+        tool_install_options=""
     fi
 
-    # Determine GHCUP_ARCH
-    os=$(uname -s -m)
-    case "$os" in
-      "Linux x86_64") GHCUP_ARCH="x86_64-linux" ;;
-      "Darwin x86_64") GHCUP_ARCH="x86_64-apple-darwin" ;;
-      *) echo "Unknown OS/Arch: $os"; exit 1;;
-    esac
+    PATH=$GHCUP_BIN:$PATH
+    echo "Added $GHCUP_BIN to PATH [$PATH]"
 
-    # Check available versions here: https://downloads.haskell.org/~ghcup/
-    URL="$GHCUP_URL_PREFIX/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
-    echo "Downloading $URL to $GHCUP_PATH"
-    # XXX Download to a temp location and move when successful?
-    #TEMP=$(mktemp -d .ghcup-XXXXXX)
-    #cleanup(){
-    #    rm -r $TEMP
-    #}
-    #trap cleanup EXIT
-    mkdir -p $(dirname $GHCUP_PATH)
-    retry_cmd curl --fail --progress-bar --location -o $GHCUP_PATH $URL
-    if test $? -ne 0
-    then
-      rm -f $GHCUP_PATH
-      echo "Failed to download ghcup"
-      exit 1
-    fi
-    chmod +x $GHCUP_PATH
-    # Avoid changing the user's setup
-    #$GHCUP_PATH set $tool $tool_ver
-  fi
-
-  if test "$tool" = "ghc"
-  then
-    run_verbose_errexit ghcup install ghc $GHCUP_GHC_OPTIONS $tool_ver
-  else
-    run_verbose_errexit ghcup install $tool $tool_ver
-  fi
+    require_cmd "packcheck"
+    packcheck ghcup \
+        --url-prefix="$GHCUP_URL_PREFIX" \
+        --ghcup-version="$GHCUP_VERSION" \
+        --install-path="$GHCUP_PATH" \
+        --tool-name="$toolName" \
+        --tool-install-options="$toolInstallOptions" \
+        --tool-version="$toolVersion"
 }
 
 ensure_default_ghc() {
@@ -1656,69 +1630,6 @@ dist_checks() {
   esac
 }
 
-# XXX The downloading code is common among different tools (e.g. ghcup).
-# we can write a common function to do it.
-#
-# hlint install from Neil Mitchell's github repo, script taken from
-# https://raw.githubusercontent.com/ndmitchell/neil/master/misc/run.sh
-install_hlint() {
-  show_step "Installing hlint version $HLINT_VERSION"
-
-  case "$(uname)" in
-      "Darwin")
-          OS=osx;;
-      MINGW*|MSYS*)
-          OS=windows;;
-      Linux)
-          OS=linux;;
-      *) die "install_hlint: unknown os";;
-  esac
-
-  if [ "$OS" = "windows" ]; then
-      EXT=.zip
-      ESCEXT=\.zip
-  else
-      EXT=.tar.gz
-      ESCEXT=\.tar\.gz
-  fi
-
-  local PACKAGE=hlint
-  VERSION=$HLINT_VERSION
-
-  URL="$HLINT_URL_PREFIX/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
-  TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
-
-  cleanup(){
-      rm -r $TEMP
-  }
-  trap cleanup EXIT
-
-  echo $URL
-  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
-  if test "$?" -ne 0
-  then
-    die "Failed to download $URL"
-  fi
-
-  if test -e "$HLINT_PATH"
-  then
-    die "$HLINT_PATH already exists, not overwriting."
-  fi
-
-  mkdir -p ${LOCAL_BIN}
-  if [ "$OS" = "windows" ]; then
-      7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
-      mv ${TEMP}/hlint-${VERSION}/hlint.exe ${LOCAL_BIN}
-  elif [ "$OS" = "osx" ]; then
-      tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --include '*/hlint'
-      mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
-  else
-      tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --wildcards '*/hlint'
-      mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
-  fi
-  chmod +x $HLINT_PATH
-}
-
 build_hlint() {
   show_step "Installing hlint..."
   if test -n "$(need_stack)"
@@ -1738,60 +1649,15 @@ build_hlint() {
 }
 
 run_hlint() {
-  show_step "Running hlint ..."
 
-  # Old method
-  if test -n "$HLINT_COMMANDS"
-  then
-    echo "DEPRECATED env var HLINT_COMMANDS! Please use HLINT_OPTIONS and HLINT_TARGETS instead."
-    run_verbose_errexit "$HLINT_COMMANDS"
-  elif test -f .hlint.ignore
-  then
-    # Check if all files mentioned in .hlint.ignore exist.
-    local hi_files_exist=""
-    local hi_files_n_exist=""
-    while read p; do
-        if test -f "$p"
-        then
-            hi_files_exist="$p\n$hi_files_exist"
-        else
-            if test -n "$p"
-            then
-                hi_files_n_exist="$p\n$hi_files_n_exist"
-            fi
-        fi
-    done <.hlint.ignore
-    if test -n "$hi_files_n_exist"
-    then
-        echo "WARNING: The following files don't exist but are mentioned in \
-your .hlint.ignore file."
-        printf "$hi_files_n_exist"
-    fi
+    require_cmd "packcheck"
+    packcheck \
+        --url-prefix="$HLINT_URL_PREFIX" \
+        --hlint_version="$HLINT_VERSION" \
+        --install-path="$HLINT_PATH" \
+        --hlint_options="$HLINT_OPTIONS" \
+        --hlint_targets="$HLINT_TARGETS"
 
-    local files
-    local found
-    local i
-    local target
-    for target in $HLINT_TARGETS
-    do
-      files=$(find $target -name "*.hs")
-      for i in $files
-      do
-        # XXX ignore whitespace at the end
-        found=$(grep "^$i$" .hlint.ignore) || true
-        if test -z "$found"
-        then
-          run_verbose_errexit "hlint $HLINT_OPTIONS $i"
-        fi
-      done
-    done
-  else
-    local target
-    for target in $HLINT_TARGETS
-    do
-      run_verbose_errexit "hlint $HLINT_OPTIONS $target"
-    done
-  fi
 }
 
 install_docspec() {
@@ -2002,9 +1868,17 @@ DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
 
 # XXX On windows this should be ghcup instead of .ghcup? See
 # set_os_specific_vars
+# There is not windows version of ghcup. We can only install ghcup in wsl.
 GHCUP_BIN="${OS_APP_HOME}/.ghcup/bin"
 GHCUP_PATH="${GHCUP_BIN}/ghcup"
 GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
+
+
+PACKCHECK_DIR=$(dirname "$0") # NOTE: This is not a reliable way to get the
+                              # directory where the file exists. But it works
+                              # for now.
+PACKCHECK_SOURCE_DIR="$PACKCHECK_DIR"
+PACKCHECK_INSTALL_DIR="$LOCAL_BIN"
 
 #------------------------------------------------------------------------------
 
@@ -2069,26 +1943,16 @@ test -n "$STACK_YAML" || unset STACK_YAML
 CABAL_BINARY_NAME=cabal
 if test "$BUILD" = "hlint"
 then
-    hlint_path=$(which_cmd hlint)
-    if test -n "$hlint_path"
+    if test -n "$HLINT_BUILD"
     then
-      echo
-      echo "WARNING! Using hlint in PATH at $hlint_path"
-    elif test -n "$HLINT_VERSION"
-    then
-      install_hlint
-    elif test -n "$HLINT_BUILD"
-    then
+      # TODO: Move this into Haskell
       # XXX This is broken as it expects BUILD to be either stack or cabal.
       # Also, we need to initialize COMPILER variable before this which is
       # done in verify_build_config happening after this.
       build_hlint
     else
-        echo "hlint not found."
-        die "Use HLINT_VERSION option to install."
+      run_hlint
     fi
-    run_verbose_errexit hlint --version
-    run_hlint
 else
     verify_build_config
     build_compile
