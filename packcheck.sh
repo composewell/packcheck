@@ -882,21 +882,22 @@ find_binary () {
   return 1
 }
 
-# We'll prep our system with default cabal and default ghc to build out
-# executable until we manage a way to ship the executable properly.
-install_packcheck_hs() {
-    local currentLocation=$(pwd)
-    cd "$PACKCHECK_SRC_DIR"
-    # Currently unsafe as we replace the already existing executable.
-    # TODO: Match version and proceed if it already exists
-    cabal install --installdir=$PACKCHECK_INSTALL_DIR --overwrite-policy=always
-    require_cmd "packcheck"
+packcheck_sanity_check() {
+    show_step "Packcheck Sanity Check"
+
+    echo "Search Paths:"
+    ld --verbose | grep SEARCH_DIR | tr -s ' ;' \\012
+
+    echo "Linked libraries:"
+    ldd "$PACKCHECK_EXE"
 }
 
 ghcup_install() {
     local toolName=$1
     local toolVersion=$2
     local toolInstallOptions
+
+    packcheck_sanity_check
 
     if test "$tool" = "ghc"
     then
@@ -908,8 +909,7 @@ ghcup_install() {
     PATH=$GHCUP_BIN:$PATH
     echo "Added $GHCUP_BIN to PATH [$PATH]"
 
-    require_cmd "packcheck"
-    packcheck ghcup \
+    $PACKCHECK_EXE ghcup \
         --url-prefix="$GHCUP_URL_PREFIX" \
         --ghcup-version="$GHCUP_VERSION" \
         --install-path="$GHCUP_PATH" \
@@ -1650,8 +1650,9 @@ build_hlint() {
 
 run_hlint() {
 
-    require_cmd "packcheck"
-    packcheck \
+    packcheck_sanity_check
+
+    $PACKCHECK_EXE \
         --url-prefix="$HLINT_URL_PREFIX" \
         --hlint_version="$HLINT_VERSION" \
         --install-path="$HLINT_PATH" \
@@ -1874,11 +1875,15 @@ GHCUP_PATH="${GHCUP_BIN}/ghcup"
 GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
 
 
-PACKCHECK_DIR=$(dirname "$0") # NOTE: This is not a reliable way to get the
-                              # directory where the file exists. But it works
-                              # for now.
-PACKCHECK_SOURCE_DIR="$PACKCHECK_DIR"
-PACKCHECK_INSTALL_DIR="$LOCAL_BIN"
+# NOTE: This is not a reliable way to get the directory where the file
+# exists. But it works for now.
+PACKCHECK_DIR=$(dirname "$0")
+os=$(uname -s -m)
+case "$os" in
+    "Linux x86_64") PACKCHECK_EXE_NAME="packcheck-x86_64-linux" ;;
+    *) echo "Unknown OS/Arch: $os"; exit 1;;
+esac
+PACKCHECK_EXE="$PACKCHECK_DIR/$PACKCHECK_EXE_NAME"
 
 #------------------------------------------------------------------------------
 
