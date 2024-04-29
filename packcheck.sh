@@ -1654,10 +1654,10 @@ run_hlint() {
 
     run_verbose_errexit $PACKCHECK_EXE hlint \
         --url-prefix="$HLINT_URL_PREFIX" \
-        --hlint_version="$HLINT_VERSION" \
+        --hlint-version="$HLINT_VERSION" \
         --install-path="$HLINT_PATH" \
-        --hlint_options="$HLINT_OPTIONS" \
-        --hlint_targets="$HLINT_TARGETS"
+        --hlint-options="$HLINT_OPTIONS" \
+        --hlint-targets="$HLINT_TARGETS"
 
 }
 
