@@ -1652,7 +1652,7 @@ run_hlint() {
 
     packcheck_sanity_check
 
-    $PACKCHECK_EXE \
+    $PACKCHECK_EXE hlint \
         --url-prefix="$HLINT_URL_PREFIX" \
         --hlint_version="$HLINT_VERSION" \
         --install-path="$HLINT_PATH" \
