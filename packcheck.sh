@@ -911,6 +911,7 @@ ghcup_install() {
     case "$os" in
       "Linux x86_64") GHCUP_ARCH="x86_64-linux" ;;
       "Darwin x86_64") GHCUP_ARCH="x86_64-apple-darwin" ;;
+      "Darwin arm64") GHCUP_ARCH="aarch64-apple-darwin" ;;
       *) echo "Unknown OS/Arch: $os"; exit 1;;
     esac
 
