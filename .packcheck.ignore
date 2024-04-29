@@ -1,1 +1,3 @@
 .packcheck.ignore
+.gitignore
+packcheck-x86_64-linux
