@@ -139,7 +139,7 @@ win_ungztar() {
 set_os_specific_vars() {
   local os=$(uname)
   case "$os" in
-    Darwin|Linux)
+    Darwin|Linux|FreeBSD)
       OS_HAS_TOOLS=tar
       OS_UNGZTAR_CMD="run_verbose_errexit tar xmzvf"
       OS_LOCAL_DIR=.local
@@ -161,7 +161,7 @@ show_machine_info() {
   local os=$(uname)
   case "$os" in
     Linux)
-      echo "OS: Linux"
+      echo "OS: $os"
       lscpu | grep "^Archi\|^CPU\|^Bogo\|^Hyper\|^Virtualiz"
 
       echo "Memory:"
@@ -179,6 +179,8 @@ show_machine_info() {
       run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_period_us || true
       run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us || true
       run_verbose cat /sys/fs/cgroup/memory/memory.limit_in_bytes || true ;;
+    FreeBSD)
+      echo "OS: FreeBSD" ;;
     Darwin)
       echo "OS: MacOS" ;;
     MINGW*)
@@ -910,6 +912,7 @@ ghcup_install() {
     os=$(uname -s -m)
     case "$os" in
       "Linux x86_64") GHCUP_ARCH="x86_64-linux" ;;
+      "FreeBSD x86_64" | "FreeBSD amd64") GHCUP_ARCH=x86_64-portbld-freebsd ;;
       "Darwin x86_64") GHCUP_ARCH="x86_64-apple-darwin" ;;
       "Darwin arm64") GHCUP_ARCH="aarch64-apple-darwin" ;;
       *) echo "Unknown OS/Arch: $os"; exit 1;;
@@ -1964,7 +1967,7 @@ get_sys_time() {
     # Do not use floating point values so that we can avoid using bc for
     # computations.
     #Linux | MINGW*) date +%s.%N ;;
-    Linux | MINGW*) date +%s ;;
+    Linux | FreeBSD | MINGW*) date +%s ;;
     Darwin) date +%s ;;
     *) die "Unknown OS [$os]" ;;
   esac
