@@ -110,7 +110,7 @@ downloadToolSimple :: DownloadTool -> IO ()
 downloadToolSimple DownloadTool{..} = do
     step [str|Downloading #{dtDownloadUrl}|]
     Temp.withSystemTempDirectory "temp" $ \tmpDir -> do
-        let downloadTo = [str|#{tmpDir}/binary#{binExt}|]
+        let downloadTo = [str|#{tmpDir}/#{dtExePathInArchive}#{binExt}|]
         let curlCmd =
                 oneLine
                     [str|curl
