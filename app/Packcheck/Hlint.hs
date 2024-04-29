@@ -28,7 +28,7 @@ data HlintConfig =
         , env_HLINT_VERSION :: String
         , env_HLINT_PATH :: String
         , env_HLINT_URL_PREFIX :: String
-        , env_HLINT_TARGETS :: [String]
+        , env_HLINT_TARGETS :: String
         }
     deriving (Show)
 
@@ -91,7 +91,7 @@ unsafeRunHlint HlintConfig{..} = do
         when (not (null invalidEntries)) $ do
             putStrLn "WARNING: The following files don't exist but are mentioned in your .hlint.ignore file."
             putStrLn $ unlines invalidEntries
-            forM_ env_HLINT_TARGETS $ \target -> do
+            forM_ hlintTargetList $ \target -> do
                 files <-
                     filter (not . null) . lines
                         <$> verbose Cmd.toString [str|find #{target} -name "*.hs"|]
@@ -99,8 +99,13 @@ unsafeRunHlint HlintConfig{..} = do
                     when (not (file `elem` validEntries)) $ do
                         sh [str|hlint #{env_HLINT_OPTIONS} #{file}|]
     else
-        forM_ env_HLINT_TARGETS $ \target ->
+        forM_ hlintTargetList $ \target ->
             sh [str|hlint #{env_HLINT_OPTIONS} #{target}|]
+
+    where
+
+    hlintTargetList = filter (not . null) $ words env_HLINT_TARGETS
+
 
 ensureHlint :: HlintConfig -> IO ()
 ensureHlint conf@(HlintConfig{..}) = do

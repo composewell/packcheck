@@ -21,7 +21,7 @@ data Cli
           , install_path :: String
           , url_prefix :: String
           , hlint_options :: String
-          , hlint_targets :: [String]
+          , hlint_targets :: String -- Space seperated hlint targets
           }
     | Ghcup
           { url_prefix :: String
@@ -82,7 +82,7 @@ hlintMode =
                 &= help "url to download hlint from."
                 &= groupname "Compile-time"
         , hlint_targets =
-            def &= typ "[STRING]"
+            def &= typ "STRING"
                 &= help "hlint hlint_targets."
                 &= groupname "Run-time"
         } &= help "run hlint"
