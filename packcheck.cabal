@@ -50,6 +50,7 @@ extra-source-files:
     .ci/stack-8.0.yaml
     .circleci/config.yml
     .github/workflows/packcheck.yml
+    .cirrus.yml
     appveyor.yml
     cabal.project.coveralls
     cabal.project
