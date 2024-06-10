@@ -105,6 +105,16 @@ function run_verbose() {
   bash -c "$*"
 }
 
+function run_verbose_errexit_with() {
+    local errScript="$1";
+    shift
+    if ! run_verbose "$*";
+    then
+        eval "$errScript"
+        die "Command [$*] failed. Exiting."
+    fi
+}
+
 function run_verbose_errexit() {
   run_verbose "$*" || die "Command [$*] failed. Exiting."
 }
@@ -942,7 +952,8 @@ ghcup_install() {
 
   if test "$tool" = "ghc"
   then
-    run_verbose_errexit ghcup install ghc $GHCUP_GHC_OPTIONS $tool_ver
+    run_verbose_errexit_with "cat /usr/local/.ghcup/logs/*" \
+        ghcup install ghc $GHCUP_GHC_OPTIONS $tool_ver
   else
     run_verbose_errexit ghcup install $tool $tool_ver
   fi
