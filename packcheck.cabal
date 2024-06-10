@@ -4,7 +4,7 @@ synopsis:           Universal build and CI testing for Haskell packages
 description:
   This package contains a universal CI/build script @packcheck.sh@ and config
   files designed such that you can just copy over
-  @.github\/workflows/packcheck.yml@, @appveyor.yml@ or @.circleci/config.yml@ 
+  @.github\/workflows/packcheck.yml@, @appveyor.yml@ or @.circleci/config.yml@
   to your package repo and your package is CI ready
   in a jiffy.  You can build and test packages on local machine as well. For
   local testing, copy @packcheck.sh@ to your local machine, put it in your
@@ -54,6 +54,7 @@ extra-source-files:
     appveyor.yml
     cabal.project.coveralls
     cabal.project
+    cabal.project.ghc-head
     packcheck.sh
     packcheck-safe.sh
     packcheck-remote.sh

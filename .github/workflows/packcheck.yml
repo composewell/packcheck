@@ -51,6 +51,7 @@ jobs:
       # For updating see: https://downloads.haskell.org/~ghcup/
       GHCUP_VERSION: 0.1.20.0
       GHCVER: ${{ matrix.ghc_version }}
+      GHCUP_GHC_OPTIONS: ${{ matrix.ghcup_ghc_options }}
       # RESOLVER: ${{ matrix.stack_resolver }}
 
       # ------------------------------------------------------------------------
@@ -68,7 +69,7 @@ jobs:
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: y
       CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
-      CABAL_PROJECT: "cabal.project"
+      CABAL_PROJECT: ${{ matrix.cabal_project }}
 
       # ------------------------------------------------------------------------
       # Where to find the required tools
@@ -110,19 +111,30 @@ jobs:
         # Adding any element to the list will increase the number of matrix
         # elements proportional to the cross product.
         include:
+
+          - name: ci
+            command: cabal
+            runner: ubuntu-latest
+            ghc_version: head
+            cabal_project: cabal.project.ghc-head
+            ghcup_ghc_options: -u https://gitlab.haskell.org/ghc/ghc/-/jobs/artifacts/master/raw/ghc-x86_64-linux-deb10-int_native-validate.tar.xz?job=x86_64-linux-deb10-int_native-validate
+
           - name: ci
             command: cabal
             runner: ubuntu-latest
             ghc_version: 9.8.1
+            cabal_project: cabal.project
 
           - name: ci
             command: stack
             runner: ubuntu-latest
+            cabal_project: cabal.project
 
           - name: ci
             ghc_version: 9.8.1
             command: cabal
             runner: macos-latest
+            cabal_project: cabal.project
 
           - name: ci
             command: hlint
