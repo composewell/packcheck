@@ -2123,10 +2123,10 @@ else
             die "Use DOCSPEC_URL option to install."
           fi
       fi
-      # XXX Use the --with-compiler option instead
-      ensure_default_ghc
+      ensure_ghc
       run_verbose_errexit cabal-docspec --version
-      run_verbose_errexit cabal-docspec $DOCSPEC_OPTIONS
+      run_verbose_errexit cabal-docspec $DOCSPEC_OPTIONS \
+          --with-compiler "$COMPILER_EXE_PATH"
     fi
 fi
 
