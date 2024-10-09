@@ -230,6 +230,7 @@ SAFE_ENVVARS="\
   CABAL_CHECK_RELAX \
   CABAL_USE_STACK_SDIST \
   CABAL_BUILD_OPTIONS \
+  CABAL_TEST_OPTIONS \
   CABAL_DISABLE_DEPS \
   CABAL_BUILD_TARGETS \
   COVERAGE \
@@ -629,6 +630,7 @@ EOF
       cabal_only_var CABAL_HACKAGE_MIRROR
 
       cabal_only_var CABAL_BUILD_OPTIONS
+      cabal_only_var CABAL_TEST_OPTIONS
       cabal_only_var CABAL_DISABLE_DEPS
       cabal_only_var CABAL_BUILD_TARGETS
     fi
@@ -1649,7 +1651,7 @@ build_and_test() {
         echo
         run_verbose_errexit $SDIST_CABALCMD v2-test \
           --with-compiler "$COMPILER_EXE_PATH" \
-          $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+          $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_TEST_OPTIONS $CABAL_BUILD_TARGETS
       fi ;;
   esac
 }
