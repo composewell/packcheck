@@ -1168,8 +1168,7 @@ ensure_cabal() {
       if test -n "$(need_stack)"
       then
         stack_install_tool cabal-install
-      elif test -n "$GHCUP_VERSION"
-      then
+      else
         ghcup_install cabal $CABALVER
         if test -n "$CABALVER"
         then
