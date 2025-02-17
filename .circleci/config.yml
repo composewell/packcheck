@@ -1,4 +1,4 @@
-# packcheck-0.7.0
+# packcheck-0.7.1
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -16,7 +16,7 @@ env: &env
       # ------------------------------------------------------------------------
       # GHC_OPTIONS: "-Werror"
       # For updating see: https://downloads.haskell.org/~ghcup/
-      GHCUP_VERSION: 0.1.20.0
+      GHCUP_VERSION: 0.1.40.0
       CABAL_REINIT_CONFIG: "y"
       LC_ALL: "C.UTF-8"
 
@@ -38,7 +38,7 @@ env: &env
       # version.
       #STACKVER: "1.6.5"
       #STACK_UPGRADE: "y"
-      #RESOLVER: "lts-21"
+      #RESOLVER: "lts-23"
       STACK_YAML: "stack.yaml"
 
       # ------------------------------------------------------------------------
@@ -65,7 +65,7 @@ env: &env
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "v0.7.0"
+      PACKCHECK_GITHUB_COMMIT: "v0.7.1"
 
     # ubuntu seems to have better support than debian on CI systems
     docker:
@@ -147,23 +147,23 @@ save: &save
 #-----------------------------------------------------------------------------
 
 jobs:
-  cabal-ghc-9-8-1:
+  cabal-ghc-9-8-4:
       <<: *env
       steps:
         - checkout
         - *restore
         - *preinstall
         - run: |
-              bash -c "$PACKCHECK cabal GHCVER=9.8.1"
+              bash -c "$PACKCHECK cabal GHCVER=9.8.4"
         - *save
-  cabal-ghc-9-6-3:
+  cabal-ghc-9-6-6:
       <<: *env
       steps:
         - checkout
         - *restore
         - *preinstall
         - run: |
-              bash -c "$PACKCHECK cabal GHCVER=9.6.3"
+              bash -c "$PACKCHECK cabal GHCVER=9.6.6"
         - *save
   cabal-ghc-9-4-8:
       <<: *env
@@ -201,14 +201,14 @@ jobs:
         - run: |
               bash -c "$PACKCHECK cabal-v2 GHCVER=8.10.7"
         - *save
-  stack-lts-21:
+  stack-lts-23:
       <<: *env
       steps:
         - checkout
         - *restore
         - *preinstall
         - run: |
-            bash -c "$PACKCHECK stack RESOLVER=lts-21"
+            bash -c "$PACKCHECK stack RESOLVER=lts-23"
         - *save
 
 workflows:
@@ -216,10 +216,10 @@ workflows:
   build:
     jobs:
       # Uncomment the configs that you want to enable
-      - cabal-ghc-9-8-1
-      - cabal-ghc-9-6-3
+      - cabal-ghc-9-8-4
+      - cabal-ghc-9-6-6
       - cabal-ghc-9-4-8
       - cabal-ghc-9-2-8
       - cabal-ghc-9-0-1
       - cabal-ghc-8-10-7
-      - stack-lts-21
+      - stack-lts-23

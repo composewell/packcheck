@@ -2,16 +2,16 @@ freebsd_instance:
   image_family: freebsd-14-0
 
 task:
-  name: FreeBSD+packcheck+ghc-9.6.3+cabal-v2
+  name: FreeBSD+packcheck+ghc-9.10.1+cabal-v2
   env:
     LC_ALL: C.UTF-8
     BUILD: cabal-v2
-    GHCUP_VERSION: 0.1.20.0
-    DOCSPEC_URL: https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20210111/cabal-docspec-0.0.0.20210111.xz
+    GHCUP_VERSION: 0.1.40.0
+    DOCSPEC_URL: https://github.com/phadej/cabal-extras/releases/tag/cabal-docspec-0.0.0.20240703
     DOCSPEC_OPTIONS: "--timeout 60 --check-properties --property-variables xs"
     # GHCUP_GHC_OPTIONS: ${{ matrix.ghcup_ghc_options }}
-    GHCVER: 9.6.3
-    CABALVER: 3.10.1.0
+    GHCVER: 9.10.1
+    CABALVER: 3.12.1.0
     DISABLE_DOCS: n
     ENABLE_DOCSPEC: n
     DISABLE_TEST: n
@@ -36,7 +36,7 @@ task:
     # packcheck location and revision
     PACKCHECK: "./packcheck.sh"
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "084ed12f33ba9ef719aabefa7662a0fa600165dd"
+    PACKCHECK_GITHUB_COMMIT: "v0.7.1"
 
     # Pull token from "secrets" setting of the github repo
     # COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}

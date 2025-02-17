@@ -1,4 +1,4 @@
-# packcheck-0.7.0
+# packcheck-0.7.1
 # You can use any of the options supported by packcheck as environment
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
@@ -49,7 +49,7 @@ jobs:
       # Selecting tool versions
       # ------------------------------------------------------------------------
       # For updating see: https://downloads.haskell.org/~ghcup/
-      GHCUP_VERSION: 0.1.20.0
+      GHCUP_VERSION: 0.1.40.0
       GHCVER: ${{ matrix.ghc_version }}
       GHCUP_GHC_OPTIONS: ${{ matrix.ghcup_ghc_options }}
       # RESOLVER: ${{ matrix.stack_resolver }}
@@ -88,7 +88,7 @@ jobs:
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "v0.7.0"
+      PACKCHECK_GITHUB_COMMIT: "v0.7.1"
 
       # ------------------------------------------------------------------------
       # Final build variables
@@ -122,7 +122,7 @@ jobs:
           - name: ci
             command: cabal
             runner: ubuntu-latest
-            ghc_version: 9.8.1
+            ghc_version: 9.8.4
             cabal_project: cabal.project
 
           - name: ci
@@ -131,7 +131,19 @@ jobs:
             cabal_project: cabal.project
 
           - name: ci
-            ghc_version: 9.8.1
+            ghc_version: 9.8.4
+            command: cabal
+            runner: macos-latest
+            cabal_project: cabal.project
+
+          - name: ci
+            ghc_version: 9.10.1
+            command: cabal
+            runner: macos-latest
+            cabal_project: cabal.project
+
+          - name: ci
+            ghc_version: 9.12.1
             command: cabal
             runner: macos-latest
             cabal_project: cabal.project

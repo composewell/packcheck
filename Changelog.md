@@ -1,6 +1,8 @@
-## Unreleased
+## 0.7.1 (Feb 2025)
 
 * Set default "ghc" in PATH for cabal-docspec to work
+* FreeBSD support and Cirrus CI support for FreeBSD - see `.cirrus.yml`
+* `CABAL_TEST_OPTIONS` envvar to pass test-only options to cabal
 
 ## 0.7.0 (Dec 2023)
 

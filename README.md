@@ -294,14 +294,14 @@ help | --help | -h      : show this help message
 --------------------------------------------------
 Selecting tool versions
 --------------------------------------------------
-GHCUP_VERSION           : [a.b.c.d] GHCUP version to install GHCVER if needed
+GHCUP_VERSION           : [a.b.c.d] ghcup version to install at $HOME/.ghcup/bin/ghcup (see https://downloads.haskell.org/~ghcup)
 GHCVER                  : [a.b.c | head] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
 STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
-HLINT_VERSION           : Download a specific version binary of hlint instead of using one in PATH
-DOCSPEC_URL             : cabal-docspec release URL to install at ~/.local/bin/cabal-docspec (see https://github.com/phadej/cabal-extras/releases/)
+HLINT_VERSION           : hlint version to install at $HOME/.local/bin/hlint (see https://github.com/ndmitchell/hlint/releases)
+DOCSPEC_URL             : cabal-docspec release URL to install at $HOME/.local/bin/cabal-docspec (see https://github.com/phadej/cabal-extras/releases/)
 
 --------------------------------------------------
 Where to find the required tools
