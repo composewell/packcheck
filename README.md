@@ -264,7 +264,7 @@ convenient when running interactively, while environment variables are more
 convenient when running on a CI system.
 
 ```
-$ packcheck.sh --help
+$ ./packcheck.sh --help
 
 --------------------------------------------------
 Usage
@@ -339,9 +339,10 @@ cabal options
 --------------------------------------------------
 CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatibility issues
 CABAL_PROJECT           : Alternative cabal project file, path relative to project root
-CABAL_BUILD_OPTIONS     : ADDITIONAL cabal v2-build options to append to defaults
+CABAL_BUILD_OPTIONS     : ADDITIONAL cabal build options to append to defaults
+CABAL_TEST_OPTIONS      : ADDITIONAL cabal test options to append to defaults
 CABAL_DISABLE_DEPS      : [y] Do not install dependencies, do not do cabal update
-CABAL_BUILD_TARGETS     : cabal v2-build targets, default is 'all'
+CABAL_BUILD_TARGETS     : cabal build targets, default is 'all'
 CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
 CABAL_HACKAGE_MIRROR    : DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
 

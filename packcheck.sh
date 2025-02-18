@@ -406,9 +406,10 @@ show_help() {
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
   help_envvar CABAL_PROJECT "Alternative cabal project file, path relative to project root"
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
-  help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal v2-build options to append to defaults"
+  help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal build options to append to defaults"
+  help_envvar CABAL_TEST_OPTIONS "ADDITIONAL cabal test options to append to defaults"
   help_envvar CABAL_DISABLE_DEPS "[y] Do not install dependencies, do not do cabal update"
-  help_envvar CABAL_BUILD_TARGETS "cabal v2-build targets, default is 'all'"
+  help_envvar CABAL_BUILD_TARGETS "cabal build targets, default is 'all'"
   help_envvar CABAL_CHECK_RELAX "[y] Do not fail if cabal check fails on the package."
   help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
 
