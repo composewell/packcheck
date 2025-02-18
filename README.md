@@ -79,13 +79,13 @@ $ packcheck.sh stack GHCVER=9.4
 ### Out of the box support
 
 | cabal         | stack     |
-|:-------------:|:---------:|
+|---------------|-----------|
 
-| Linux         | OSX       | Windows       |
-|:-------------:|:---------:|:--------------|
+| Linux         | OSX       | Windows       | FreeBSD |
+|---------------|-----------|---------------|---------|
 
 | Github        | Appveyor  | CircleCI      | Local Machine |
-|:-------------:|:---------:|:--------------|:--------------|
+|---------------|-----------|---------------|---------------|
 
 The script can be easily adapted to any CI with a single line build command.
 

@@ -1,11 +1,11 @@
 freebsd_instance:
-  image_family: freebsd-14-0
+  image_family: freebsd-14-2
 
 task:
-  name: FreeBSD+packcheck+ghc-9.10.1+cabal-v2
+  name: FreeBSD+ghc-9.10.1+cabal
   env:
     LC_ALL: C.UTF-8
-    BUILD: cabal-v2
+    BUILD: cabal
     GHCUP_VERSION: 0.1.40.0
     DOCSPEC_URL: https://github.com/phadej/cabal-extras/releases/tag/cabal-docspec-0.0.0.20240703
     DOCSPEC_OPTIONS: "--timeout 60 --check-properties --property-variables xs"
