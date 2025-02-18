@@ -31,7 +31,7 @@ to your package repo
   [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
   to your package repo
 
-#### Appveyor
+#### Appveyor (Windows)
 * Add your package repo to Appveyor as necessary (See
   https://www.appveyor.com/docs/server/)
 * Copy
@@ -43,6 +43,13 @@ to your package repo
   https://docs.github.com/en/actions/quickstart)
 * Copy
   [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml)
+  to your package repo
+
+#### Cirrus (FreeBSD)
+* Add your package repo to Cirrus as necessary (See
+  https://cirrus-ci.org/)
+* Copy
+  [.cirrus.yml](https://github.com/composewell/packcheck/blob/master/.cirrus.yml)
   to your package repo
 
 CI should work out of the box for most packages. Uncomment the relevant lines
