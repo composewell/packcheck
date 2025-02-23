@@ -171,11 +171,20 @@ show_machine_info() {
   local os=$(uname)
   case "$os" in
     Linux)
-      echo "OS: $os"
+      #echo "OS: $os"
+      run_verbose lsb_release -a || true
+      echo
+      run_verbose uname -a || true
+
+      show_step "CPU"
+      echo "lscpu"
       lscpu | grep "^Archi\|^CPU\|^Bogo\|^Hyper\|^Virtualiz"
 
-      echo "Memory:"
+      show_step "Memory"
       run_verbose free -h || true
+
+      show_step "Filesystems"
+      run_verbose mount || true
 
       show_step "Container/cgroup information"
       # See https://stackoverflow.com/questions/20010199/determining-if-a-process-runs-inside-lxc-docker
