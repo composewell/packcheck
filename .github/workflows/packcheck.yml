@@ -88,7 +88,7 @@ jobs:
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "v0.7.1"
+      PACKCHECK_GITHUB_COMMIT: "03f9e753567d08835e342c8d24a406d5a1e1582e"
 
       # ------------------------------------------------------------------------
       # Final build variables
@@ -158,7 +158,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/cache@v2
+    - uses: actions/cache@v3
       name: Cache common directories
       with:
         path: |
