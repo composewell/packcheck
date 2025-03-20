@@ -183,9 +183,6 @@ show_machine_info() {
       show_step "Memory"
       run_verbose free -h || true
 
-      show_step "Filesystems"
-      run_verbose mount || true
-
       show_step "Container/cgroup information"
       # See https://stackoverflow.com/questions/20010199/determining-if-a-process-runs-inside-lxc-docker
       # For comprehensive detection see container-detect.conf in ubuntu
@@ -197,11 +194,32 @@ show_machine_info() {
       sudo -n cat /proc/1/environ | tr '\0' '\n' | grep "^container=" || true
       run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_period_us || true
       run_verbose cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us || true
-      run_verbose cat /sys/fs/cgroup/memory/memory.limit_in_bytes || true ;;
+      run_verbose cat /sys/fs/cgroup/memory/memory.limit_in_bytes || true
+
+      show_step "Filesystems"
+      run_verbose mount || true
+
+      show_step "Disk Usage"
+      run_verbose df -T || true ;;
+
     FreeBSD)
-      echo "OS: FreeBSD" ;;
+      echo "OS: FreeBSD"
+
+      show_step "Filesystems"
+      run_verbose mount || true
+
+      show_step "Disk Usage"
+      run_verbose df || true ;;
+
     Darwin)
-      echo "OS: MacOS" ;;
+      echo "OS: MacOS"
+
+      show_step "Filesystems"
+      run_verbose mount || true
+
+      show_step "Disk Usage"
+      run_verbose df -Y || true ;;
+
     MINGW*)
       echo "OS: Windows (MINGW)" ;;
     *) die "OS: Unknown OS [$os]" ;;
@@ -923,8 +941,8 @@ ghcup_install() {
   else
     # User can either add it in the PATH or we can use the full path of the
     # tool either as found in PATH or use GHCUP_PATH directly. We should
-    # probably fix each tool's location as found and use that rather using it
-    # from PATH.
+    # probably fix each tool's location as found and use that rather
+    # than using it from PATH.
     if test -e "$GHCUP_PATH"
     then
       die "$GHCUP_PATH already exists, not overwriting."
