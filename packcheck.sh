@@ -1496,6 +1496,14 @@ create_and_unpack_pkg_dist() {
     exit 1
   fi
 
+  # XXX We could keep the sdist build incremental if we could keep the file
+  # modified/creation times same as the original file. However, we also need to
+  # make sure that we remove any additional files that have been deleted in the
+  # original tree. To keep it simple and reliable as of now we just remove the
+  # whole thing and create it fresh.
+
+  run_verbose rm -rf .packcheck || exit 1
+
   # Unpack the tar inside .packcheck directory
   mkdir -p .packcheck || exit 1
 
