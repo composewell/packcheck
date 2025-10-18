@@ -451,7 +451,7 @@ show_help() {
   #help_envvar HLINT_COMMANDS "hlint commands e.g.'hlint lint src; hlint lint test'"
   # XXX this is broken
   #help_envvar HLINT_BUILD "Build latest hlint from hackage source"
-  help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=. lint'"
+  help_envvar HLINT_OPTIONS "hlint arguments e.g.'--datadir=.'"
   help_envvar HLINT_TARGETS "target directories to run hlint on e.g. 'src test'"
 
   show_step1 "Coverage options"
