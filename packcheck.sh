@@ -1533,10 +1533,10 @@ your .packcheck.ignore file."
       local sane_ignore_file=".packcheck/sane-ignore"
       printf "$pi_files_exist" > "$sane_ignore_file"
       cat "$sane_ignore_file" .packcheck/tar-ztf.txt \
-        | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
+        | sort | grep -v '^$' | uniq > .packcheck/tar-ztf1.txt
     else
       cat .packcheck/tar-ztf.txt \
-        | sort | grep -v '^$' > .packcheck/tar-ztf1.txt
+        | sort | grep -v '^$' | uniq > .packcheck/tar-ztf1.txt
     fi
     git ls-files | sort | grep -v '^$' > .packcheck/git-ls-files.txt
     local diff_res_file=".packcheck/tar-git-diff.txt"
