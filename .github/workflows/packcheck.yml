@@ -23,10 +23,10 @@ on:
 jobs:
   build:
     name: >-
-      ${{ matrix.name }}
-      ${{ matrix.command }}
       ${{ matrix.runner }}
+      ${{ matrix.command }}
       ${{ matrix.ghc_version }}
+      ${{ matrix.name }}
     env:
       # ------------------------------------------------------------------------
       # Common options
@@ -49,10 +49,8 @@ jobs:
       # Selecting tool versions
       # ------------------------------------------------------------------------
       # For updating see: https://downloads.haskell.org/~ghcup/
-      GHCUP_VERSION: 0.1.40.0
+      GHCUP_VERSION: 0.1.50.2
       GHCVER: ${{ matrix.ghc_version }}
-      GHCUP_GHC_OPTIONS: ${{ matrix.ghcup_ghc_options }}
-      # RESOLVER: ${{ matrix.stack_resolver }}
 
       # ------------------------------------------------------------------------
       # stack options
@@ -69,7 +67,6 @@ jobs:
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: y
       CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
-      CABAL_PROJECT: ${{ matrix.cabal_project }}
 
       # ------------------------------------------------------------------------
       # Where to find the required tools
@@ -88,7 +85,7 @@ jobs:
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "03f9e753567d08835e342c8d24a406d5a1e1582e"
+      PACKCHECK_GITHUB_COMMIT: "2856fb3010c7d0549537852cfa8500b4f1b58537"
 
       # ------------------------------------------------------------------------
       # Final build variables
@@ -97,11 +94,20 @@ jobs:
 
     # ubuntu seems to have better support than debian on CI systems
     runs-on: ${{ matrix.runner }}
+    #continue-on-error: ${{ matrix.ignore_error }}
     strategy:
       fail-fast: false
       matrix:
+
+        # The order of jobs is important to optimize fail-fast.
+
+        # This section is to order the important jobs first especially for
+        # "fail-fast" so that these are the ones started first.
+        #name:
+        #  - ci
+
         # The name of the CI is built using the name and other info from CI,
-        # therefore, the "name" field is same for all tests here.
+        # therefore, the "name" field can be same for all tests here.
         #
         # The reason we have an explicit "name" field here is to force
         # an additional config instead of adding to an existing config
@@ -113,52 +119,85 @@ jobs:
         include:
 
           - name: ci
-            command: cabal
             runner: ubuntu-latest
+            command: cabal
             ghc_version: head
-            cabal_project: cabal.project.ghc-head
-            ghcup_ghc_options: -u https://gitlab.haskell.org/ghc/ghc/-/jobs/artifacts/master/raw/ghc-x86_64-linux-deb10-int_native-validate.tar.xz?job=x86_64-linux-deb10-int_native-validate
+            # The URL may change, to find a working URL go to https://gitlab.haskell.org/ghc/ghc/-/jobs/
+            # Find a debian10/11/12 job, click on a passed/failed status, at the
+            # end of the output you will find the tar.xz name, put that tar
+            # name after "raw/", and put the job name after "job=".
+            # Also see https://github.com/mpickering/ghc-artefact-nix/blob/master/gitlab-artifact.nix
+            #
+            # May also use ghcup for installing ghc head version, use the
+            # version "LatestNightly", and the following config:
+            # ghcup config add-release-channel https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
+            pack_options: >-
+              GHCUP_GHC_OPTIONS="-u https://gitlab.haskell.org/ghc/ghc/-/jobs/artifacts/master/raw/ghc-x86_64-linux-deb10-int_native-validate.tar.xz?job=x86_64-linux-deb10-int_native-validate"
+              CABAL_PROJECT=cabal.project.ghc-head
 
           - name: ci
-            command: cabal
             runner: ubuntu-latest
-            ghc_version: 9.8.4
-            cabal_project: cabal.project
+            command: cabal
+            ghc_version: 9.14.1
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
 
           - name: ci
-            command: stack
+            runner: macos-latest
+            command: cabal
+            ghc_version: 9.12.2
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
+
+          - name: ci
             runner: ubuntu-latest
-            cabal_project: cabal.project
+            command: cabal
+            ghc_version: 9.10.3
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
 
           - name: ci
+            runner: ubuntu-latest
+            command: cabal
             ghc_version: 9.8.4
-            command: cabal
-            runner: macos-latest
-            cabal_project: cabal.project
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
 
           - name: ci
-            ghc_version: 9.10.1
+            runner: ubuntu-latest
             command: cabal
-            runner: macos-latest
-            cabal_project: cabal.project
-
+            ghc_version: 9.6.3
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
           - name: ci
-            ghc_version: 9.12.1
-            command: cabal
-            runner: macos-latest
-            cabal_project: cabal.project
-
-          - name: ci
+            runner: ubuntu-latest
             command: hlint
-            runner: ubuntu-latest
             pack_options: >-
               HLINT_VERSION=3.6.1
               HLINT_OPTIONS="lint"
               HLINT_TARGETS="src"
 
+          - name: docspec
+            runner: ubuntu-latest
+            command: cabal
+            ghc_version: 9.12.2
+            pack_options: >-
+              ENABLE_DOCSPEC="y"
+              DOCSPEC_URL=https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20210111/cabal-docspec-0.0.0.20210111.xz
+              DOCSPEC_OPTIONS="--timeout 60"
+              CABAL_PROJECT=cabal.project
+
+          - name: ci
+            runner: ubuntu-latest
+            command: stack
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
+              STACK_UPGRADE="y"
+              DISABLE_SDIST_BUILD="y"
+
     steps:
     - uses: actions/checkout@v2
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       name: Cache common directories
       with:
         path: |

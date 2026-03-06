@@ -34,7 +34,7 @@ environment:
     # github API limit while checking and upgrading/downgrading to the specific
     # version.
     #STACKVER: "1.6.5"
-    STACK_UPGRADE: "y"
+    #STACK_UPGRADE: "y"
     # RESOLVER: "lts-15"
     STACK_ROOT: "c:\\sr"
     STACK_YAML: "stack.yaml"
@@ -63,7 +63,7 @@ environment:
     # If you have not committed packcheck.sh in your repo at PACKCHECK_LOCAL_PATH
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "03f9e753567d08835e342c8d24a406d5a1e1582e"
+    PACKCHECK_GITHUB_COMMIT: "2856fb3010c7d0549537852cfa8500b4f1b58537"
 
     # Override the temp directory to avoid sed escaping issues
     # See https://github.com/haskell/cabal/issues/5386
@@ -83,7 +83,7 @@ before_test:
 - if not exist %PACKCHECK_LOCAL_PATH% curl -sSkL -o%PACKCHECK_LOCAL_PATH% %PACKCHECK_GITHUB_URL%/%PACKCHECK_GITHUB_COMMIT%/packcheck.sh
 - if not exist %LOCAL_BIN% mkdir %LOCAL_BIN%
 - where stack.exe || curl -sSkL -ostack.zip http://www.stackage.org/stack/windows-x86_64 && 7z x stack.zip stack.exe && move stack.exe %LOCAL_BIN%
-- if defined STACKVER (stack upgrade --binary-only --binary-version %STACKVER%) else (stack upgrade --binary-only || ver > nul)
+#- if defined STACKVER (stack upgrade --binary-only --binary-version %STACKVER%) else (stack upgrade --binary-only || ver > nul)
 - stack --version
 
 test_script:
