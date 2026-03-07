@@ -157,7 +157,7 @@ set_os_specific_vars() {
       OS_LOCAL_DIR=.local
       OS_CABAL_DIR=.cabal
       OS_APP_HOME=$HOME ;;
-    MINGW*)
+    CYGWIN*|MINGW*|MSYS*)
       require_cmd cygpath
       require_envvar APPDATA
       OS_HAS_TOOLS=cygpath
@@ -222,8 +222,8 @@ show_machine_info() {
       show_step "Disk Usage"
       run_verbose df -Y || true ;;
 
-    MINGW*)
-      echo "OS: Windows (MINGW)" ;;
+    CYGWIN*|MINGW*|MSYS*)
+      echo "OS: Windows ($os)" ;;
     *) die "OS: Unknown OS [$os]" ;;
   esac
 }
@@ -715,7 +715,7 @@ fetch_stack() {
   case "$os" in
     Darwin) retry_cmd fetch_stack_osx $1 ;;
     Linux)  retry_cmd fetch_stack_linux $1 ;;
-    MINGW*) retry_cmd fetch_stack_windows $1 ;;
+    CYGWIN*|MINGW*|MSYS*) retry_cmd fetch_stack_windows $1 ;;
     *) die "Unknown OS [$os]" ;;
   esac
 }
@@ -769,19 +769,21 @@ use_stack_paths() {
   # use bin path so that on windows we will find the stack installed mingw gcc
   run_verbose_errexit $STACKCMD path --bin-path
   local BINPATH=`$STACKCMD path --bin-path`
-  if [[ `uname` = MINGW* ]]
-  then
-    # Need for 7z on windows
-    local GHCPATHS=`$STACKCMD path --programs`
-    # Convert the path to MINGW format from windows native format
-    BINPATH=$(cygpath -u -p $BINPATH)
-    GHCPATHS=$(cygpath -u -p $GHCPATHS)
-    if test -n "$GHCPATHS"
-    then
-      echo "Adding [$GHCPATHS] in front of PATH..."
-      export PATH=$GHCPATHS:$PATH
-    fi
-  fi
+
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      # Need for 7z on windows
+      local GHCPATHS=`$STACKCMD path --programs`
+      # Convert the path to MINGW format from windows native format
+      BINPATH=$(cygpath -u -p $BINPATH)
+      GHCPATHS=$(cygpath -u -p $GHCPATHS)
+      if test -n "$GHCPATHS"
+      then
+        echo "Adding [$GHCPATHS] in front of PATH..."
+        export PATH=$GHCPATHS:$PATH
+      fi
+      ;;
+  esac
   if test -n "$BINPATH"
   then
     echo "Adding [$BINPATH] in front of PATH..."
@@ -951,17 +953,35 @@ ghcup_install() {
     fi
 
     # Determine GHCUP_ARCH
-    os=$(uname -s -m)
+    os="$(uname -s)"
     case "$os" in
-      "Linux x86_64") GHCUP_ARCH="x86_64-linux" ;;
-      "FreeBSD x86_64" | "FreeBSD amd64") GHCUP_ARCH=x86_64-portbld-freebsd ;;
-      "Darwin x86_64") GHCUP_ARCH="x86_64-apple-darwin" ;;
-      "Darwin arm64") GHCUP_ARCH="aarch64-apple-darwin" ;;
-      *) echo "Unknown OS/Arch: $os"; exit 1;;
+      Linux)   os_id="linux" ;;
+      FreeBSD) os_id="portbld-freebsd" ;;
+      Darwin)  os_id="apple-darwin" ;;
+      MSYS_*|MINGW*|CYGWIN*) os_id="mingw64" ;;
+      *)
+          echo "Unknown OS: $os"
+          exit 1
+          ;;
     esac
+
+    arch="$(uname -m)"
+    case "$arch" in
+      x86_64|amd64) arch_id="x86_64" ;;
+      arm64|aarch64) arch_id="aarch64" ;;
+      *)
+          echo "Unknown arch: $arch"
+          exit 1
+          ;;
+    esac
+
+    GHCUP_ARCH="$arch_id-$os_id"
 
     # Check available versions here: https://downloads.haskell.org/~ghcup/
     URL="$GHCUP_URL_PREFIX/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
+    if [ "$os_id" = "mingw64" ]; then
+      URL="${URL}.exe"
+    fi
     echo "Downloading $URL to $GHCUP_PATH"
     # XXX Download to a temp location and move when successful?
     #TEMP=$(mktemp -d .ghcup-XXXXXX)
@@ -985,10 +1005,12 @@ ghcup_install() {
   if test "$tool" = "ghc"
   then
     run_verbose_errexit_with "cat /usr/local/.ghcup/logs/*" \
-        ghcup install ghc $GHCUP_GHC_OPTIONS $tool_ver
+        $GHCUP_PATH install ghc $GHCUP_GHC_OPTIONS $tool_ver
   else
     run_verbose_errexit ghcup install $tool $tool_ver
   fi
+
+  $GHCUP_PATH whereis $tool $tool_ver
 }
 
 ensure_default_ghc() {
@@ -1043,7 +1065,7 @@ ensure_ghc() {
   if test -z "$compiler"
   then
     local msg
-    msg="$COMPILER $GHCVER not found in PATH [$PATH]"
+    msg="$COMPILER version $GHCVER not found in PATH [$PATH]"
     if test -n "$TOOLS_DIR"
     then
       msg="$msg or in $TOOLS_DIR/$COMPILER/$GHCVER*/bin"
@@ -1120,19 +1142,36 @@ ensure_ghc() {
 
 # XXX/TODO this may not work for cabal 1.24 config
 # $1: mirror URL
+#cabal_use_mirror() {
+#  local CABAL_CONFIG=${OS_APP_HOME}/${OS_CABAL_DIR}/config
+#  if test -f $CABAL_CONFIG
+#  then
+#    local inplace
+#    if [ `uname` = "Darwin" ]
+#    then
+#      inplace="-i orig"
+#    else
+#      inplace="--in-place"
+#    fi
+#    echo "Adding hackage mirror [$1] to [$CABAL_CONFIG]"
+#    sed $inplace -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
+#  else
+#    die "cabal config file [$CABAL_CONFIG] not found."
+#  fi
+#}
+
 cabal_use_mirror() {
-  local CABAL_CONFIG=${OS_APP_HOME}/${OS_CABAL_DIR}/config
-  if test -f $CABAL_CONFIG
+  # XXX The config location depends on the cabal installation e.g. ghcup
+  # installed cabal can use c:\cabal\config.
+  local CABAL_CONFIG="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+
+  if test -f "$CABAL_CONFIG"
   then
-    local inplace
-    if [ `uname` = "Darwin" ]
-    then
-      inplace="-i orig"
-    else
-      inplace="--in-place"
-    fi
     echo "Adding hackage mirror [$1] to [$CABAL_CONFIG]"
-    sed $inplace -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
+
+    sed -i.bak \
+      -e "s%^remote-repo:.*%remote-repo: $1%" \
+      "$CABAL_CONFIG"
   else
     die "cabal config file [$CABAL_CONFIG] not found."
   fi
@@ -1484,7 +1523,11 @@ create_and_unpack_pkg_dist() {
   fi
 
   # stack commands return path in windows format
-  [[ `uname` != MINGW* ]] || SDIST_DIR=`cygpath ${SDIST_DIR}`
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      SDIST_DIR="$(cygpath -u "$SDIST_DIR")"
+      ;;
+  esac
 
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
@@ -1714,7 +1757,7 @@ install_hlint() {
   case "$(uname)" in
       "Darwin")
           OS=osx;;
-      MINGW*|MSYS*)
+      CYGWIN*|MINGW*|MSYS*)
           OS=windows;;
       Linux)
           OS=linux;;
@@ -1919,7 +1962,11 @@ build_compile () {
 
   # use the stack installed 7z instead. depends on ensure ghc where we setup
   # stack paths.
-  [[ `uname` != MINGW* ]] || require_cmd 7z
+  case "$(uname -s)" in
+    MINGW*|MSYS*|CYGWIN*)
+      require_cmd 7z
+      ;;
+  esac
 
   show_step "Effective build config"
   show_build_config
@@ -2005,15 +2052,7 @@ get_confirmation()
 }
 
 get_sys_time() {
-  local os=$(uname)
-  case "$os" in
-    # Do not use floating point values so that we can avoid using bc for
-    # computations.
-    #Linux | MINGW*) date +%s.%N ;;
-    Linux | FreeBSD | MINGW*) date +%s ;;
-    Darwin) date +%s ;;
-    *) die "Unknown OS [$os]" ;;
-  esac
+  date +%s
 }
 
 get_rel_time() {
@@ -2049,7 +2088,12 @@ DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
 
 # XXX On windows this should be ghcup instead of .ghcup? See
 # set_os_specific_vars
-GHCUP_BIN="${OS_APP_HOME}/.ghcup/bin"
+case "$(uname)" in
+  CYGWIN*|MINGW*|MSYS*)
+    GHCUP_BIN=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup/bin ;;
+  *)
+    GHCUP_BIN="${GHCUP_INSTALL_BASE_PREFIX:-${OS_APP_HOME}}/.ghcup/bin" ;;
+esac
 GHCUP_PATH="${GHCUP_BIN}/ghcup"
 GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
 
