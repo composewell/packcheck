@@ -1259,6 +1259,9 @@ ensure_cabal() {
   MIN_CABALVER="1.24.0.0"
   verlte $MIN_CABALVER $CABALVER || \
       die "Cabal version should at least be $MIN_CABALVER"
+
+  echo
+  run_verbose $CABAL_BINARY_NAME path
 }
 
 # Find a file in the parent/ancestor directories
