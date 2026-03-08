@@ -1,3 +1,7 @@
+## Unreleased
+
+* Support using ghcup on Windows
+
 ## 0.7.1 (Feb 2025)
 
 * Set default "ghc" in PATH for cabal-docspec to work
