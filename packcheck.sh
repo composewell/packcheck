@@ -71,7 +71,7 @@ require_file () {
 
 # $1: message
 die () {
-  >&2 echo -e "Error: $1"
+  >&2 echo -e "[Packcheck] Error: $1"
   exit 1
 }
 
@@ -112,6 +112,8 @@ function run_verbose_errexit_with() {
     shift
     if ! run_verbose "$*";
     then
+        echo
+        echo "Running: $errScript"
         eval "$errScript"
         die "Command [$*] failed. Exiting."
     fi
@@ -1004,7 +1006,7 @@ ghcup_install() {
 
   if test "$tool" = "ghc"
   then
-    run_verbose_errexit_with "cat /usr/local/.ghcup/logs/*" \
+    run_verbose_errexit_with "cat ${GHCUP_PREFIX}/logs/*" \
         $GHCUP_PATH install ghc $GHCUP_GHC_OPTIONS $tool_ver
   else
     run_verbose_errexit ghcup install $tool $tool_ver
@@ -2098,10 +2100,11 @@ DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
 # set_os_specific_vars
 case "$(uname)" in
   CYGWIN*|MINGW*|MSYS*)
-    GHCUP_BIN=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup/bin ;;
+    GHCUP_PREFIX=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup ;;
   *)
-    GHCUP_BIN="${GHCUP_INSTALL_BASE_PREFIX:-${OS_APP_HOME}}/.ghcup/bin" ;;
+    GHCUP_PREFIX="${GHCUP_INSTALL_BASE_PREFIX:-${OS_APP_HOME}}/.ghcup" ;;
 esac
+GHCUP_BIN="${GHCUP_PREFIX}/bin"
 GHCUP_PATH="${GHCUP_BIN}/ghcup"
 GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
 
