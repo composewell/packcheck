@@ -1363,6 +1363,9 @@ get_pkg_full_name() {
   then
     if test -z "$DISABLE_SDIST_BUILD"
     then
+      echo
+      run_verbose pwd
+      run_verbose $CABAL_BINARY_NAME info .
       die "'cabal info' command failed to determine package name.\nPlease use 'DISABLE_SDIST_BUILD=y' to avoid this issue."
     fi
   else
