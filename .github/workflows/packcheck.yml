@@ -9,11 +9,11 @@ name: packcheck
 # Events on which the build should be triggered
 #-----------------------------------------------------------------------------
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
+#on:
+#  push:
+#    branches:
+#      - master
+#  pull_request:
 
 
 #-----------------------------------------------------------------------------
@@ -31,7 +31,6 @@ jobs:
       # ------------------------------------------------------------------------
       # Common options
       # ------------------------------------------------------------------------
-      # GHC_OPTIONS: "-Werror"
       CABAL_REINIT_CONFIG: y
       LC_ALL: C.UTF-8
 
@@ -53,7 +52,7 @@ jobs:
       GHCVER: ${{ matrix.ghc_version }}
 
       # ------------------------------------------------------------------------
-      # stack options
+      # stack options (if using stack builds)
       # ------------------------------------------------------------------------
       # Note requiring a specific version of stack using STACKVER may fail due to
       # github API limit while checking and upgrading/downgrading to the specific
@@ -66,13 +65,11 @@ jobs:
       # cabal options
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: y
-      CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
 
       # ------------------------------------------------------------------------
       # Where to find the required tools
       # ------------------------------------------------------------------------
-      PATH: /opt/ghc/bin:/sbin:/usr/sbin:/bin:/usr/bin
-      #TOOLS_DIR: /opt
+      PATH: /sbin:/usr/sbin:/bin:/usr/bin
 
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
