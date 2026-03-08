@@ -1010,7 +1010,9 @@ ghcup_install() {
     run_verbose_errexit ghcup install $tool $tool_ver
   fi
 
+  echo "Running: $GHCUP_PATH whereis $tool $tool_ver"
   $GHCUP_PATH whereis $tool $tool_ver
+  echo
 }
 
 ensure_default_ghc() {
