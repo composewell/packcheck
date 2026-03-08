@@ -9,11 +9,11 @@ name: packcheck
 # Events on which the build should be triggered
 #-----------------------------------------------------------------------------
 
-#on:
-#  push:
-#    branches:
-#      - master
-#  pull_request:
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 
 #-----------------------------------------------------------------------------
