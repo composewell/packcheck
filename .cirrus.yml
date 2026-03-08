@@ -36,7 +36,7 @@ task:
     # packcheck location and revision
     PACKCHECK: "./packcheck.sh"
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "2856fb3010c7d0549537852cfa8500b4f1b58537"
+    PACKCHECK_GITHUB_COMMIT: "4e1603ebb7692ffd538b54135a5fd002fc5644eb"
 
     # Pull token from "secrets" setting of the github repo
     # COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
