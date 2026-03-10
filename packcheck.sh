@@ -101,9 +101,10 @@ require_cmd () {
 
 # $1: command
 function run_verbose() {
-  # XXX redirecting to stderr leads to misaligned output because stdout and
-  # stdin are printed at different times.
-  echo "$*" 1>&2
+  # Note: we used to redirect the echo to stderr but it leads to
+  # misaligned output because stdout and stdin are printed at different
+  # times.
+  echo "$*"
   bash -c "$*"
 }
 
