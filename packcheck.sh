@@ -156,7 +156,8 @@ set_os_specific_vars() {
   case "$os" in
     Darwin|Linux|FreeBSD)
       OS_HAS_TOOLS=tar
-      OS_UNGZTAR_CMD="run_verbose_errexit tar xmzvf"
+      # Removed verbose from this, causes too much output when untar-ing sdist
+      OS_UNGZTAR_CMD="run_verbose_errexit tar xmzf"
       OS_LOCAL_DIR=.local
       OS_CABAL_DIR=.cabal
       OS_APP_HOME=$HOME ;;
@@ -230,14 +231,13 @@ show_machine_info() {
     Darwin)
       run_verbose uname -a || true
       run_verbose sw_vers || true
-      show_step "CPU"
+      show_step "Hardware/CPU"
+      sysctl -n hw.model
       sysctl -n machdep.cpu.brand_string
       sysctl hw.physicalcpu hw.logicalcpu hw.cpufrequency
       show_step "Memory"
       sysctl hw.memsize | awk '{printf "Total RAM: %.2f GB\n", $2/1024/1024/1024}' || true
       run_verbose vm_stat || true
-      show_step "Virtualization"
-      sysctl -n kern.hv_support && echo "Hypervisor support: yes" || true
       show_step "Filesystems"
       run_verbose mount || true
       show_step "Disk Usage"
