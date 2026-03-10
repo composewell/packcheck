@@ -1042,6 +1042,18 @@ ghcup_install() {
   then
     run_verbose_errexit_with "cat ${GHCUP_PREFIX}/logs/*" \
         $GHCUP_PATH install ghc $GHCUP_GHC_OPTIONS $tool_ver
+
+    # Add the actual GHC bin dir to PATH so plain 'ghc' command without a
+    # version suffix is also available. Commands like "cabal path", "cabal
+    # info" require "ghc" in path. Other tasks like cabal build can use a
+    # specific versioned path like ghc-9.4.3.
+    local ghc_bindir
+    ghc_bindir=$($GHCUP_PATH whereis --directory ghc $tool_ver)
+    case "$(uname)" in
+      CYGWIN*|MINGW*|MSYS*) ghc_bindir=$(cygpath -u "$ghc_bindir") ;;
+    esac
+    echo "Adding GHC bin dir [$ghc_bindir] to PATH"
+    export PATH="$ghc_bindir:$PATH"
   else
     run_verbose_errexit ghcup install $tool $tool_ver
   fi
@@ -1054,13 +1066,19 @@ ghcup_install() {
 ensure_default_ghc() {
   local ghc
   ghc="$(which_cmd ghc)"
-  if test -z "$ghc" -a -n "$GHCUP_VERSION"
+  if test -z "$ghc"
   then
-    echo "No default ghc found in PATH. Setting it using ghcup"
-    ghcup set ghc $GHCVER
+    HAVE_DEFAULT_GHC=
+    echo "WARNING! No default \"ghc\" found in PATH."
+    echo "WARNING! cabal path output will not be shown."
+    echo "WARNING! cabal info output will not be shown."
+  else
+    HAVE_DEFAULT_GHC=y
   fi
 }
 
+# NOTE: this should be called before ensure_cabal as ensure_cabal needs
+# default_ghc to run "cabal path".
 ensure_ghc() {
   local found
   local compiler
@@ -1138,11 +1156,7 @@ ensure_ghc() {
   # GHCVER
   GHCVER=$($compiler --numeric-version) || exit 1
 
-  # cabal info command requires "ghc" to be in PATH
-  if test -z "$DISABLE_SDIST_BUILD"
-  then
-    ensure_default_ghc
-  fi
+  ensure_default_ghc
 
   if test -n "$ENABLE_GHCJS"
   then
@@ -1296,8 +1310,13 @@ ensure_cabal() {
   verlte $MIN_CABALVER $CABALVER || \
       die "Cabal version should at least be $MIN_CABALVER"
 
-  echo
-  run_verbose $CABAL_BINARY_NAME path
+  if test -n "$HAVE_DEFAULT_GHC"
+  then
+    echo
+    run_verbose $CABAL_BINARY_NAME path
+  else
+    echo "WARNING! skipping \"cabal path\", \"ghc\" not in PATH"
+  fi
 }
 
 # Find a file in the parent/ancestor directories
@@ -1392,26 +1411,11 @@ get_pkg_name() {
 
 get_pkg_full_name() {
   local pkgname
-  local full_name
   pkgname=$(get_pkg_name) || exit 1
-  full_name=$($CABAL_BINARY_NAME info . | awk '{ if ($1 == "*") {print $2; exit}}') || true
-  if test -z "$full_name"
-  then
-    if test -z "$DISABLE_SDIST_BUILD"
-    then
-      echo
-      run_verbose pwd
-      run_verbose $CABAL_BINARY_NAME info .
-      die "'cabal info' command failed to determine package name.\nPlease use 'DISABLE_SDIST_BUILD=y' to avoid this issue."
-    fi
-  else
-    if test "${pkgname}${full_name#$pkgname}" != "${full_name}"
-    then
-      die "Inconsistent package name [$pkgname] and package full name [$full_name]"
-    fi
-  fi
-
-  echo $full_name
+  local pkgver
+  pkgver=$(grep -i "^version:" "${pkgname}.cabal" | awk '{print $2}' | tr -d '\r')
+  test -n "$pkgver" || die "Could not determine package version from ${pkgname}.cabal"
+  echo "${pkgname}-${pkgver}"
 }
 
 # XXX use MULTI_PACKAGE_PROJECT as a CLI option, instead of trying to determine
@@ -1506,20 +1510,6 @@ ensure_cabal_config() {
       fi
     fi
   fi
-}
-
-# $1: dir where they are installed
-remove_pkg_executables() {
-  test -n "$(which_cmd $CABAL_BINARY_NAME)" || return 0
-
-  exes=$($CABAL_BINARY_NAME info . | awk '{if ($1 == "Executables:") { print $2; exit }}') || exit 1
-  echo "Remove installed binaries"
-  for i in $exes
-  do
-    # The executables may be under a cabal flag and may not have been installed
-    # unless we used that flag. So just use "rm -f" to remove silently.
-    run_verbose_errexit rm -f "$1"/"$i"
-  done
 }
 
 sdist_remove_project_file () {
@@ -1720,7 +1710,12 @@ then add them to .packcheck.ignore file at the root of the git repository."
   fi
 
   show_step "Package info [sdist $SDIST_OPTIONS]"
-  run_verbose $CABAL_BINARY_NAME info . || true
+  if test -n "$HAVE_DEFAULT_GHC"
+  then
+    run_verbose $CABAL_BINARY_NAME info . || true
+  else
+    echo "WARNING! skipping \"cabal info\", \"ghc\" not in PATH"
+  fi
 
   if test -f "./configure.ac"
   then
@@ -1861,9 +1856,9 @@ build_hlint() {
     ensure_ghc
     stack_install_tool hlint
   else
+    ensure_ghc
     ensure_cabal ${LOCAL_BIN}
     ensure_cabal_config
-    ensure_ghc
     case "$BUILD" in
       cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
       *) echo "Bug: unknown build type: $BUILD" ;;
@@ -2004,8 +1999,6 @@ build_compile () {
   ensure_ghc && echo
   dont_need_cabal 'verbose' || ensure_cabal ${LOCAL_BIN}
 
-  # use the stack installed 7z instead. depends on ensure ghc where we setup
-  # stack paths.
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*)
       require_cmd 7z
