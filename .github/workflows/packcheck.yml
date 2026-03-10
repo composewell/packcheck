@@ -202,11 +202,14 @@ jobs:
       name: Cache common directories (non-Windows)
       if: runner.os != 'Windows'
       with:
+        # On macos ghcup gets installed in ~/.ghcup
+        # On Linux it is /usr/local/.ghcup
         path: |
-          ~/.local
+          ~/.local/bin
           ~/.cabal
           ~/.stack
           ~/.ghcup
+          /usr/local/.ghcup
         # Bump the key version to clear the cache
         key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
 
