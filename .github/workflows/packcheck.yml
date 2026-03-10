@@ -67,11 +67,6 @@ jobs:
       CABAL_CHECK_RELAX: y
 
       # ------------------------------------------------------------------------
-      # Where to find the required tools
-      # ------------------------------------------------------------------------
-      PATH: /sbin:/usr/sbin:/bin:/usr/bin
-
-      # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
       # ------------------------------------------------------------------------
       # You can either commit the packcheck.sh script at this path in your repo or
@@ -192,25 +187,48 @@ jobs:
               STACK_UPGRADE="y"
               DISABLE_SDIST_BUILD="y"
 
+          - name: ci
+            runner: windows-latest
+            command: cabal
+            ghc_version: 9.10.3
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
+              DISABLE_SDIST_BUILD="y"
+
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
+
     - uses: actions/cache@v4
-      name: Cache common directories
+      name: Cache common directories (non-Windows)
+      if: runner.os != 'Windows'
       with:
         path: |
           ~/.local
           ~/.cabal
           ~/.stack
           ~/.ghcup
+        # Bump the key version to clear the cache
+        key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
+
+    - uses: actions/cache@v4
+      name: Cache common directories (Windows)
+      if: runner.os == 'Windows'
+      with:
+        path: |
+          ${{ env.APPDATA }}/local/bin
+          C:/ghcup
+          C:/cabal
         key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
 
     - name: Download packcheck
+      # on windows-latest GitHub Actions defaults to PowerShell
+      shell: bash
       run: |
         if test ! -e "$PACKCHECK"
         then
           if test -z "$PACKCHECK_GITHUB_COMMIT"
           then
-              die "PACKCHECK_GITHUB_COMMIT is not specified."
+              die "PACKCHECK_GITHUB_COMMIT env var is not specified."
           fi
           PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
           curl --fail -sL -o "$PACKCHECK" $PACKCHECK_URL || exit 1
@@ -221,5 +239,16 @@ jobs:
         fi
 
     - name: Run packcheck
+      # on windows-latest GitHub Actions defaults to PowerShell
+      shell: bash
       run: |
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND"
+        PATH_VAR=/sbin:/usr/sbin:/bin:/usr/bin
+        case "$(uname)" in
+          CYGWIN*|MINGW*|MSYS*)
+          PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
+            ;;
+        esac
+        # Use "bash -c" instead of invoking directly to preserve quoted
+        # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
+        # Direct invocation would word-split on spaces inside quoted values.
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
