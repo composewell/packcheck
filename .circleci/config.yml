@@ -137,7 +137,7 @@ save: &save
   save_cache:
       key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
       paths:
-        - ~/.local
+        - ~/.local/bin
         - ~/.cabal
         - ~/.stack
         - ~/.ghcup
