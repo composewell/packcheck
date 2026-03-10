@@ -68,6 +68,7 @@ environment:
 cache:
   - "%APPDATA%\\local\\bin -> v1"
   - "%APPDATA%\\cabal"
+  - "%LOCALAPPDATA%\\cabal"
   - "C:\\ghcup"
   - "C:\\cabal"
 
