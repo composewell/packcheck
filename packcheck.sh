@@ -204,29 +204,62 @@ show_machine_info() {
       run_verbose mount || true
 
       show_step "Disk Usage"
-      run_verbose df -T || true ;;
+      run_verbose df -T || true
+      ;;
 
     FreeBSD)
-      echo "OS: FreeBSD"
+      run_verbose uname -a || true
+      run_verbose freebsd-version || true
+      show_step "CPU"
+      sysctl hw.model hw.ncpu hw.physicalcpu hw.logicalcpu 2>/dev/null || true
+
+      show_step "Memory"
+      sysctl hw.physmem hw.realmem 2>/dev/null || true
+      run_verbose vmstat -H || true
+      show_step "Virtualization"
+      sysctl kern.vm_guest 2>/dev/null || true
 
       show_step "Filesystems"
       run_verbose mount || true
 
       show_step "Disk Usage"
-      run_verbose df || true ;;
+      run_verbose df -h || true
+      ;;
 
     Darwin)
-      echo "OS: MacOS"
-
+      run_verbose uname -a || true
+      run_verbose sw_vers || true
+      show_step "CPU"
+      sysctl -n machdep.cpu.brand_string
+      sysctl hw.physicalcpu hw.logicalcpu hw.cpufrequency
+      show_step "Memory"
+      sysctl hw.memsize | awk '{printf "Total RAM: %.2f GB\n", $2/1024/1024/1024}' || true
+      run_verbose vm_stat || true
+      show_step "Virtualization"
+      sysctl -n kern.hv_support && echo "Hypervisor support: yes" || true
       show_step "Filesystems"
       run_verbose mount || true
-
       show_step "Disk Usage"
-      run_verbose df -Y || true ;;
+      run_verbose df -h || true
+      ;;
 
     CYGWIN*|MINGW*|MSYS*)
-      echo "OS: Windows ($os)" ;;
-    *) die "OS: Unknown OS [$os]" ;;
+      echo "OS: Windows $WINVER ($os)"
+
+      show_step "CPU"
+      echo "$NUMBER_OF_PROCESSORS processor(s)"
+      echo "${PROCESSOR_IDENTIFIER:-unknown}"
+
+      show_step "Memory"
+      run_verbose free -h
+
+      show_step "Disk Usage"
+      run_verbose df -h
+      ;;
+
+    *)
+      die "OS: Unknown OS [$os]"
+      ;;
   esac
 }
 
