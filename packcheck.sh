@@ -89,14 +89,17 @@ which_cmd() {
   hash -r && type -P "$1" || true
 }
 
-require_cmd () {
+require_cmd_silent () {
   if test -z "$(which_cmd $1)"
   then
     echo "Required command [$1] not found in PATH [$PATH]."
     exit 1
-  else
-    echo "Using [$1] at [$(which_cmd $1)]"
   fi
+}
+
+require_cmd () {
+  require_cmd_silent $1
+  echo "Using [$1] at [$(which_cmd $1)]"
 }
 
 # $1: command
@@ -152,6 +155,7 @@ win_ungztar() {
 }
 
 set_os_specific_vars() {
+  require_cmd_silent uname
   local os=$(uname)
   case "$os" in
     Darwin|Linux|FreeBSD)
@@ -162,9 +166,9 @@ set_os_specific_vars() {
       OS_CABAL_DIR=.cabal
       OS_APP_HOME=$HOME ;;
     CYGWIN*|MINGW*|MSYS*)
-      require_cmd cygpath
+      require_cmd_silent cygpath
       require_envvar APPDATA
-      OS_HAS_TOOLS=cygpath
+      OS_HAS_TOOLS="7z cygpath"
       OS_UNGZTAR_CMD=win_ungztar
       OS_LOCAL_DIR=local
       OS_CABAL_DIR=cabal
@@ -539,7 +543,7 @@ show_build_command() {
 
   echo "You can use the following command to reproduce this build:"
   echo
-  echo -n "$0 $BUILD "
+  echo -n "$(basename $0) $BUILD "
   for i in $SAFE_ENVVARS
   do
     local val="$(show_nonempty_var $i)"
@@ -2001,7 +2005,7 @@ build_compile () {
 
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*)
-      require_cmd 7z
+      require_cmd_silent 7z
       ;;
   esac
 
@@ -2104,10 +2108,26 @@ get_rel_time() {
 # functions are returning non-zero exit codes.
 #set -e
 set -o pipefail
-test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
+
+# For commands make sure we call eval_env "$@" before doing anything else so
+# that the envvars passed on the command line are evaluated first. We may have
+# PATH as one of the args which we need to evaluate before running any
+# command.
+case $1 in
+  cabal|cabal-v2|stack|hlint|clean|cleanall|-h|--help|help|--version|version) BUILD=$1; shift; eval_env "$@" ;;
+  cabal-v1) die "cabal-v1 is not supported, please use cabal-v2 instead";;
+  cabal-new) die "cabal-new is not supported, please use cabal-v2 instead";;
+  *) echo -e "$(basename $0): unrecognized command [$1]\n"
+    short_help; exit 1 ;;
+esac
+
+# This should be called after eval_env "$@" has been done above, so that PATH
+# is set.
+require_cmd_silent date
+test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 #------------------------------------------------------------------------------
 
@@ -2123,8 +2143,7 @@ HLINT_URL_PREFIX="https://github.com/ndmitchell/hlint/releases"
 DOCSPEC_PATH="${LOCAL_BIN}/cabal-docspec"
 DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
 
-# XXX On windows this should be ghcup instead of .ghcup? See
-# set_os_specific_vars
+# See set_os_specific_vars
 case "$(uname)" in
   CYGWIN*|MINGW*|MSYS*)
     GHCUP_PREFIX=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup ;;
@@ -2137,33 +2156,32 @@ GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
 
 #------------------------------------------------------------------------------
 
-case $1 in
-  cabal) shift; eval_env "$@"; BUILD=cabal-v2;;
-  cabal-v1) die "cabal-v1 is not supported, please use cabal-v2 instead";;
-  cabal-new) die "cabal-new is not supported, please use cabal-v2 instead";;
-  cabal-v2) shift; eval_env "$@"; BUILD=cabal-v2;;
-  stack) shift; eval_env "$@"; BUILD=stack;;
-  hlint) shift; eval_env "$@"; BUILD=hlint;;
+case $BUILD in
+  cabal) BUILD=cabal-v2;;
   clean) rm -rf .packcheck; exit;;
   cleanall)
     rm -rf .packcheck .stack-work
     exit;;
-  -h | --help | help) show_help; exit;;
-  --version) show_version; exit;;
-  *) echo -e "Error: First argument must be a command\n"
-    short_help; exit 1 ;;
+  -h|--help|help) show_help; exit;;
+  --version|version) show_version; exit;;
 esac
 
 test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
 test -z "$CHECK_ENV" || check_clean_env
 
+require_cmd_silent bash
 echo
 bash --version
 
 show_step "Build command"
 show_build_command
 
-TOOLS="awk cat curl cut date env head mkdir printf rm sleep tr which sort \
+# Note that date, uname, cygpath, rm are used even before this point. This
+# informatory so that PATH argument can be cleaned up by looking at where the
+# tools are. Anything used in require_cmd can be listed here. But the danger is
+# that we will put a requirement on a tool even if it may not be required in a
+# particular command's flow.
+TOOLS="awk cat curl cut date env head mkdir printf rm sleep sort tr uname which \
 $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
