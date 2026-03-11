@@ -179,7 +179,7 @@ jobs:
               DOCSPEC_OPTIONS="--timeout 60"
               CABAL_PROJECT=cabal.project
 
-          - name: ci
+          - name: no-sdist
             runner: ubuntu-latest
             command: stack
             pack_options: >-
@@ -193,7 +193,6 @@ jobs:
             ghc_version: 9.10.3
             pack_options: >-
               CABAL_PROJECT=cabal.project
-              DISABLE_SDIST_BUILD="y"
 
     steps:
     - uses: actions/checkout@v4

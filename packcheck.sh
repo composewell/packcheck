@@ -1597,7 +1597,9 @@ create_and_unpack_pkg_dist() {
     then
       local pi_files_exist=""
       local pi_files_n_exist=""
-      while read p; do
+      while IFS= read -r p || test -n "$p"; do
+          p="${p%$'\r'}"
+          test -n "$p" || continue
           if [ ! -f "$p" -a ! -d "$p" ]
           then
               pi_files_n_exist="$p\n$pi_files_n_exist"
@@ -1883,7 +1885,9 @@ run_hlint() {
     # Check if all files mentioned in .hlint.ignore exist.
     local hi_files_exist=""
     local hi_files_n_exist=""
-    while read p; do
+    while IFS= read -r p || test -n "$p"; do
+        p="${p%$'\r'}"
+        test -n "$p" || continue
         if test -f "$p"
         then
             hi_files_exist="$p\n$hi_files_exist"
