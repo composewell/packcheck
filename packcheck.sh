@@ -256,7 +256,7 @@ show_machine_info() {
       echo "${PROCESSOR_IDENTIFIER:-unknown}"
 
       show_step "Memory"
-      run_verbose free -h
+      cat /proc/meminfo
 
       show_step "Disk Usage"
       run_verbose df -h
