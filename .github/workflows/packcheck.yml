@@ -3,7 +3,7 @@
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
 
-name: packcheck
+name: tests
 
 #-----------------------------------------------------------------------------
 # Events on which the build should be triggered
@@ -14,7 +14,6 @@ on:
     branches:
       - master
   pull_request:
-
 
 #-----------------------------------------------------------------------------
 # Build matrix
@@ -66,6 +65,13 @@ jobs:
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: y
 
+      # Build paralellism can cause memory issues. We need to have sufficient
+      # per CPU memory, if not we can use a lower -j option; default is ncpus.
+      # Currently (2026-03-12) from packcheck output we see:
+      # Linux: 15GB, 4 cpus
+      # macOS: 7GB, 3 cpus
+      # Windows: 16GB, 4 cpus
+
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
       # ------------------------------------------------------------------------
@@ -84,6 +90,8 @@ jobs:
       # ------------------------------------------------------------------------
       PACKCHECK_COMMAND: ${{ matrix.command }} ${{ matrix.pack_options }}
 
+      # Subdir
+      SUBDIR: ${{ matrix.subdir }}
     # ubuntu seems to have better support than debian on CI systems
     runs-on: ${{ matrix.runner }}
     #continue-on-error: ${{ matrix.ignore_error }}
@@ -123,6 +131,7 @@ jobs:
             # May also use ghcup for installing ghc head version, use the
             # version "LatestNightly", and the following config:
             # ghcup config add-release-channel https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               GHCUP_GHC_OPTIONS="-u https://gitlab.haskell.org/ghc/ghc/-/jobs/artifacts/master/raw/ghc-x86_64-linux-deb10-int_native-validate.tar.xz?job=x86_64-linux-deb10-int_native-validate"
               CABAL_PROJECT=cabal.project.ghc-head
@@ -131,6 +140,7 @@ jobs:
             runner: ubuntu-latest
             command: cabal
             ghc_version: 9.14.1
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               CABAL_PROJECT=cabal.project
 
@@ -138,6 +148,7 @@ jobs:
             runner: macos-latest
             command: cabal
             ghc_version: 9.12.2
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               CABAL_PROJECT=cabal.project
 
@@ -145,13 +156,25 @@ jobs:
             runner: ubuntu-latest
             command: cabal
             ghc_version: 9.10.3
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               CABAL_PROJECT=cabal.project
+
+          - name: ghc-9.10.3
+            runner: ubuntu-latest
+            command: stack
+            # WARNING! cannot use # comments inside pack_options.
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
+              STACK_UPGRADE="y"
+              DISABLE_SDIST_BUILD="y"
+
 
           - name: ci
             runner: ubuntu-latest
             command: cabal
             ghc_version: 9.8.4
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               CABAL_PROJECT=cabal.project
 
@@ -159,11 +182,22 @@ jobs:
             runner: ubuntu-latest
             command: cabal
             ghc_version: 9.6.3
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               CABAL_PROJECT=cabal.project
+
+          - name: ci
+            runner: windows-latest
+            command: cabal
+            ghc_version: 9.10.3
+            # WARNING! cannot use # comments inside pack_options.
+            pack_options: >-
+              CABAL_PROJECT=cabal.project
+
           - name: ci
             runner: ubuntu-latest
             command: hlint
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               HLINT_VERSION=3.6.1
               HLINT_OPTIONS="lint"
@@ -173,54 +207,42 @@ jobs:
             runner: ubuntu-latest
             command: cabal
             ghc_version: 9.12.2
+            # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               ENABLE_DOCSPEC="y"
               DOCSPEC_URL=https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20210111/cabal-docspec-0.0.0.20210111.xz
               DOCSPEC_OPTIONS="--timeout 60"
               CABAL_PROJECT=cabal.project
 
-          - name: no-sdist
-            runner: ubuntu-latest
-            command: stack
-            pack_options: >-
-              CABAL_PROJECT=cabal.project
-              STACK_UPGRADE="y"
-              DISABLE_SDIST_BUILD="y"
-
-          - name: ci
-            runner: windows-latest
-            command: cabal
-            ghc_version: 9.10.3
-            pack_options: >-
-              CABAL_PROJECT=cabal.project
-
     steps:
     - uses: actions/checkout@v4
 
+    # See the "cabal path" output in the CI logs to tweak the cache locations
     - uses: actions/cache@v4
       name: Cache common directories (non-Windows)
       if: runner.os != 'Windows'
       with:
-        # On macos ghcup gets installed in ~/.ghcup
-        # On Linux it is /usr/local/.ghcup
+        # ghcup: ~/.ghcup (macOS), /usr/local/.ghcup (Linux)
+        # cabal: ~/.local/bin, ~/.local/state/cabal, ~/.local/cache/cabal
         path: |
-          ~/.local/bin
-          ~/.cabal
-          ~/.stack
-          ~/.ghcup
           /usr/local/.ghcup
+          ~/.cabal
+          ~/.ghcup
+          ~/.local
+          ~/.stack
         # Bump the key version to clear the cache
-        key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
+        # Key is same as the CI name
+        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
 
     - uses: actions/cache@v4
       name: Cache common directories (Windows)
       if: runner.os == 'Windows'
       with:
         path: |
-          ${{ env.APPDATA }}/local/bin
+          ${{ env.APPDATA }}/local
           C:/ghcup
           C:/cabal
-        key: ${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.runner }}
+        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
 
     - name: Download packcheck
       # on windows-latest GitHub Actions defaults to PowerShell
@@ -244,13 +266,22 @@ jobs:
       # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
       run: |
+        if test -n "$SUBDIR"
+        then
+          mv "$PACKCHECK" "$SUBDIR/packcheck.sh"
+          # This is required otherwise dist-newstyle will be created in
+          # the top level directory as it is considered the working dir.
+          rm cabal.project
+          cd "$SUBDIR"
+        fi
         PATH_VAR=/sbin:/usr/sbin:/bin:/usr/bin
         case "$(uname)" in
           CYGWIN*|MINGW*|MSYS*)
-          PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
+            PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
         # Use "bash -c" instead of invoking directly to preserve quoted
         # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
         # Direct invocation would word-split on spaces inside quoted values.
+        echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
         bash -c "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
