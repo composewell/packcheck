@@ -1747,18 +1747,27 @@ install_deps() {
 
 build_and_test() {
   case "$BUILD" in
-    stack) run_verbose_errexit $SDIST_STACKCMD build $STACK_BUILD_OPTIONS ;;
+    stack)
+      show_step "Build and test"
+      run_verbose_errexit $SDIST_STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-v2)
+      show_step "Build"
       run_verbose_errexit $SDIST_CABALCMD v2-build \
         --with-compiler "$COMPILER_EXE_PATH" \
         $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
       echo
-      test -n "$DISABLE_DOCS" || \
+
+      if test -z "$DISABLE_DOCS"
+      then
+        show_step "Build haddock docs"
         run_verbose_errexit $SDIST_CABALCMD v2-haddock \
           --with-compiler "$COMPILER_EXE_PATH" \
           $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      fi
+
       if test -z "$DISABLE_TEST"
       then
+        show_step "Run tests"
         local version
         local SHOW_DETAILS
         version=$($CABAL_BINARY_NAME --numeric-version|cut -f1,2 -d'.'|sed s/\\.//g)
@@ -2048,7 +2057,6 @@ build_compile () {
   show_step "Install package dependencies"
   install_deps
 
-  show_step "Build and test"
   build_and_test
 
   if test -n "$COVERALLS_OPTIONS"
