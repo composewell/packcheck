@@ -225,7 +225,6 @@ jobs:
         # ghcup: ~/.ghcup (macOS), /usr/local/.ghcup (Linux)
         # cabal: ~/.local/bin, ~/.local/state/cabal, ~/.local/cache/cabal
         path: |
-          /usr/local/.ghcup
           ~/.cabal
           ~/.ghcup
           ~/.local
@@ -274,10 +273,18 @@ jobs:
           rm cabal.project
           cd "$SUBDIR"
         fi
-        PATH_VAR=/sbin:/usr/sbin:/bin:/usr/bin
         case "$(uname)" in
+          Linux)
+            PATH_VAR=/bin
+            # On Linux it defaults to /usr/local, during cache restore
+            # tar is unable to change permissions and restore fails.
+            export GHCUP_INSTALL_BASE_PREFIX=$HOME
+            ;;
+          Darwin)
+            PATH_VAR=/bin:/usr/bin
+            ;;
           CYGWIN*|MINGW*|MSYS*)
-            PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
+            PATH_VAR="/bin:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
         # Use "bash -c" instead of invoking directly to preserve quoted
