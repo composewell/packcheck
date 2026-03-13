@@ -56,11 +56,16 @@ task:
     # If you have not committed packcheck.sh in your repo at PACKCHECK
     # then it is automatically pulled from this URL.
     PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-    PACKCHECK_GITHUB_COMMIT: "fac7ab9aad48d5b80a1d65efb34ff353a848e927"
+    PACKCHECK_GITHUB_COMMIT: "dd6862df527f317fd4987afa523fba3f4fde7e19"
 
   cabal_cache:
     folder: ~/.cabal
-    fingerprint_script: cat *.cabal cabal.project 2>/dev/null || cat *.cabal
+    fingerprint_script: echo $GHCVER
+
+  # Cabal store is in .local/state/cabal
+  local_cache:
+    folder: ~/.local
+    fingerprint_script: echo $GHCVER
 
   ghcup_cache:
     folder: ~/.ghcup
@@ -90,9 +95,8 @@ task:
       fi
 
   packcheck_run_script: |
-      PTH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      PTH=/usr/local/bin:/usr/bin:/bin
       # Use "bash -c" instead of invoking directly to preserve quoted
       # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
       # Direct invocation would word-split on spaces inside quoted values.
       bash -c "$PACKCHECK $PACKCHECK_COMMAND PATH=$PTH"
-

@@ -71,6 +71,7 @@ jobs:
       # Linux: 15GB, 4 cpus
       # macOS: 7GB, 3 cpus
       # Windows: 16GB, 4 cpus
+      # CABAL_BUILD_OPTIONS="-j1"
 
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
@@ -83,7 +84,7 @@ jobs:
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
-      PACKCHECK_GITHUB_COMMIT: "4e1603ebb7692ffd538b54135a5fd002fc5644eb"
+      PACKCHECK_GITHUB_COMMIT: "dd6862df527f317fd4987afa523fba3f4fde7e19"
 
       # ------------------------------------------------------------------------
       # Final build variables
@@ -219,14 +220,21 @@ jobs:
 
     # See the "cabal path" output in the CI logs to tweak the cache locations
     - uses: actions/cache@v4
-      name: Cache common directories (non-Windows)
+      name: Cache ghcup (non-Windows)
       if: runner.os != 'Windows'
       with:
         # ghcup: ~/.ghcup (macOS), /usr/local/.ghcup (Linux)
+        path: |
+          ~/.ghcup
+        key: ${{ matrix.runner }}-ghcup-${{ env.GHCUP_VERSION }}-${{ matrix.ghc_version }}-v1
+
+    - uses: actions/cache@v4
+      name: Cache common directories (non-Windows)
+      if: runner.os != 'Windows'
+      with:
         # cabal: ~/.local/bin, ~/.local/state/cabal, ~/.local/cache/cabal
         path: |
           ~/.cabal
-          ~/.ghcup
           ~/.local
           ~/.stack
         # Bump the key version to clear the cache
