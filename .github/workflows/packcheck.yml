@@ -221,6 +221,10 @@ jobs:
               DOCSPEC_OPTIONS="--timeout 60"
               CABAL_PROJECT=cabal.project
 
+#-----------------------------------------------------------------------------
+# Usually you do need to change anything below, this is generic code for
+# caching and running packcheck on Linux/Mac/Windows.
+#-----------------------------------------------------------------------------
     steps:
     - uses: actions/checkout@v4
 
@@ -307,7 +311,7 @@ jobs:
           mv "$PACKCHECK" "$SUBDIR/packcheck.sh"
           # This is required otherwise dist-newstyle will be created in
           # the top level directory as it is considered the working dir.
-          rm cabal.project
+          rm -f cabal.project
           cd "$SUBDIR"
         fi
         # Commands like mount, sysctl for info require sbin
