@@ -1474,23 +1474,25 @@ ensure_cabal_config() {
   # When cabal versions change across builds on a CI host its safer to remove
   # the old config so that the build does not error out.
   local cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+  local new_cfg="${OS_APP_HOME}/.config/cabal/config"
   if test "$CABAL_REINIT_CONFIG" = y
   then
     echo "Removing old cabal config [$cfg]"
     run_verbose_errexit rm -f "$cfg"
+    run_verbose_errexit rm -f "$new_cfg"
   fi
 
   # this generates it in ~/.config which creates issues for cabal-docspec and
   # some other issues.
-  if test ! -e $cfg
+  if test ! -e $new_cfg
   then
     run_verbose $CABAL_BINARY_NAME user-config init || true
     if test ! -f $cfg
     then
-      if test -f ${OS_APP_HOME}/.config/cabal/config
+      if test -f $new_cfg
       then
         mkdir -p $(dirname $cfg)
-        run_verbose_errexit ln -s ${OS_APP_HOME}/.config/cabal/config $cfg
+        run_verbose_errexit ln -s $new_cfg $cfg
       fi
     fi
   fi
