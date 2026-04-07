@@ -234,8 +234,9 @@ jobs:
       run: |
         rm -f ~/.ghcup
 
-    - name: Cache hackage package index (non-Windows)
-      uses: actions/cache@v4
+    - name: Restore hackage package index (non-Windows)
+      id: restore-hackage
+      uses: actions/cache/restore@v4
       if: runner.os != 'Windows'
       with:
         path: |
@@ -246,8 +247,9 @@ jobs:
     # See the "cabal path" output in the CI logs to tweak the cache locations
     # ghc is big but cheap to install, if cache size is a concern we can avoid
     # caching it.
-    - name: Cache ghcup and ghc (non-Windows)
-      uses: actions/cache@v4
+    - name: Restore ghcup and ghc (non-Windows)
+      id: restore-ghcup
+      uses: actions/cache/restore@v4
       if: runner.os != 'Windows'
       with:
         path: |
@@ -260,8 +262,9 @@ jobs:
     # and then copied to pack_options from there, needs some work. It
     # should be fine as resolver minor version change can only increase
     # the cache size.
-    - name: Cache build dependencies (non-Windows)
-      uses: actions/cache@v4
+    - name: Restore build dependencies (non-Windows)
+      id: restore-deps-nonwin
+      uses: actions/cache/restore@v4
       if: runner.os != 'Windows'
       with:
         # cabal: ~/.local/bin, ~/.local/state/cabal
@@ -274,8 +277,9 @@ jobs:
         # Bump the key version to clear the cache
         key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
 
-    - name: Cache common directories (Windows)
-      uses: actions/cache@v4
+    - name: Restore common directories (Windows)
+      id: restore-deps-win
+      uses: actions/cache/restore@v4
       if: runner.os == 'Windows'
       with:
         path: |
@@ -303,6 +307,7 @@ jobs:
         fi
 
     - name: Run packcheck (dependencies only)
+      id: deps-only
       # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
       run: |
@@ -330,7 +335,41 @@ jobs:
         # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
         # Direct invocation would word-split on spaces inside quoted values.
         echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND ENABLE_DEPS_ONLY=y PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND SKIP_POST_DEP=y PATH=\"$PATH_VAR\""
+
+    - name: Save hackage package index (non-Windows)
+      uses: actions/cache/save@v4
+      if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-hackage.outputs.cache-hit != 'true'
+      with:
+        path: ~/.cache/cabal/packages
+        key: cache-cabal-packages
+
+    - name: Save ghcup and ghc (non-Windows)
+      uses: actions/cache/save@v4
+      if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-ghcup.outputs.cache-hit != 'true'
+      with:
+        path: ~/.ghcup
+        key: ${{ matrix.runner }}-${{ matrix.ghc_version }}.${{ matrix.ghc_salt}}
+
+    - name: Save build dependencies (non-Windows)
+      uses: actions/cache/save@v4
+      if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-deps-nonwin.outputs.cache-hit != 'true'
+      with:
+        path: |
+          ~/.local/bin
+          ~/.local/state/cabal
+          ~/.stack
+        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
+
+    - name: Save common directories (Windows)
+      uses: actions/cache/save@v4
+      if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-deps-win.outputs.cache-hit != 'true'
+      with:
+        path: |
+          ${{ env.APPDATA }}/local
+          C:/ghcup
+          C:/cabal
+        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
 
     - name: Run packcheck
       # on windows-latest GitHub Actions defaults to PowerShell
@@ -353,7 +392,7 @@ jobs:
             ;;
         esac
         echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND ENABLE_DEPS_ONLY=y PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND SKIP_PRE_DEP=y PATH=\"$PATH_VAR\""
 
     - name: Check cache locations
       if: runner.os != 'Windows'
