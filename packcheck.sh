@@ -286,6 +286,8 @@ SAFE_ENVVARS="\
   DISABLE_SDIST_GIT_CHECK \
   DISABLE_BENCH \
   DISABLE_TEST \
+  SKIP_POST_DEP \
+  SKIP_PRE_DEP \
   DISABLE_DOCS \
   ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
@@ -462,6 +464,8 @@ show_help() {
   show_step1 "Specifying what to build"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
+  help_envvar SKIP_PRE_DEP "[y] Skip all the steps before deps, resume main build"
+  help_envvar SKIP_POST_DEP "[y] Install dependencies only, skip building the package itself"
   help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar ENABLE_DOCSPEC "[y] Run cabal-docspec after the cabal build"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
@@ -532,6 +536,8 @@ check_all_boolean_vars () {
   fi
   check_boolean_var DISABLE_BENCH
   check_boolean_var DISABLE_TEST
+  check_boolean_var SKIP_POST_DEP
+  check_boolean_var SKIP_PRE_DEP
   check_boolean_var DISABLE_DOCS
   check_boolean_var ENABLE_DOCSPEC
   check_boolean_var COVERAGE
@@ -2001,6 +2007,39 @@ determine_package_full_name() {
   echo "Package name and version: [$PACKAGE_FULL_NAME]"
 }
 
+build_pre_dep() {
+  if test -z "$DISABLE_SDIST_BUILD"
+  then
+    # Note this function leaves us in the package dir unpacked from sdist
+    show_step "Prepare to build from source distribution"
+    create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
+  fi
+
+  show_step "Install package dependencies"
+  install_deps
+}
+
+build_post_dep() {
+  if test -z "$DISABLE_SDIST_BUILD" -a -n "$SKIP_PRE_DEP"
+  then
+    cd  .packcheck/$PACKAGE_FULL_NAME
+  fi
+
+  build_and_test
+
+  if test -n "$COVERALLS_OPTIONS"
+  then
+      show_step "Send coverage info to coveralls.io"
+      coveralls_io
+  fi
+
+  if test -z "$DISABLE_DIST_CHECKS"
+  then
+    show_step "Package distribution checks"
+    dist_checks || die "Use DISABLE_DIST_CHECKS=y to disable this check"
+  fi
+}
+
 # stack or cabal build (i.e. not hlint)
 build_compile () {
   # ---------Install any tools needed--------
@@ -2051,26 +2090,22 @@ build_compile () {
       echo "option if you do not have 'autoreconf' available"
       require_cmd autoreconf
     fi
-    # Note this function leaves us in the package dir unpacked from sdist
-    show_step "Prepare to build from source distribution"
-    create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
   fi
 
-  show_step "Install package dependencies"
-  install_deps
-
-  build_and_test
-
-  if test -n "$COVERALLS_OPTIONS"
+  if test -n "$SKIP_PRE_DEP"
   then
-      show_step "Send coverage info to coveralls.io"
-      coveralls_io
+    show_step "Dependency install"
+    echo "Skipping dependency install steps (SKIP_PRE_DEP=y)"
+  else
+    build_pre_dep
   fi
 
-  if test -z "$DISABLE_DIST_CHECKS"
+  if test -n "$SKIP_POST_DEP"
   then
-    show_step "Package distribution checks"
-    dist_checks || die "Use DISABLE_DIST_CHECKS=y to disable this check"
+    show_step "Post dependency"
+    echo "Skipping post dependency steps (SKIP_POST_DEP=y)"
+  else
+    build_post_dep
   fi
 }
 
