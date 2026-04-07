@@ -242,8 +242,7 @@ jobs:
       with:
         path: |
             ~/.cache/cabal/packages
-        # Bump the key version to clear the cache
-        key: cache-cabal-packages
+        key: cabal-hackage-index-non-windows
 
     # See the "cabal path" output in the CI logs to tweak the cache locations
     # ghc is big but cheap to install, if cache size is a concern we can avoid
@@ -255,7 +254,7 @@ jobs:
       with:
         path: |
           ~/.ghcup
-        key: ${{ matrix.runner }}-${{ matrix.ghc_version }}.${{ matrix.ghc_salt}}
+        key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
     # XXX If we want to invalidate the cache on resolver change we
     # should use a separate cache for stack as it should be keyed on
@@ -275,13 +274,12 @@ jobs:
           ~/.local/bin
           ~/.local/state/cabal
           ~/.stack
-        # Bump the key version to clear the cache
-        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
 
     # Removed this as it could be huge, build was getting stuck. We need to
     # cache only specific directories where we have installed apps.
     # ${{ env.APPDATA }}/local
-    - name: Restore common directories (Windows)
+    - name: Restore ghc, deps, local/bin (Windows)
       id: restore-deps-win
       uses: actions/cache/restore@v4
       if: runner.os == 'Windows'
@@ -290,7 +288,7 @@ jobs:
           ${{ env.APPDATA }}/local
           C:/ghcup
           C:/cabal
-        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
 
     - name: Download packcheck
       # on windows-latest GitHub Actions defaults to PowerShell
@@ -346,14 +344,14 @@ jobs:
       if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-hackage.outputs.cache-hit != 'true'
       with:
         path: ~/.cache/cabal/packages
-        key: cache-cabal-packages
+        key: cabal-hackage-index-non-windows
 
     - name: Save ghcup and ghc (non-Windows)
       uses: actions/cache/save@v4
       if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-ghcup.outputs.cache-hit != 'true'
       with:
         path: ~/.ghcup
-        key: ${{ matrix.runner }}-${{ matrix.ghc_version }}.${{ matrix.ghc_salt}}
+        key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
     - name: Save build dependencies (non-Windows)
       uses: actions/cache/save@v4
@@ -363,9 +361,10 @@ jobs:
           ~/.local/bin
           ~/.local/state/cabal
           ~/.stack
-        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
 
-    - name: Save common directories (Windows)
+    # hackage package index is part of C:/cabal
+    - name: Save ghc, deps, hackage index, local/bin (Windows)
       uses: actions/cache/save@v4
       if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-deps-win.outputs.cache-hit != 'true'
       with:
@@ -373,7 +372,7 @@ jobs:
           ${{ env.APPDATA }}/local
           C:/ghcup
           C:/cabal
-        key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
 
     - name: Run packcheck
       # on windows-latest GitHub Actions defaults to PowerShell
