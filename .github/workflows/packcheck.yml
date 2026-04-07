@@ -225,6 +225,7 @@ jobs:
 # Usually you do need to change anything below, this is generic code for
 # caching and running packcheck on Linux/Mac/Windows.
 #-----------------------------------------------------------------------------
+
     steps:
     - uses: actions/checkout@v4
 
@@ -277,6 +278,9 @@ jobs:
         # Bump the key version to clear the cache
         key: ${{ matrix.runner }}-${{ matrix.command }}-${{ matrix.ghc_version }}-${{ matrix.name }}-v1
 
+    # Removed this as it could be huge, build was getting stuck. We need to
+    # cache only specific directories where we have installed apps.
+    # ${{ env.APPDATA }}/local
     - name: Restore common directories (Windows)
       id: restore-deps-win
       uses: actions/cache/restore@v4
