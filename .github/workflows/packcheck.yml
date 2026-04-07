@@ -302,7 +302,7 @@ jobs:
             chmod +x $PACKCHECK
         fi
 
-    - name: Run packcheck
+    - name: Run packcheck (dependencies only)
       # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
       run: |
@@ -330,7 +330,30 @@ jobs:
         # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
         # Direct invocation would word-split on spaces inside quoted values.
         echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND ENABLE_DEPS_ONLY=y PATH=\"$PATH_VAR\""
+
+    - name: Run packcheck
+      # on windows-latest GitHub Actions defaults to PowerShell
+      shell: bash
+      run: |
+        if test -n "$SUBDIR"
+        then
+          cd "$SUBDIR"
+        fi
+        # Commands like mount, sysctl for info require sbin
+        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
+        case "$(uname)" in
+          Linux)
+            # On Linux it defaults to /usr/local, during cache restore
+            # tar is unable to change permissions and restore fails.
+            export GHCUP_INSTALL_BASE_PREFIX=$HOME
+            ;;
+          CYGWIN*|MINGW*|MSYS*)
+            PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
+            ;;
+        esac
+        echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND ENABLE_DEPS_ONLY=y PATH=\"$PATH_VAR\""
 
     - name: Check cache locations
       if: runner.os != 'Windows'
