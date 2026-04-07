@@ -47,22 +47,15 @@ stability:           Experimental
 build-type:          Simple
 cabal-version:       >= 1.10
 
-extra-source-files:
+extra-doc-files:
     Changelog.md
+    MAINTAINING.md
     README.md
-    stack.yaml
-    .ci/stack-8.0.yaml
-    .circleci/config.yml
-    .github/workflows/packcheck.yml
-    .cirrus.yml
-    appveyor.yml
-    cabal.project.coveralls
-    cabal.project
-    cabal.project.ghc-head
+
+extra-source-files:
     packcheck.sh
     packcheck-safe.sh
     packcheck-remote.sh
-    MAINTAINING.md
 
 source-repository head
     type: git
