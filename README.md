@@ -24,6 +24,20 @@ To use packcheck for CI testing of your repo:
 to your package repo
 -->
 
+#### Github Actions (Linux/macOS/Windows)
+* Add your package repo to Github as necessary (See
+  https://docs.github.com/en/actions/quickstart)
+* Copy
+  [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml)
+  to your package repo
+
+#### Cirrus (FreeBSD)
+* Add your package repo to Cirrus as necessary (See
+  https://cirrus-ci.org/)
+* Copy
+  [.cirrus.yml](https://github.com/composewell/packcheck/blob/master/.cirrus.yml)
+  to your package repo
+
 #### CircleCI
 * Add your package repo to CircleCI as necessary (See
   https://circleci.com/docs/2.0/getting-started/)
@@ -36,20 +50,6 @@ to your package repo
   https://www.appveyor.com/docs/server/)
 * Copy
   [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml)
-  to your package repo
-
-#### Github Actions
-* Add your package repo to Github as necessary (See
-  https://docs.github.com/en/actions/quickstart)
-* Copy
-  [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml)
-  to your package repo
-
-#### Cirrus (FreeBSD)
-* Add your package repo to Cirrus as necessary (See
-  https://cirrus-ci.org/)
-* Copy
-  [.cirrus.yml](https://github.com/composewell/packcheck/blob/master/.cirrus.yml)
   to your package repo
 
 CI should work out of the box for most packages. Uncomment the relevant lines
@@ -160,13 +160,39 @@ roughly as follows:
 * run `hlint`
 * generate coverage report
 
+## Split caching
+
+The CIs are designed such that:
+
+* If it fails after ghc install, ghc will be cached
+* If it fails after dependency build, dependencies will be cached
+
+Thus even after failure your next runs will be fast and efficient. For
+this purpose the packcheck script is designed such that it can be
+stopped after the dependency install (using `SKIP_POST_DEP`) step, and
+then after saving the caches it can be resumed from that point again (using
+`SKIP_PRE_DEP`).
+
+## Why the sample CI configs look too big?
+
+The minimal CI config with packcheck can be very small, just a few
+lines. However, the CI configs provided in the samples:
+
+* cater to a large number of use cases
+* pre-populated matrix entries for multiple ghc versions
+* extensive documentation and all options specified
+* support for all platforms (Linux/macOS/Windows)
+* handles caching efficiently, uses split caches
+* shows extensive runtime debug information
+* Handles all possible error cases
+
 ## Usage Examples
 
 You can run these commands on your local machine as well as inside a CI script.
 You can try these commands in the `packcheck` package itself:
 ```
 $ cd packcheck
-$ ./packcheck.sh cabal GHCUP_VERSION=0.1.20.0 GHCVER=9.8.1
+$ ./packcheck.sh cabal GHCUP_VERSION=0.1.50.0 GHCVER=9.14.1
 ```
 
 ```
@@ -219,40 +245,6 @@ myriad GHC version directories explicitly in your `PATH`.
 
 If all of the above fails `packcheck` looks for ghc in the `stack` install
 locations.
-
-## packcheck-safe
-
-`packcheck-safe.sh` is a more robust wrapper over `packcheck.sh`, it does not
-trust or use any environment variables, all environment needs to be specified
-explicitly on the command line. Therefore, it ensures better reproducibility.
-
-It also catches any misspelled command line parameter names. For example,
-`packcheck.sh` won't catch it if you typed `GHCVWR=9.8` instead of
-`GHCVER=9.8`, it just assumes that `GHCVER` is not specified.
-`packcheck-safe.sh` would generate an error saying that `GHCVWR` is not
-recognized. Since it uses a clean environment you will have to specify PATH as
-well on the command line. For example,
-
-```
-$ ./packcheck-safe.sh cabal PATH=/bin:/usr/bin:/opt/ghc/bin
-```
-
-## packcheck-remote
-
-`packcheck-remote.sh` is a wrapper over `packcheck.sh`. It allows you to run
-packcheck on a remote repository by cloning it locally and optionally merging a
-branch into another branch (e.g. merging a PR branch into master).
-
-```
-$ ./packcheck-remote.sh --force \
-    --remote=https://github.com/user/repo \
-    --checkout=origin/master \
-    --merge=origin/branch \
-    --directory=./repo.packcheck \
-    -- cabal GHCVER=9.8.1
-```
-
-Use `./packcheck-remote.sh --help` for more information.
 
 ## Full Reference
 
@@ -427,3 +419,37 @@ $ env -i CHECK_ENV=y ./packcheck.sh stack
 
 For performance diagnostics `packcheck` prints the time elapsed from the
 beginning at each build step performed.
+
+## packcheck-safe
+
+`packcheck-safe.sh` is a more robust wrapper over `packcheck.sh`, it does not
+trust or use any environment variables, all environment needs to be specified
+explicitly on the command line. Therefore, it ensures better reproducibility.
+
+It also catches any misspelled command line parameter names. For example,
+`packcheck.sh` won't catch it if you typed `GHCVWR=9.8` instead of
+`GHCVER=9.8`, it just assumes that `GHCVER` is not specified.
+`packcheck-safe.sh` would generate an error saying that `GHCVWR` is not
+recognized. Since it uses a clean environment you will have to specify PATH as
+well on the command line. For example,
+
+```
+$ ./packcheck-safe.sh cabal PATH=/bin:/usr/bin:/opt/ghc/bin
+```
+
+## packcheck-remote
+
+`packcheck-remote.sh` is a wrapper over `packcheck.sh`. It allows you to run
+packcheck on a remote repository by cloning it locally and optionally merging a
+branch into another branch (e.g. merging a PR branch into master).
+
+```
+$ ./packcheck-remote.sh --force \
+    --remote=https://github.com/user/repo \
+    --checkout=origin/master \
+    --merge=origin/branch \
+    --directory=./repo.packcheck \
+    -- cabal GHCVER=9.8.1
+```
+
+Use `./packcheck-remote.sh --help` for more information.
