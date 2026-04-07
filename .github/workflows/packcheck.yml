@@ -106,23 +106,26 @@ jobs:
       fail-fast: false
       matrix:
 
-        # The order of jobs is important to optimize fail-fast.
+        # The order of jobs is important to optimize fail-fast, if
+        # fail-fast is set to true.
 
         # This section is to order the important jobs first especially for
         # "fail-fast" so that these are the ones started first.
         #name:
         #  - ci
 
-        # The name of the CI is built using the name and other info from CI,
-        # therefore, the "name" field can be same for all tests here.
-        #
-        # The reason we have an explicit "name" field here is to force
-        # an additional config instead of adding to an existing config
-        # while adding additional configs.
+        # IMPORTANT NOTE:
+        # If runner, command, ghc version are identical then the name of
+        # CI is used to distinguish the cache key.
+
+        # The reason we have an explicit "name" field in the following
+        # entries is to force an additional config instead of adding to
+        # an existing config while adding additional configs.
         # Look at <https://docs.github.com/en/free-pro-team@latest/actions/reference/workflow-syntax-for-github-actions#jobsjob_idstrategymatrix>
         # for more info about adding matrix elements.
         # Adding any element to the list will increase the number of matrix
         # elements proportional to the cross product.
+
         include:
 
           #- name: ci
@@ -235,6 +238,7 @@ jobs:
       run: |
         rm -f ~/.ghcup
 
+    # Shared by all tests, all platforms
     - name: Restore hackage package index (non-Windows)
       id: restore-hackage
       uses: actions/cache/restore@v4
@@ -247,6 +251,7 @@ jobs:
     # See the "cabal path" output in the CI logs to tweak the cache locations
     # ghc is big but cheap to install, if cache size is a concern we can avoid
     # caching it.
+    # GHC is not test/options specific
     - name: Restore ghcup and ghc (non-Windows)
       id: restore-ghcup
       uses: actions/cache/restore@v4
@@ -256,12 +261,23 @@ jobs:
           ~/.ghcup
         key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
+    # GHC is not test/options specific
+    - name: Restore ghcup and ghc (Windows)
+      id: restore-ghcup-win
+      uses: actions/cache/restore@v4
+      if: runner.os == 'Windows'
+      with:
+        path: |
+          C:/ghcup
+        key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
+
     # XXX If we want to invalidate the cache on resolver change we
     # should use a separate cache for stack as it should be keyed on
     # resolver as well. But that requires resolver as a matrix element
     # and then copied to pack_options from there, needs some work. It
     # should be fine as resolver minor version change can only increase
     # the cache size.
+    # Deps are test/options specific
     - name: Restore build dependencies (non-Windows)
       id: restore-deps-nonwin
       uses: actions/cache/restore@v4
@@ -274,21 +290,17 @@ jobs:
           ~/.local/bin
           ~/.local/state/cabal
           ~/.stack
-        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}-${{ matrix.name }}
 
-    # Removed this as it could be huge, build was getting stuck. We need to
-    # cache only specific directories where we have installed apps.
-    # ${{ env.APPDATA }}/local
-    - name: Restore ghc, deps, local/bin (Windows)
+    # Deps are test/options specific
+    - name: Restore build dependencies, hackage index, local/bin (Windows)
       id: restore-deps-win
       uses: actions/cache/restore@v4
       if: runner.os == 'Windows'
       with:
         path: |
-          ${{ env.APPDATA }}/local
-          C:/ghcup
           C:/cabal
-        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}-${{ matrix.name }}
 
     - name: Download packcheck
       # on windows-latest GitHub Actions defaults to PowerShell
@@ -353,6 +365,15 @@ jobs:
         path: ~/.ghcup
         key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
+    - name: Save ghcup and ghc (Windows)
+      uses: actions/cache/save@v4
+      if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-ghcup-win.outputs.cache-hit != 'true'
+      with:
+        path: |
+          C:/ghcup
+        key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
+
+    # Deps are test/options specific, hence, matrix.name in the key
     - name: Save build dependencies (non-Windows)
       uses: actions/cache/save@v4
       if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-deps-nonwin.outputs.cache-hit != 'true'
@@ -361,20 +382,20 @@ jobs:
           ~/.local/bin
           ~/.local/state/cabal
           ~/.stack
-        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}-${{ matrix.name }}
 
     # hackage package index is part of C:/cabal
-    - name: Save ghc, deps, hackage index, local/bin (Windows)
+    # Deps are test/options specific, hence, matrix.name in the key
+    - name: Save build dependencies (Windows)
       uses: actions/cache/save@v4
       if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-deps-win.outputs.cache-hit != 'true'
       with:
         path: |
           ${{ env.APPDATA }}/local
-          C:/ghcup
           C:/cabal
-        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.name }}
+        key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}-${{ matrix.name }}
 
-    - name: Run packcheck
+    - name: Run packcheck (final build)
       # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
       run: |
