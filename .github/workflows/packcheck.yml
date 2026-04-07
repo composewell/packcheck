@@ -395,17 +395,26 @@ jobs:
         bash -c "$PACKCHECK $PACKCHECK_COMMAND SKIP_PRE_DEP=y PATH=\"$PATH_VAR\""
 
     - name: Check cache locations
-      if: runner.os != 'Windows'
+      shell: bash
       run: |
-        # We want to see if it is a symlink; e.g. on github ~/.ghcup is a
-        # pre-existing symlink to /usr/local.
-        list="$HOME/.local/bin $HOME/.local/state/cabal $HOME/.ghcup $HOME/.stack"
+        # We want to see if any cache paths are symlinks; e.g. on github
+        # ~/.ghcup is a pre-existing symlink to /usr/local.
+        if [ "$RUNNER_OS" == "Windows" ]; then
+          # Convert Windows paths to Unix-style for Bash
+          APPDATA_UNIX=$(cygpath "$APPDATA")
+          list="$APPDATA_UNIX/local C:/ghcup C:/cabal"
+        else
+          list="$HOME/.local/bin $HOME/.local/state/cabal $HOME/.ghcup $HOME/.stack"
+        fi
+
         for dir in $list; do
           # macOS does not have --no-dereference option
           if [ -L "$dir" ]; then
             echo "$dir is a symlink -> $(readlink $dir)"
+          elif [ -d "$dir" ]; then
+            du -sh "$dir" 2>/dev/null || echo "$dir permission denied"
           else
-            du -sh "$dir" 2>/dev/null || echo "$dir missing"
+            echo "$dir missing or not a dir"
           fi
         done
         echo
