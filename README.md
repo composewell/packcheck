@@ -1,263 +1,209 @@
-# packcheck
+# Packcheck
 
 [![Hackage](https://img.shields.io/hackage/v/packcheck.svg?style=flat)](https://hackage.haskell.org/package/packcheck)
 [![Gitter chat](https://badges.gitter.im/composewell/gitter.svg)](https://gitter.im/composewell/streamly)
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)
 
+**Packcheck** is a universal Haskell build and CI script designed for
+uniform, consistent testing across all platforms (Linux, macOS, Windows,
+FreeBSD). It is the simplest way to build and test your packages
+comprehensively, ensuring your local environment and CI pipeline run
+identical checks with minimal configuration.
+
 ## Quick Start
 
-<!--
-Please use `cabal` version 2.4 or later.
--->
+### Minimal GitHub Actions Setup
 
-### Build on CI
+The following `github.yml` uses the default GHC available on the runner
+(typically the latest stable version).
 
-To use packcheck for CI testing of your repo:
-
-<!--
-#### Travis
-* Add your package repo to Travis as necessary (See
-  https://docs.travis-ci.com/user/tutorial/)
-* Copy
-[.travis.yml](https://github.com/composewell/packcheck/blob/master/.travis.yml),
-to your package repo
--->
-
-#### Github Actions (Linux/macOS/Windows)
-* Add your package repo to Github as necessary (See
-  https://docs.github.com/en/actions/quickstart)
-* Copy
-  [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml)
-  to your package repo
-
-#### Cirrus (FreeBSD)
-* Add your package repo to Cirrus as necessary (See
-  https://cirrus-ci.org/)
-* Copy
-  [.cirrus.yml](https://github.com/composewell/packcheck/blob/master/.cirrus.yml)
-  to your package repo
-
-#### CircleCI
-* Add your package repo to CircleCI as necessary (See
-  https://circleci.com/docs/2.0/getting-started/)
-* Copy
-  [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml)
-  to your package repo
-
-#### Appveyor (Windows)
-* Add your package repo to Appveyor as necessary (See
-  https://www.appveyor.com/docs/server/)
-* Copy
-  [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml)
-  to your package repo
-
-CI should work out of the box for most packages. Uncomment the relevant lines
-in the CI config files or change the values of the environment variables for
-fine grained control or custom configuration.
-
-### Build on Local Machine
-
-You can use packcheck to build or CI test a package on your local machine as
-well.  For local use, copy
-[packcheck.sh](https://github.com/composewell/packcheck/blob/master/packcheck.sh)
-to your local machine (Linux/OSX/Windows), put it in your PATH, and run it
-from your package directory. You can pass the same environment variables that
-are used in CI files to run the exact same tests locally. Usage is as simple
-as:
-```
-$ packcheck.sh cabal
-$ packcheck.sh cabal GHCUP_VERSION=0.1.20.0 GHCVER=9.8.1
-$ packcheck.sh stack GHCVER=9.4
+```yaml
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sLO https://raw.githubusercontent.com/composewell/packcheck/master/packcheck.sh
+          bash packcheck.sh cabal
 ```
 
-`packcheck` can automatically pick the requested version of GHC from:
+> **Tip:** Replace `master` with a specific commit hash for production
+> environments to ensure build reproducibility.
 
-* multiple GHC path components in your PATH environment variable
-* stack installed ghc binaries
+### Testing Across a GHC Matrix
 
-### Out of the box support
+To verify your package against multiple GHC versions, use a strategy matrix:
 
-| cabal         | stack     |
-|---------------|-----------|
+```yaml
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ghc: ["9.12.4", "9.14.1"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sLO https://raw.githubusercontent.com/composewell/packcheck/master/packcheck.sh
+          bash packcheck.sh cabal GHCVER=${{ matrix.ghc }}
+```
 
-| Linux         | OSX       | Windows       | FreeBSD |
-|---------------|-----------|---------------|---------|
+### Consistent Local Testing
 
-| Github        | Appveyor  | CircleCI      | Local Machine |
-|---------------|-----------|---------------|---------------|
+One of Packcheck's core strengths is parity. You can run the exact same
+CI tests locally by executing the script directly:
 
-The script can be easily adapted to any CI with a single line build command.
+```bash
+./packcheck.sh cabal GHCVER=9.14.1
+```
+
+### Streamlined CI
+
+If you prefer to commit `packcheck.sh` directly to your repository root,
+your GitHub workflow becomes even leaner:
+
+```yaml
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./packcheck.sh cabal
+```
+
+---
+
+## Environment & CI Support
+
+Packcheck provides one-line, out-of-the-box configurations for all major
+platforms. These templates include optimized, multi-stage caching to
+ensure your CI runs are fast and efficient.  The templates are designed
+to work immediately for most packages. For fine-grained control, simply
+uncomment the labeled lines in the config files to toggle benchmarks,
+Haddock generation, or coverage reports.
+
+
+| CI System | Platforms | Configuration Template |
+| :--- | :--- | :--- |
+| **GitHub Actions** | Linux, macOS, Windows | [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml) |
+| **CircleCI** | Linux | [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml) |
+| **Appveyor** | Windows | [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml) |
+| **Cirrus CI** | FreeBSD | [.cirrus.yml](https://github.com/composewell/packcheck/blob/master/.cirrus.yml) |
+
+**Build Tools:** Cabal, Stack  
+**GHC Provisioning:** System PATH, `ghcup`, Stack-managed GHC
+
+### Implementation
+1. **Copy** the relevant configuration file to your repository.
+2. **Enable** the project in your CI provider's dashboard.
+3. **Customize** by modifying environment variables (e.g., `GHCVER`,
+`CABALVER`) in the YAML. Simply uncomment labeled lines to toggle
+benchmarks, Haddock generation, or coverage.
+
+---
 
 ## Key Features
 
-* _Error messages:_ A lot of emphasis has been put on providing precise and
-  detailed error messages when something fails so that the user can easily fix
-  things.
-* _Informational:_ The output provides all the information that you may want to
-  know, tool paths being used, their versions, how they are invoked, build
-  options, time taken by each build step etc. You can even copy the commands
-  from the output and paste them on your local host to reproduce the build or
-  failure and debug quickly.
-* _Same tests everywhere:_ You can run exact same tests with same options or
-  flags, in the same way, on all CI platforms.
-* _Choose options:_ Conveniently control all aspects of build through command
-  line or environment variables, including tool options or whether to enable
-  benchmarks, haddock, coverage, test etc.
-* _Picking GHC:_ Right GHC is picked up automatically from PATH or installed
-  using ghcup by specifying GHCUP_VERSION and GHCVER env vars.  Stack
-  installed GHC binaries can be picked automatically when available.
-* _Test source distribution:_ `packcheck` creates the source distribution and
-  builds the package from the generated tarball to make sure that you build
-  what you release and don't miss adding a file to the distribution. Also,
-  checks if any file in the git repo is missing in the source distribution.
-<!--
-* _Upload coverage:_ To send coverage info to
-  [coveralls.io](https://coveralls.io) just uncomment a line in your respective
-  ci config file.
--->
-* _Non-destructive_: By default the script does not change any config or
-  upgrade any tools on the host machine.
-* _Auto tool install_: `stack` and `ghc` can be installed automatically
+* **Identical Testing:** Run the exact same test suite locally that runs on your CI—eliminating "it worked on my machine" issues.
+* **Deep Diagnostics:** Precise error messages and detailed build metadata (tool paths, versions, timing) for every step.
+* **Production-Ready Checks:**
+    * **SDist Verification:** Builds from the generated tarball to ensure no files are missing from your release.
+    * **Git Parity:** Automatically alerts you if files in your repository are missing from the source distribution.
+* **Smart GHC Discovery:** Automatically resolves GHC versions from PATH, `ghcup` (with auto-install), or Stack.
+* **Zero-Footprint:** Non-destructive by default. It won’t alter your global configs or upgrade tools unless explicitly requested.
+* **Declarative Control:** Toggle benchmarks, docs, coverage, or `hlint` via simple environment variables.
+* **Docspec Integration:** Seamlessly run doctest-style snippets within your source code using `cabal-docspec`. Toggle it on with a single variable and optionally provide a custom binary URL for specific environments.
 
-## Introduction
+---
 
-The package `packcheck` includes a script called `packcheck.sh`, it is a high
-level universal super build script to uniformly, consistently build and
-comprehensively sanity test a Haskell package across build tools (stack/cabal)
-and across all platforms (Linux/MacOS/Windows).  You do not need to be familiar
-with any of the build tools to use it.
+## Advanced CI & Caching
 
-To make sure that it works everywhere without installing anything it is
-deliberately written using the `bash` shell scripting language. Any of the
-parameters to control the builds can either be passed on the script command
-line or as environment variables for convenient use on CI systems.
+For complex projects, Packcheck supports **Split Caching**. The CI is architected to save progress at logical boundaries:
+1.  **Post-Tool Install:** Caches GHC/Cabal/Stack if the build fails early.
+2.  **Post-Dependency:** Caches the build artifacts before running your local tests.
 
-`packcheck` is also a minimal yet complete "hello world" Haskell package with
-model config files that can be used unmodified in any Haskell package. The CI
-configs can be modified **declaratively**, using environment variables, to adapt
-to **any** kind of build scenario you can imagine.
+This ensures that even after a failure, your next CI run starts from the last successful compilation step, significantly reducing iteration time.
 
-This model package has everything that a Haskell package usually has; including
-tests, benchmarks and Linux/MacOS/Windows CI already working. It can be used as
-a starting point to develop a new package. Beginners can use it to learn about
-Haskell package metadata structure.
-
-## What all does it do?
-
-An invocation of `packcheck.sh` performs a whole battery of tests, all aspects
-can be controlled via environment variables, command line. The flow goes
-roughly as follows:
-
-* Pick or install the requested version of GHC/cabal/stack
-* create source distribution package, unpack and test from it
-* Check the differences in git repo and source distribution
-* perform distribution checks
-* build source
-* build benchmarks
-* build haddock docs
-* run tests
-* run `hlint`
-* generate coverage report
-
-## Split caching
-
-The CIs are designed such that:
-
-* If it fails after ghc install, ghc will be cached
-* If it fails after dependency build, dependencies will be cached
-
-Thus even after failure your next runs will be fast and efficient. For
-this purpose the packcheck script is designed such that it can be
-stopped after the dependency install (using `SKIP_POST_DEP`) step, and
-then after saving the caches it can be resumed from that point again (using
-`SKIP_PRE_DEP`).
-
-## Why the sample CI configs look too big?
-
-The minimal CI config with packcheck can be very small, just a few
-lines. However, the CI configs provided in the samples:
-
-* cater to a large number of use cases
-* pre-populated matrix entries for multiple ghc versions
-* extensive documentation and all options specified
-* support for all platforms (Linux/macOS/Windows)
-* handles caching efficiently, uses split caches
-* shows extensive runtime debug information
-* Handles all possible error cases
+---
 
 ## Usage Examples
 
-You can run these commands on your local machine as well as inside a CI script.
-You can try these commands in the `packcheck` package itself:
-```
-$ cd packcheck
-$ ./packcheck.sh cabal GHCUP_VERSION=0.1.50.0 GHCVER=9.14.1
-```
+Packcheck is driven by environment variables, making it highly
+scriptable for both local use and CI.
 
-```
-$ ./packcheck.sh stack RESOLVER=lts-21
-$ ./packcheck.sh stack GHCVER=8.6.5
-$ ./packcheck.sh stack RESOLVER=lts-21.24 STACK_YAML=stack-8.0.yaml STACK_BUILD_OPTIONS="--flag streamly:examples-sdl" CABALVER=3.10
-# You can also do a cabal build using stack installed ghc:
-$ stack exec ./packcheck.sh cabal RESOLVER=lts-21
-```
+```bash
+# Test using a specific GHC version via ghcup
+./packcheck.sh cabal GHCUP_VERSION=0.1.50.0 GHCVER=9.14.1
 
-Run hlint commands on the directories `src` and `test`:
-```
-$ ./packcheck.sh hlint HLINT_OPTIONS="lint" HLINT_TARGETS="src test"
+# Test using Stack with a specific resolver
+./packcheck.sh stack RESOLVER=lts-21
+
+# Run hlint on specific directories
+./packcheck.sh hlint HLINT_TARGETS="src test"
+
+# Run a cabal build using a stack-installed GHC
+stack exec ./packcheck.sh cabal RESOLVER=lts-21
 ```
 
-<!--
-Send coverage info of the testsuites named `test1` and `test2` to coveralls.io
-using `hpc-coveralls`.
+To verify the documentation snippets in your source files, enable the
+`docspec` flag. You can also disable the source distribution build to
+speed up the check:
+
+```bash
+# Run all docspec snippets in the source
+./packcheck.sh cabal \
+  ENABLE_DOCSPEC="y" \
+  DISABLE_SDIST_BUILD="y" \
+  DOCSPEC_OPTIONS="--timeout 60" \
+  DOCSPEC_URL="[https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz](https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz)"
 ```
-$ ./packcheck.sh cabal GHCVER=8.8.3 COVERALLS_OPTIONS="test1 test2"
-```
--->
 
-## Picking GHC versions
+> **Tip:** Instead of passing the options on the command line, you can also
+> export them in your shell environment and just run `packcheck.sh
+> cabal` after that.
 
-When `GHCVER` parameter is not specified, `packcheck` looks for a binary named
-`ghc` in your `PATH` environment variable. It uses first such binary found in
-`PATH`.
+---
 
-When `GHCVER` parameter is specified and is not set to `head`, it looks
-for `ghc` in the `PATH` and if `GHCVER` is a PREFIX of the actual
-version of `ghc` binary found then that `ghc` binary is used. Otherwise,
-`packcheck` tries to look for another `ghc` binary in the next PATH
-components until it finds a matching `ghc` version.
+## Pro-Tips & Advanced Logic
 
-If `GHCVER` is set to `head`, packcheck looks for `ghc-head` as the
-compiler and does not check the numeric version of the compiler.
+* **GHC Resolution:** If `GHCVER` is a prefix (e.g., `9.12`), Packcheck finds the first matching binary in your `PATH`. Set `GHCVER=head` to specifically target `ghc-head`.
+* **Hybrid Workflows:** You can use Stack-installed GHCs for Cabal builds: 
+    `stack exec ./packcheck.sh cabal RESOLVER=lts-21`
+* **Template Repo:** This repository is a fully functional "Hello World" Haskell package. You can clone it as a foundation for new projects to get CI, testing, and benchmarking pre-configured.
+* **Tooling Pass-through:** Use `HLINT_OPTIONS` and `STACK_BUILD_OPTIONS` to pass raw flags directly to the underlying tools.
+* **Split Caching Control:** Use `SKIP_POST_DEP` and `SKIP_PRE_DEP` in your CI YAML to manually manage where caching starts and stops.
 
-If `GHCUP_VERSION` is specified packcheck tries to use the existing `ghcup`
-to install the ghc, if `ghcup` is not found it installs the requested
-version and then installs the `GHCVER` using it.
+---
 
-<!--
-When both `GHCVER` and `TOOLS_DIR` are specified then in addition to searching
-in `PATH` environment variable, `packcheck` also looks for ghc in
-`${TOOLS_DIR}/ghc/${GHCVER}*/bin`. This is to facilitate selecting any GHC
-version from an `hvr/ghc` ubuntu PPA installation without putting all the
-myriad GHC version directories explicitly in your `PATH`.
--->
+## Why Packcheck?
 
-If all of the above fails `packcheck` looks for ghc in the `stack` install
-locations.
+Most CI scripts are fragile collections of shell commands.
+`packcheck.sh` is a high-level, universal "super-build" script written
+in `bash` to ensure it works everywhere without dependencies. It
+wraps the complexity of cross-platform Haskell tooling into a single,
+consistent interface. Whether you are a beginner learning Haskell
+metadata or a maintainer managing complex libraries, Packcheck ensures
+your builds are reproducible, transparent, and fast.
 
 ## Full Reference
 
-Please use `cabal` version 2.4 or later.
+> **Note:** Any parameter can be passed either as a command-line
+> argument or an environment variable. Command-line arguments are ideal
+> for interactive local use, while environment variables are preferred
+> for CI configurations.
 
-NOTE: Any of the parameters described below can either be passed on command
-line or as an environment variable. Passing options on command line is more
-convenient when running interactively, while environment variables are more
-convenient when running on a CI system.
-
+```bash
+# Show all available commands and options
+./packcheck.sh --help
 ```
-$ ./packcheck.sh --help
 
+### Help Output Reference
+```text
 --------------------------------------------------
 Usage
 --------------------------------------------------
@@ -268,8 +214,8 @@ packcheck.sh cabal GHCVER=9.8.1
 packcheck.sh stack RESOLVER=lts GHC_OPTIONS="-O0 -Werror"
 packcheck.sh hlint
 
-Ask questions: https://app.gitter.im/#/room/#composewell_streamly:gitter.im
-Report issues: https://github.com/composewell/packcheck/issues/new
+Ask questions: [https://app.gitter.im/#/room/#composewell_streamly:gitter.im](https://app.gitter.im/#/room/#composewell_streamly:gitter.im)
+Report issues: [https://github.com/composewell/packcheck/issues/new](https://github.com/composewell/packcheck/issues/new)
 
 Control parameters can either be passed on command line or exported
 as environment variables. Parameters marked DESTRUCTIVE may modify
@@ -288,19 +234,19 @@ hlint                   : run hlint
 clean                   : remove the .packcheck directory
 cleanall                : remove .packcheck, .stack-work directories
 help | --help | -h      : show this help message
---version               : show packcheck version
+--version                : show packcheck version
 
 --------------------------------------------------
 Selecting tool versions
 --------------------------------------------------
-GHCUP_VERSION           : [a.b.c.d] ghcup version to install at $HOME/.ghcup/bin/ghcup (see https://downloads.haskell.org/~ghcup)
+GHCUP_VERSION           : [a.b.c.d] ghcup version to install at $HOME/.ghcup/bin/ghcup (see [https://downloads.haskell.org/~ghcup](https://downloads.haskell.org/~ghcup))
 GHCVER                  : [a.b.c | head] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
 STACK_UPGRADE           : [y] DESTRUCTIVE! Upgrades stack to latest version
 RESOLVER                : Stack resolver to use for stack builds or cabal builds using stack
-HLINT_VERSION           : hlint version to install at $HOME/.local/bin/hlint (see https://github.com/ndmitchell/hlint/releases)
-DOCSPEC_URL             : cabal-docspec release URL to install at $HOME/.local/bin/cabal-docspec (see https://github.com/phadej/cabal-extras/releases/)
+HLINT_VERSION           : hlint version to install at $HOME/.local/bin/hlint (see [https://github.com/ndmitchell/hlint/releases](https://github.com/ndmitchell/hlint/releases))
+DOCSPEC_URL             : cabal-docspec release URL to install at $HOME/.local/bin/cabal-docspec (see [https://github.com/phadej/cabal-extras/releases/](https://github.com/phadej/cabal-extras/releases/))
 
 --------------------------------------------------
 Where to find the required tools
@@ -319,6 +265,8 @@ Specifying what to build
 --------------------------------------------------
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 DISABLE_TEST            : [y] Do not run tests, default is to run tests
+SKIP_PRE_DEP            : [y] Skip all the steps before deps, resume main build
+SKIP_POST_DEP           : [y] Install dependencies only, skip building the package itself
 DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
 ENABLE_DOCSPEC          : [y] Run cabal-docspec after the cabal build
 DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
@@ -348,7 +296,7 @@ STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 --------------------------------------------------
 hlint options
 --------------------------------------------------
-HLINT_OPTIONS           : hlint arguments e.g.'--datadir=. lint'
+HLINT_OPTIONS           : hlint arguments e.g.'--datadir=.'
 HLINT_TARGETS           : target directories to run hlint on e.g. 'src test'
 
 --------------------------------------------------
@@ -363,93 +311,50 @@ CHECK_ENV               : [y] Treat unknown env variables as error, used with en
 BASE_TIME               : System time to be used as base for timeline reporting
 ```
 
-Build fails if `DISABLE_SDIST_BUILD` is not set and the contents
-of the source distribution tar ball do not match the git repository
-contents. Either add any exceptions to `.packcheck.ignore` file or use
-`DISABLE_SDIST_GIT_CHECK=y` to disable this feature. Currently this check is
-done only if `git` and `tar` commands are available in the `PATH`.
+### Critical Behavioral Notes
+* **SDist Parity:** By default, the build fails if the source
+distribution (`.tar.gz`) does not match your git repository. This
+ensures you only release what you have committed. You can bypass this
+with `DISABLE_SDIST_GIT_CHECK=y`.
+* **Destructive Options:** Parameters marked `DESTRUCTIVE!` (like
+`STACK_UPGRADE` or `CABAL_REINIT_CONFIG`) are safe for CI but should
+be used cautiously on local machines as they modify global user
+configurations.
+* **Sandboxing:** Cabal builds are performed in a sandbox. All temporary
+artifacts are stored in the `.packcheck` directory to keep your project
+root clean.
 
-Options marked `DESTRUCTIVE!` are fine in a CI environment. But on a
-local machine sometimes it may not be desirable as it will change the
-state of your global cabal config, so consider that before using these options.
+---
 
-By default cabal builds are done using sandboxes. It creates any temporary
-files or build artifacts inside `.packcheck` directory. See the `clean` and
-`cleanall` commands to release the temporary space.
+## Advanced Workflows & Diagnostics
 
-`stack` is automatically installed and can be used to do cabal builds as well.
-If you specify `BUILD=cabal` and `RESOLVER` at the same time then the cabal
-build uses stack installed `cabal` and `ghc`, both are installed automatically
-when needed.
+#### 1. Bulletproof Reproducibility (`packcheck-safe`)
+If you are troubleshooting a "ghost" issue where a build fails due to a
+hidden environment variable or a typo (e.g., typing `GHCVWR` instead of
+`GHCVER`), use the safe wrapper:
 
-For pure cabal builds i.e. when `BUILD=cabal` and `RESOLVER` is not
-specified, `cabal` and `ghc` must be pre-installed on the system before
-building.
-
-<!--
-## Coveralls
-
-Please pick the updated version of `hpc-coveralls` from
-[here](https://github.com/composewell/hpc-coveralls). You can create a
-`cabal.project.coveralls` file, and use that as project file using
-the `CABAL_PROJECT=cabal.project.coveralls` option/env var.
-
-```
-packages: .
-
-source-repository-package
-  type: git
-  location: https://github.com/composewell/hpc-coveralls
-  tag: d9e20179579f0638f6e978816355d18568e6a1f0
-```
--->
-
-## Diagnostics
-
-Sometimes you may run into issues due to some environment variables unknowingly
-set or some command line parameters or env variables being misspelled and
-therefore silently ignored. To avoid any such issues the robust way to invoke
-`packcheck` is to use a clean environment using `env -i` and passing
-`CHECK_ENV=y` parameter. When this parameter is set unwanted/misspelled
-variables are detected and reported.
-
-```
-$ env -i CHECK_ENV=y ./packcheck.sh stack
+```bash
+# packcheck-safe runs in a clean environment and validates all parameter names
+./packcheck-safe.sh cabal PATH=/bin:/usr/bin:/opt/ghc/bin GHCVER=9.14.1
 ```
 
-For performance diagnostics `packcheck` prints the time elapsed from the
-beginning at each build step performed.
+#### 2. Remote Testing (`packcheck-remote`)
+You can run Packcheck on a remote repository without manually cloning
+it. This is particularly useful for verifying Pull Requests locally
+before merging.
 
-## packcheck-safe
-
-`packcheck-safe.sh` is a more robust wrapper over `packcheck.sh`, it does not
-trust or use any environment variables, all environment needs to be specified
-explicitly on the command line. Therefore, it ensures better reproducibility.
-
-It also catches any misspelled command line parameter names. For example,
-`packcheck.sh` won't catch it if you typed `GHCVWR=9.8` instead of
-`GHCVER=9.8`, it just assumes that `GHCVER` is not specified.
-`packcheck-safe.sh` would generate an error saying that `GHCVWR` is not
-recognized. Since it uses a clean environment you will have to specify PATH as
-well on the command line. For example,
-
-```
-$ ./packcheck-safe.sh cabal PATH=/bin:/usr/bin:/opt/ghc/bin
-```
-
-## packcheck-remote
-
-`packcheck-remote.sh` is a wrapper over `packcheck.sh`. It allows you to run
-packcheck on a remote repository by cloning it locally and optionally merging a
-branch into another branch (e.g. merging a PR branch into master).
-
-```
-$ ./packcheck-remote.sh --force \
-    --remote=https://github.com/user/repo \
+```bash
+# Clones the repo, merges a branch, and runs the build
+./packcheck-remote.sh --force \
+    --remote=[https://github.com/user/repo](https://github.com/user/repo) \
     --checkout=origin/master \
-    --merge=origin/branch \
-    --directory=./repo.packcheck \
-    -- cabal GHCVER=9.8.1
+    --merge=origin/feature-branch \
+    --directory=./temp_build \
+    -- cabal GHCVER=9.12.1
 ```
 
-Use `./packcheck-remote.sh --help` for more information.
+#### 3. Performance & Environment Debugging
+* **Timeline Reporting:** Packcheck prints the elapsed time for every
+build step, allowing you to identify bottlenecks in your CI pipeline.
+* **Variable Validation:** Use `CHECK_ENV=y` to force Packcheck to error
+out if it detects misspelled or unrecognized environment variables.
