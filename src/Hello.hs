@@ -1,5 +1,6 @@
-module Hello
-    (hello)
-where
+module Hello (hello) where
 
-hello = print "Hello world!"
+import Unicode.Char.General (isAlphabetic)
+
+hello :: IO ()
+hello = print (isAlphabetic 'λ')
