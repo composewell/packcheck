@@ -1,0 +1,88 @@
+{
+  "nodes": {
+    "basepkgs": {
+      "inputs": {
+        "basepkgs": "basepkgs_2",
+        "nixpkgs": "nixpkgs",
+        "nixpkgs-darwin": "nixpkgs-darwin"
+      },
+      "locked": {
+        "lastModified": 1775312922,
+        "narHash": "sha256-V292VAXWHHN2Q6xKqs45BqSPego/jtEp+Pc8H/gneEU=",
+        "ref": "refs/heads/master",
+        "rev": "76420910d9c74e5fc1d92d680499c97e4f94e873",
+        "revCount": 118,
+        "type": "git",
+        "url": "ssh://git@github.com/composewell/streamly-packages"
+      },
+      "original": {
+        "rev": "76420910d9c74e5fc1d92d680499c97e4f94e873",
+        "type": "git",
+        "url": "ssh://git@github.com/composewell/streamly-packages"
+      }
+    },
+    "basepkgs_2": {
+      "locked": {
+        "lastModified": 1775305167,
+        "narHash": "sha256-BPBKbDZ9aoGOHDAeScwj/N4h2IHOLLRSJmSC3AXQZko=",
+        "owner": "composewell",
+        "repo": "nixpack",
+        "rev": "fc492c73877aeaa3bf9bec85d0eebc56036d53f9",
+        "type": "github"
+      },
+      "original": {
+        "owner": "composewell",
+        "repo": "nixpack",
+        "rev": "fc492c73877aeaa3bf9bec85d0eebc56036d53f9",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1774106199,
+        "narHash": "sha256-US5Tda2sKmjrg2lNHQL3jRQ6p96cgfWh3J1QBliQ8Ws=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6c9a78c09ff4d6c21d0319114873508a6ec01655",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6c9a78c09ff4d6c21d0319114873508a6ec01655",
+        "type": "github"
+      }
+    },
+    "nixpkgs-darwin": {
+      "locked": {
+        "lastModified": 1774106199,
+        "narHash": "sha256-US5Tda2sKmjrg2lNHQL3jRQ6p96cgfWh3J1QBliQ8Ws=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6c9a78c09ff4d6c21d0319114873508a6ec01655",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "6c9a78c09ff4d6c21d0319114873508a6ec01655",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "basepkgs": "basepkgs",
+        "nixpkgs": [
+          "basepkgs",
+          "nixpkgs"
+        ],
+        "nixpkgs-darwin": [
+          "basepkgs",
+          "nixpkgs-darwin"
+        ]
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
