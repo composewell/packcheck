@@ -1948,6 +1948,29 @@ your .hlint.ignore file."
   fi
 }
 
+start_hlint() {
+    hlint_path=$(which_cmd hlint)
+    if test -n "$hlint_path"
+    then
+      echo
+      echo "WARNING! Using hlint in PATH at $hlint_path"
+    elif test -n "$HLINT_VERSION"
+    then
+      install_hlint
+    elif test -n "$HLINT_BUILD"
+    then
+      # XXX This is broken as it expects BUILD to be either stack or cabal.
+      # Also, we need to initialize COMPILER variable before this which is
+      # done in verify_build_config happening after this.
+      build_hlint
+    else
+        echo "hlint not found."
+        die "Use HLINT_VERSION option to install."
+    fi
+    run_verbose_errexit hlint --version
+    run_hlint
+}
+
 install_docspec() {
   show_step "Installing docspec from $DOCSPEC_URL"
   case "$(uname)" in
@@ -2040,6 +2063,31 @@ build_post_dep() {
   fi
 }
 
+run_docspec() {
+    if test -n "$ENABLE_DOCSPEC"
+    then
+      show_step "Run cabal-docspec"
+      if test $BUILD = "cabal-v2"
+      then
+          docspec_path=$(which_cmd cabal-docspec)
+          if test -n "$docspec_path"
+          then
+            echo "WARNING! Using cabal-docspec in PATH at $docspec_path"
+          elif test -n "$DOCSPEC_URL"
+          then
+            install_docspec
+          else
+            echo "cabal-docspec not found."
+            die "Use DOCSPEC_URL option to install."
+          fi
+      fi
+      ensure_ghc
+      run_verbose_errexit cabal-docspec --version
+      run_verbose_errexit $SDIST_CABALCMD exec cabal-docspec -- $DOCSPEC_OPTIONS \
+          --with-compiler "$COMPILER_EXE_PATH"
+    fi
+}
+
 # stack or cabal build (i.e. not hlint)
 build_compile () {
   # ---------Install any tools needed--------
@@ -2106,6 +2154,7 @@ build_compile () {
     echo "Skipping post dependency steps (SKIP_POST_DEP=y)"
   else
     build_post_dep
+    run_docspec
   fi
 }
 
@@ -2225,6 +2274,12 @@ bash --version
 show_step "Build command"
 show_build_command
 
+if test "$BUILD" = "hlint" -a -n "$SKIP_PRE_DEP"
+then
+  show_step "hlint: nothing to do (SKIP_PRE_DEP=y)"
+  exit 0
+fi
+
 # Note that date, uname, cygpath, rm are used even before this point. This
 # informatory so that PATH argument can be cleaned up by looking at where the
 # tools are. Anything used in require_cmd can be listed here. But the danger is
@@ -2265,50 +2320,10 @@ test -n "$STACK_YAML" || unset STACK_YAML
 CABAL_BINARY_NAME=cabal
 if test "$BUILD" = "hlint"
 then
-    hlint_path=$(which_cmd hlint)
-    if test -n "$hlint_path"
-    then
-      echo
-      echo "WARNING! Using hlint in PATH at $hlint_path"
-    elif test -n "$HLINT_VERSION"
-    then
-      install_hlint
-    elif test -n "$HLINT_BUILD"
-    then
-      # XXX This is broken as it expects BUILD to be either stack or cabal.
-      # Also, we need to initialize COMPILER variable before this which is
-      # done in verify_build_config happening after this.
-      build_hlint
-    else
-        echo "hlint not found."
-        die "Use HLINT_VERSION option to install."
-    fi
-    run_verbose_errexit hlint --version
-    run_hlint
+  start_hlint
 else
-    verify_build_config
-    build_compile
-    if test -n "$ENABLE_DOCSPEC"
-    then
-      if test $BUILD = "cabal-v2"
-      then
-          docspec_path=$(which_cmd cabal-docspec)
-          if test -n "$docspec_path"
-          then
-            echo "WARNING! Using cabal-docspec in PATH at $docspec_path"
-          elif test -n "$DOCSPEC_URL"
-          then
-            install_docspec
-          else
-            echo "cabal-docspec not found."
-            die "Use DOCSPEC_URL option to install."
-          fi
-      fi
-      ensure_ghc
-      run_verbose_errexit cabal-docspec --version
-      run_verbose_errexit $SDIST_CABALCMD exec cabal-docspec -- $DOCSPEC_OPTIONS \
-          --with-compiler "$COMPILER_EXE_PATH"
-    fi
+  verify_build_config
+  build_compile
 fi
 
 show_step "Done"
