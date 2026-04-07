@@ -230,6 +230,25 @@ jobs:
 #-----------------------------------------------------------------------------
 
     steps:
+
+    - name: Optimize Windows Runner Environment
+      if: runner.os == 'Windows'
+      shell: powershell
+      run: |
+        # Enable long paths.  Sometimes failures occur due to path
+        # length limitation.
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\FileSystem' -Name 'LongPathsEnabled' -value 1
+
+        # Cache saving is very slow on Windows, it could be due to tar,
+        # or the compression program or the file system. Changing the
+        # compression level of zstd does not help. We are also not able to pick
+        # another tar program by changing the path, tar is picked up by the
+        # cache action itself.
+
+        # This does not seem to make much difference.
+        # Disable Windows Defender to speed up IO/Tar operations
+        Set-MpPreference -DisableRealtimeMonitoring $true
+        
     - uses: actions/checkout@v4
 
     # This should happen before cache restore.
@@ -237,6 +256,9 @@ jobs:
       if: runner.os != 'Windows'
       run: |
         rm -f ~/.ghcup
+
+    # See the "cabal path" output in the CI logs to tweak the cache
+    # locations.
 
     # Shared by all tests, all platforms
     - name: Restore hackage package index (non-Windows)
@@ -248,9 +270,6 @@ jobs:
             ~/.cache/cabal/packages
         key: cabal-hackage-index-non-windows
 
-    # See the "cabal path" output in the CI logs to tweak the cache locations
-    # ghc is big but cheap to install, if cache size is a concern we can avoid
-    # caching it.
     # GHC is not test/options specific
     - name: Restore ghcup and ghc (non-Windows)
       id: restore-ghcup
@@ -262,14 +281,14 @@ jobs:
         key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
     # GHC is not test/options specific
-    - name: Restore ghcup and ghc (Windows)
-      id: restore-ghcup-win
-      uses: actions/cache/restore@v4
-      if: runner.os == 'Windows'
-      with:
-        path: |
-          C:/ghcup
-        key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
+    #- name: Restore ghcup and ghc (Windows)
+    #  id: restore-ghcup-win
+    #  uses: actions/cache/restore@v4
+    #  if: runner.os == 'Windows'
+    #  with:
+    #    path: |
+    #      C:/ghcup
+    #    key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
     # XXX If we want to invalidate the cache on resolver change we
     # should use a separate cache for stack as it should be keyed on
@@ -365,13 +384,16 @@ jobs:
         path: ~/.ghcup
         key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
-    - name: Save ghcup and ghc (Windows)
-      uses: actions/cache/save@v4
-      if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-ghcup-win.outputs.cache-hit != 'true'
-      with:
-        path: |
-          C:/ghcup
-        key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
+    # On Windows, ghc restore step takes 2-3 minutes whereas installing
+    # GHC takes less than 2 minutes. On top of this saving the ghc cache
+    # takes 7 minutes. So this does not make sense.
+    #- name: Save ghcup and ghc (Windows)
+    #  uses: actions/cache/save@v4
+    #  if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-ghcup-win.outputs.cache-hit != 'true'
+    #  with:
+    #    path: |
+    #      C:/ghcup
+    #    key: ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}
 
     # Deps are test/options specific, hence, matrix.name in the key
     - name: Save build dependencies (non-Windows)
