@@ -125,24 +125,24 @@ jobs:
         # elements proportional to the cross product.
         include:
 
-          - name: ci
-            runner: ubuntu-latest
-            command: cabal
-            ghc_version: head
-            # The URL may change, to find a working URL go to https://gitlab.haskell.org/ghc/ghc/-/jobs/
-            # Find a debian10/11/12 job, click on a passed/failed status, at the
-            # end of the output you will find the tar.xz name, put that tar
-            # name after "raw/", and put the job name after "job=".
-            # Also see https://github.com/mpickering/ghc-artefact-nix/blob/master/gitlab-artifact.nix
-            #
-            # May also use ghcup for installing ghc head version, use the
-            # version "LatestNightly", and the following config:
-            # ghcup config add-release-channel https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
-            # WARNING! cannot use # comments inside pack_options.
-            pack_options: >-
-              GHCUP_GHC_OPTIONS="-u https://gitlab.haskell.org/ghc/ghc/-/jobs/artifacts/master/raw/ghc-x86_64-linux-deb10-int_native-validate.tar.xz?job=x86_64-linux-deb10-int_native-validate"
-              CABAL_PROJECT=cabal.project.ghc-head
-              DISABLE_SDIST_BUILD="y"
+          #- name: ci
+          #  runner: ubuntu-latest
+          #  command: cabal
+          #  ghc_version: head
+          #  # The URL may change, to find a working URL go to https://gitlab.haskell.org/ghc/ghc/-/jobs/
+          #  # Find a debian10/11/12 job, click on a passed/failed status, at the
+          #  # end of the output you will find the tar.xz name, put that tar
+          #  # name after "raw/", and put the job name after "job=".
+          #  # Also see https://github.com/mpickering/ghc-artefact-nix/blob/master/gitlab-artifact.nix
+          #  #
+          #  # May also use ghcup for installing ghc head version, use the
+          #  # version "LatestNightly", and the following config:
+          #  # ghcup config add-release-channel https://ghc.gitlab.haskell.org/ghcup-metadata/ghcup-nightlies-0.0.7.yaml
+          #  # WARNING! cannot use # comments inside pack_options.
+          #  pack_options: >-
+          #    GHCUP_GHC_OPTIONS="-u https://gitlab.haskell.org/ghc/ghc/-/jobs/artifacts/master/raw/ghc-x86_64-linux-deb10-int_native-validate.tar.xz?job=x86_64-linux-deb10-int_native-validate"
+          #    CABAL_PROJECT=cabal.project.ghc-head
+          #    DISABLE_SDIST_BUILD="y"
 
           - name: ci
             runner: ubuntu-latest
