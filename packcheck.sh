@@ -2271,7 +2271,7 @@ else
       fi
       ensure_ghc
       run_verbose_errexit cabal-docspec --version
-      run_verbose_errexit cabal-docspec $DOCSPEC_OPTIONS \
+      run_verbose_errexit $SDIST_CABALCMD exec cabal-docspec -- $DOCSPEC_OPTIONS \
           --with-compiler "$COMPILER_EXE_PATH"
     fi
 fi
