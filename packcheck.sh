@@ -1514,7 +1514,7 @@ ensure_cabal_config() {
     run_verbose $CABAL_BINARY_NAME user-config init || true
     if test ! -f $cfg
     then
-      if test -f $new_cfg
+      if test -f $new_cfg -a -n "$ENABLE_DOCSPEC"
       then
         mkdir -p $(dirname $cfg)
         run_verbose_errexit ln -s $new_cfg $cfg
