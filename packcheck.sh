@@ -1264,6 +1264,7 @@ cabal_use_mirror() {
 stack_install_tool () {
     rm -rf .packcheck/tool-install
     mkdir -p .packcheck/tool-install || exit 1
+    echo "cd .packcheck/tool-install"
     cd .packcheck/tool-install || exit 1
 
     local res
@@ -1281,6 +1282,7 @@ stack_install_tool () {
         new --bare tool-install
     fi
     run_verbose_errexit $STACKCMD_TOOL_INSTALL $res install $1
+    echo "cd ../.."
     cd ../..
 }
 
@@ -1555,6 +1557,7 @@ create_and_unpack_pkg_dist() {
   local SDIST_DIR
   local SDIST_CMD
 
+  echo "pwd: $(pwd)"
   test -z "$SDIST_OPTIONS" || opts="$SDIST_OPTIONS"
 
   if test "$BUILD" = stack
@@ -1699,6 +1702,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
   # files here, it is removed from the sdist copy not from the original tree.
   # However, the CABAL_PROJECT and STACK_YAML variables are pointing to a path
   # relative to the original tree root.
+  echo "cd ${1}"
   cd ${1}
   if test "$BUILD" = stack
   then
@@ -1751,6 +1755,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
 }
 
 install_deps() {
+  echo "pwd: $(pwd)"
   case "$BUILD" in
     stack) run_verbose_errexit $SDIST_STACKCMD build $STACK_DEP_OPTIONS ;;
     cabal-v2)
@@ -1902,6 +1907,7 @@ build_hlint() {
 
 run_hlint() {
   show_step "Running hlint ..."
+  echo "pwd: $(pwd)"
 
   # Old method
   if test -n "$HLINT_COMMANDS"
@@ -2054,9 +2060,12 @@ build_pre_dep() {
 }
 
 build_post_dep() {
+  show_step "Prepare to build"
+  echo "pwd: $(pwd)"
   if test -z "$DISABLE_SDIST_BUILD" -a -n "$BUILD_POST_DEPS"
   then
-    cd  .packcheck/$PACKAGE_FULL_NAME
+    echo "cd .packcheck/$PACKAGE_FULL_NAME"
+    cd .packcheck/$PACKAGE_FULL_NAME
   fi
 
   build_and_test
@@ -2123,7 +2132,7 @@ build_compile () {
   show_build_config
 
   # ---------Create dist, unpack, install deps, test--------
-  show_step "Build tools: package level and global configuration"
+  show_step "Build tools and build configuration"
   dont_need_cabal || ensure_cabal_project
   dont_need_cabal || ensure_cabal_config
   if test -z "$DISABLE_SDIST_BUILD"
