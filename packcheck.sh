@@ -590,20 +590,25 @@ show_build_command() {
   fi
 }
 
+OTHER_ENVVARS="HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME APPDATA STACK_ROOT CABAL_DIR CABAL_CONFIG CABAL_BUILDDIR HTTP_PROXY HTTPS_PROXY GHC"
+
+# Environment on entry to packcheck
+show_build_env() {
+  for i in $OTHER_ENVVARS
+  do
+    show_nonempty_var $i
+  done
+}
+
+# Environment just before the build, packcheck may have changed things.
 show_build_config() {
   check_all_boolean_vars
   for i in $ENVVARS
   do
     show_nonempty_var $i
   done
-}
-
-show_build_env() {
-  OTHER_ENVVARS="HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME APPDATA STACK_ROOT CABAL_DIR CABAL_CONFIG CABAL_BUILDDIR HTTP_PROXY HTTPS_PROXY GHC"
-  for i in $OTHER_ENVVARS
-  do
-    show_nonempty_var $i
-  done
+  echo
+  show_build_env
 }
 
 need_stack() {
@@ -1505,7 +1510,8 @@ ensure_cabal_config() {
   local cfg
   local new_cfg
 
-  # XXX Use cabal path to determine the path
+  # XXX Use cabal path to determine the path, but it was introduced in cabal
+  # 3.10.
   # Precedence: CABAL_CONFIG > CABAL_DIR > Legacy > XDG
   if test -n "$CABAL_CONFIG"; then
     cfg="$CABAL_CONFIG"
@@ -1516,6 +1522,8 @@ ensure_cabal_config() {
     new_cfg="${OS_APP_HOME}/.config/cabal/config"
   fi
 
+  # We can use CABAL_CONFIG=/dev/null on Posix,
+  # but that would disable remote repositories as well.
   if test "$CABAL_REINIT_CONFIG" = y
   then
     echo "Removing old cabal config [$cfg]"
@@ -1774,6 +1782,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
 
 install_deps() {
   echo "pwd: $(pwd)"
+  echo
   case "$BUILD" in
     stack) run_verbose_errexit $SDIST_STACKCMD build $STACK_DEP_OPTIONS ;;
     cabal-v2)
