@@ -1498,27 +1498,39 @@ determine_build_type() {
 ensure_cabal_config() {
   # When cabal versions change across builds on a CI host its safer to remove
   # the old config so that the build does not error out.
-  local cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
-  local new_cfg="${OS_APP_HOME}/.config/cabal/config"
+  #
+  # XXX Note that config may also be set on command line --config
+  local cfg
+  local new_cfg
+
+  # Precedence: CABAL_CONFIG > CABAL_DIR > Legacy > XDG
+  if test -n "$CABAL_CONFIG"; then
+    cfg="$CABAL_CONFIG"
+  elif test -n "$CABAL_DIR"; then
+    cfg="$CABAL_DIR/config"
+  else
+    cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+    new_cfg="${OS_APP_HOME}/.config/cabal/config"
+  fi
+
   if test "$CABAL_REINIT_CONFIG" = y
   then
     echo "Removing old cabal config [$cfg]"
     run_verbose_errexit rm -f "$cfg"
-    run_verbose_errexit rm -f "$new_cfg"
+    if test -n "$new_cfg"; then
+      run_verbose_errexit rm -f "$new_cfg"
+    fi
   fi
 
-  # this generates it in ~/.config which creates issues for cabal-docspec and
-  # some other issues.
-  if test ! -e $new_cfg
+  # cabal-docspec may need it at old location so generate it right away and
+  # link it. This used to be the case but not sure if it is still like that.
+  if test -n "$new_cfg" -a ! -e "$new_cfg" -a -n "$ENABLE_DOCSPEC"
   then
-    run_verbose $CABAL_BINARY_NAME user-config init || true
-    if test ! -f $cfg
+    run_verbose "${CABAL_BINARY_NAME}" user-config init || true
+    if test ! -f "$cfg" -a -f "$new_cfg"
     then
-      if test -f $new_cfg -a -n "$ENABLE_DOCSPEC"
-      then
-        mkdir -p $(dirname $cfg)
-        run_verbose_errexit ln -s $new_cfg $cfg
-      fi
+        mkdir -p "$(dirname "$cfg")"
+        run_verbose_errexit ln -s "$new_cfg" "$cfg"
     fi
   fi
 
