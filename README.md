@@ -76,10 +76,10 @@ jobs:
 
 ---
 
-## Environment & CI Support
+## OS and CI Support
 
-Packcheck provides one-line, out-of-the-box configurations for all major
-platforms. These templates include optimized, multi-stage caching to
+Packcheck provides out-of-the-box configuration files for all major
+OS and CI platforms. These templates include optimized, multi-stage caching to
 ensure your CI runs are fast and efficient.  The templates are designed
 to work immediately for most packages. For fine-grained control, simply
 uncomment the labeled lines in the config files to toggle benchmarks,
@@ -89,9 +89,9 @@ Haddock generation, or coverage reports.
 | CI System | Platforms | Configuration Template |
 | :--- | :--- | :--- |
 | **GitHub Actions** | Linux, macOS, Windows | [.github/workflows/packcheck.yml](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml) |
-| **CircleCI** | Linux | [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml) |
-| **Appveyor** | Windows | [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml) |
 | **Cirrus CI** | FreeBSD | [.cirrus.yml](https://github.com/composewell/packcheck/blob/master/.cirrus.yml) |
+| **Appveyor** | Windows | [appveyor.yml](https://github.com/composewell/packcheck/blob/master/appveyor.yml) |
+| **CircleCI** | Linux | [.circleci/config.yml](https://github.com/composewell/packcheck/blob/master/.circleci/config.yml) |
 
 **Build Tools:** Cabal, Stack  
 **GHC Provisioning:** System PATH, `ghcup`, Stack-managed GHC
@@ -99,9 +99,7 @@ Haddock generation, or coverage reports.
 ### Implementation
 1. **Copy** the relevant configuration file to your repository.
 2. **Enable** the project in your CI provider's dashboard.
-3. **Customize** by modifying environment variables (e.g., `GHCVER`,
-`CABALVER`) in the YAML. Simply uncomment labeled lines to toggle
-benchmarks, Haddock generation, or coverage.
+3. **Customize** the environment variables in the YAML.
 
 ---
 
@@ -110,7 +108,8 @@ benchmarks, Haddock generation, or coverage.
 * **Identical Testing:** Run the exact same test suite locally that runs
 on your CI—eliminating "it worked on my machine" issues.
 * **Deep Diagnostics:** Precise error messages and detailed build
-metadata (tool paths, versions, timing) for every step.
+metadata (tool paths, versions, OS CPU, memory, disk space), timing for
+every step.
 * **Production-Ready Checks:**
     * **SDist Verification:** Builds from the generated tarball to
     ensure no files are missing from your release.
@@ -131,11 +130,9 @@ environments.
 
 ## Advanced CI & Caching
 
-For complex projects, Packcheck supports **Split Caching**. The CI is
-architected to save progress at logical boundaries:
-1.  **Post-Tool Install:** Caches GHC/Cabal/Stack if the build fails early.
-2.  **Post-Dependency:** Caches the build artifacts before running your
-local tests.
+For larger projects, Packcheck supports **Split Caching**. The CI is
+architected to save progress after installing dependencies, save the cache and
+then resume from where we left to do the final build.
 
 This ensures that even after a failure, your next CI run starts from the
 last successful compilation step, significantly reducing iteration time.
@@ -162,16 +159,14 @@ stack exec ./packcheck.sh cabal RESOLVER=lts-21
 ```
 
 To verify the documentation snippets in your source files, enable the
-`docspec` flag. You can also disable the source distribution build to
-speed up the check:
+`docspec` flag.
 
 ```bash
 # Run all docspec snippets in the source
 ./packcheck.sh cabal \
   ENABLE_DOCSPEC="y" \
-  DISABLE_SDIST_BUILD="y" \
-  DOCSPEC_OPTIONS="--timeout 60" \
-  DOCSPEC_URL="https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz"
+  DOCSPEC_URL="https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz" \
+  DOCSPEC_OPTIONS="--timeout 60"
 ```
 
 > **Tip:** Instead of passing the options on the command line, you can also
@@ -191,7 +186,7 @@ specifically target `ghc-head`.
 Haskell package. You can clone it as a foundation for new projects to
 get CI, testing, and benchmarking pre-configured.
 * **Tooling Pass-through:** Use `HLINT_OPTIONS` and
-`STACK_BUILD_OPTIONS` to pass raw flags directly to the underlying
+`CABAL_BUILD_OPTIONS` to pass raw flags directly to the underlying
 tools.
 * **Split Caching Control:** Use `SKIP_POST_DEP` and `SKIP_PRE_DEP` in
 your CI YAML to manually manage where caching starts and stops.
@@ -225,6 +220,7 @@ your builds are reproducible, transparent, and fast.
 --------------------------------------------------
 Usage
 --------------------------------------------------
+
 packcheck.sh COMMAND [PARAMETER=VALUE ...]
 
 For example:
@@ -232,8 +228,8 @@ packcheck.sh cabal GHCVER=9.8.1
 packcheck.sh stack RESOLVER=lts GHC_OPTIONS="-O0 -Werror"
 packcheck.sh hlint
 
-Ask questions: [https://app.gitter.im/#/room/#composewell_streamly:gitter.im](https://app.gitter.im/#/room/#composewell_streamly:gitter.im)
-Report issues: [https://github.com/composewell/packcheck/issues/new](https://github.com/composewell/packcheck/issues/new)
+Ask questions: https://app.gitter.im/#/room/#composewell_streamly:gitter.im
+Report issues: https://github.com/composewell/packcheck/issues/new
 
 Control parameters can either be passed on command line or exported
 as environment variables. Parameters marked DESTRUCTIVE may modify
@@ -246,17 +242,19 @@ n|N|no|No|NO|false|False|FALSE|off|Off|OFF or empty for a negative value.
 --------------------------------------------------
 Commands and flags
 --------------------------------------------------
+
 cabal                   : build using cabal
 stack                   : build using stack
 hlint                   : run hlint
 clean                   : remove the .packcheck directory
 cleanall                : remove .packcheck, .stack-work directories
 help | --help | -h      : show this help message
---version                : show packcheck version
+--version               : show packcheck version
 
 --------------------------------------------------
 Selecting tool versions
 --------------------------------------------------
+
 GHCUP_VERSION           : [a.b.c.d] ghcup version to install at $HOME/.ghcup/bin/ghcup (see [https://downloads.haskell.org/~ghcup](https://downloads.haskell.org/~ghcup))
 GHCVER                  : [a.b.c | head] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
@@ -269,11 +267,13 @@ DOCSPEC_URL             : cabal-docspec release URL to install at $HOME/.local/b
 --------------------------------------------------
 Where to find the required tools
 --------------------------------------------------
+
 PATH                    : [path] Set PATH explicitly for predictable builds
 
 --------------------------------------------------
 Specifying common tool options
 --------------------------------------------------
+
 GHCUP_GHC_OPTIONS       : Used as in "ghcup install ghc <GHCUP_GHC_OPTIONS> <version>"
 GHC_OPTIONS             : Specify GHC options to use
 SDIST_OPTIONS           : Arguments to stack/cabal sdist command
@@ -281,10 +281,9 @@ SDIST_OPTIONS           : Arguments to stack/cabal sdist command
 --------------------------------------------------
 Specifying what to build
 --------------------------------------------------
+
 DISABLE_BENCH           : [y] Do not build benchmarks, default is to build but not run
 DISABLE_TEST            : [y] Do not run tests, default is to run tests
-SKIP_PRE_DEP            : [y] Skip all the steps before deps, resume main build
-SKIP_POST_DEP           : [y] Install dependencies only, skip building the package itself
 DISABLE_DOCS            : [y] Do not build haddocks, default is to build docs
 ENABLE_DOCSPEC          : [y] Run cabal-docspec after the cabal build
 DISABLE_SDIST_BUILD     : [y] Do not build from source distribution
@@ -293,20 +292,29 @@ DISABLE_SDIST_GIT_CHECK : [y] Do not compare source distribution with git repo
 DISABLE_DIST_CHECKS     : [y] Do not perform source distribution checks
 
 --------------------------------------------------
+Skipping parts of build (for split caching)
+--------------------------------------------------
+
+BUILD_ONLY_DEPS         : [y] Build dependencies only, skip building the package itself
+BUILD_POST_DEPS         : [y] Skip all the steps before deps, resume main build
+
+--------------------------------------------------
 cabal options
 --------------------------------------------------
+
 CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatibility issues
 CABAL_PROJECT           : Alternative cabal project file, path relative to project root
 CABAL_BUILD_OPTIONS     : ADDITIONAL cabal build options to append to defaults
-CABAL_TEST_OPTIONS      : ADDITIONAL cabal test options to append to defaults
-CABAL_DISABLE_DEPS      : [y] Do not install dependencies, do not do cabal update
 CABAL_BUILD_TARGETS     : cabal build targets, default is 'all'
-CABAL_CHECK_RELAX       : [y] Do not fail if cabal check fails on the package.
+CABAL_DISABLE_DEPS      : [y] Do not install deps, no cabal update, useful for nix
+CABAL_TEST_OPTIONS      : ADDITIONAL cabal test options to append to defaults
+CABAL_CHECK_RELAX       : [y] Do not return failure if 'cabal check' fails on the package.
 CABAL_HACKAGE_MIRROR    : DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
 
 --------------------------------------------------
 stack options
 --------------------------------------------------
+
 STACK_YAML              : Alternative stack config file path relative to project root
 STACK_OPTIONS           : ADDITIONAL stack global options (e.g. -v) to append
 STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
@@ -314,17 +322,20 @@ STACK_BUILD_OPTIONS     : ADDITIONAL stack build command options to append
 --------------------------------------------------
 hlint options
 --------------------------------------------------
+
 HLINT_OPTIONS           : hlint arguments e.g.'--datadir=.'
 HLINT_TARGETS           : target directories to run hlint on e.g. 'src test'
 
 --------------------------------------------------
 Coverage options
 --------------------------------------------------
+
 COVERAGE                : [y] Just generate coverage information
 
 --------------------------------------------------
 Diagnostics options
 --------------------------------------------------
+
 CHECK_ENV               : [y] Treat unknown env variables as error, used with env -i
 BASE_TIME               : System time to be used as base for timeline reporting
 ```

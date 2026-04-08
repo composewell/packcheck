@@ -368,7 +368,7 @@ jobs:
         # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
         # Direct invocation would word-split on spaces inside quoted values.
         echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND SKIP_POST_DEP=y PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_ONLY_DEPS=y PATH=\"$PATH_VAR\""
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
@@ -438,7 +438,7 @@ jobs:
             ;;
         esac
         echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND SKIP_PRE_DEP=y PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_POST_DEPS=y PATH=\"$PATH_VAR\""
 
     - name: Check cache locations
       shell: bash
