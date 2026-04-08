@@ -45,7 +45,7 @@ copyright:           2017 Harendra Kumar
 category:            Testing, CI
 stability:           Experimental
 build-type:          Simple
-cabal-version:       >= 1.18
+cabal-version:       1.18
 
 extra-doc-files:
     Changelog.md
