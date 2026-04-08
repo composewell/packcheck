@@ -2280,6 +2280,11 @@ bash --version
 show_step "Build command"
 show_build_command
 
+if test -n "$BUILD_ONLY_DEPS" -a -n "$BUILD_POST_DEPS"
+then
+    die "Both [BUILD_ONLY_DEPS] and [BUILD_POST_DEPS] cannot be set at the same time."
+fi
+
 if test "$BUILD" = "hlint" -a -n "$BUILD_POST_DEPS"
 then
   show_step "hlint: nothing to do (BUILD_POST_DEPS=y)"
