@@ -305,6 +305,7 @@ SAFE_ENVVARS="\
   CABAL_TEST_OPTIONS \
   CABAL_DISABLE_DEPS \
   CABAL_BUILD_TARGETS \
+  CABAL_HADDOCK_TARGETS \
   HADDOCK_OPTIONS \
   COVERAGE \
   COVERALLS_OPTIONS \
@@ -485,6 +486,7 @@ show_help() {
   #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal build options to append to defaults"
   help_envvar CABAL_BUILD_TARGETS "cabal build targets, default is 'all'"
+  help_envvar CABAL_HADDOCK_TARGETS "cabal haddock targets, default is '.'"
   help_envvar CABAL_DISABLE_DEPS "[y] Do not install deps, no cabal update, useful for nix"
   help_envvar CABAL_TEST_OPTIONS "ADDITIONAL cabal test options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not return failure if 'cabal check' fails on the package."
@@ -675,6 +677,7 @@ EOF
   elif test "$BUILD" = "cabal-v2"
   then
     test -n "$CABAL_BUILD_TARGETS" || CABAL_BUILD_TARGETS=all
+    test -n "$CABAL_HADDOCK_TARGETS" || CABAL_HADDOCK_TARGETS=.
 
     CABAL_BUILD_OPTIONS=$(cat << EOF
       $(test -n "$DISABLE_TEST" || echo "--enable-tests")
@@ -714,6 +717,7 @@ EOF
       cabal_only_var CABAL_TEST_OPTIONS
       cabal_only_var CABAL_DISABLE_DEPS
       cabal_only_var CABAL_BUILD_TARGETS
+      cabal_only_var CABAL_HADDOCK_TARGETS
     fi
 
     if test -z "$(need_stack)"
@@ -1773,9 +1777,8 @@ build_and_test() {
         run_verbose_errexit $SDIST_CABALCMD v2-haddock \
           --with-compiler "$COMPILER_EXE_PATH" \
           $GHCJS_FLAG $CABAL_BUILD_OPTIONS \
-          --no-haddock-deps \
           $HADDOCK_OPTIONS \
-          $CABAL_BUILD_TARGETS
+          $CABAL_HADDOCK_TARGETS
       fi
 
       if test -z "$DISABLE_TEST"
