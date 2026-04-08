@@ -599,9 +599,11 @@ show_build_config() {
 }
 
 show_build_env() {
-  show_nonempty_var HOME
-  show_nonempty_var APPDATA
-  show_nonempty_var STACK_ROOT
+  OTHER_ENVVARS="HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME APPDATA STACK_ROOT CABAL_DIR CABAL_CONFIG CABAL_BUILDDIR HTTP_PROXY HTTPS_PROXY GHC"
+  for i in $OTHER_ENVVARS
+  do
+    show_nonempty_var $i
+  done
 }
 
 need_stack() {
@@ -1503,6 +1505,7 @@ ensure_cabal_config() {
   local cfg
   local new_cfg
 
+  # XXX Use cabal path to determine the path
   # Precedence: CABAL_CONFIG > CABAL_DIR > Legacy > XDG
   if test -n "$CABAL_CONFIG"; then
     cfg="$CABAL_CONFIG"
