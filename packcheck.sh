@@ -477,7 +477,7 @@ show_help() {
   show_step1 "Selecting tool versions"
   # untested/unsupported
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
-  help_envvar GHCUP_VERSION "[a.b.c.d] ghcup version to install at $GHCUP_PATH (see $GHCUP_URL_PREFIX)"
+  help_envvar GHCUP_VERSION "[a.b.c.d] or 'latest' to install at $GHCUP_PATH (for versions see $GHCUP_URL_PREFIX)"
   help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
@@ -1080,7 +1080,16 @@ ghcup_install() {
     GHCUP_ARCH="$arch_id-$os_id"
 
     # Check available versions here: https://downloads.haskell.org/~ghcup/
-    URL="$GHCUP_URL_PREFIX/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
+    if test "$GHCUP_VERSION" = latest
+    then
+      URL="$GHCUP_URL_PREFIX/${GHCUP_ARCH}-ghcup"
+    elif test -n "$GHCUP_VERSION"
+    then
+      URL="$GHCUP_URL_PREFIX/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
+    else
+      die "Please use GHCUP_VERSION=<ver>|latest to install ghcup"
+    fi
+
     if [ "$os_id" = "mingw64" ]; then
       URL="${URL}.exe"
     fi
