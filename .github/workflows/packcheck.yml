@@ -199,7 +199,8 @@ jobs:
           - name: ci
             runner: windows-latest
             command: cabal
-            ghc_version: 9.12.4
+            # Use whichever available or latest ghc
+            #ghc_version: 9.12.4
             # WARNING! cannot use # comments inside pack_options.
             # DISABLE_SDIST_BUILD for shorter paths on Windows
             pack_options: >-
