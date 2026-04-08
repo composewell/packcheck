@@ -7,7 +7,7 @@
 
 **Packcheck** is a universal Haskell build and CI script designed for
 uniform, consistent testing across all platforms (Linux, macOS, Windows,
-FreeBSD). It is the simplest way to build and test your packages
+FreeBSD). It is the simplest way to build and test your Haskell packages
 comprehensively, ensuring your local environment and CI pipeline run
 identical checks with minimal configuration.
 
@@ -61,8 +61,6 @@ CI tests locally by executing the script directly:
 ./packcheck.sh cabal GHCVER=9.14.1
 ```
 
-### Streamlined CI
-
 If you prefer to commit `packcheck.sh` directly to your repository root,
 your GitHub workflow becomes even leaner:
 
@@ -109,25 +107,38 @@ benchmarks, Haddock generation, or coverage.
 
 ## Key Features
 
-* **Identical Testing:** Run the exact same test suite locally that runs on your CI—eliminating "it worked on my machine" issues.
-* **Deep Diagnostics:** Precise error messages and detailed build metadata (tool paths, versions, timing) for every step.
+* **Identical Testing:** Run the exact same test suite locally that runs
+on your CI—eliminating "it worked on my machine" issues.
+* **Deep Diagnostics:** Precise error messages and detailed build
+metadata (tool paths, versions, timing) for every step.
 * **Production-Ready Checks:**
-    * **SDist Verification:** Builds from the generated tarball to ensure no files are missing from your release.
-    * **Git Parity:** Automatically alerts you if files in your repository are missing from the source distribution.
-* **Smart GHC Discovery:** Automatically resolves GHC versions from PATH, `ghcup` (with auto-install), or Stack.
-* **Zero-Footprint:** Non-destructive by default. It won’t alter your global configs or upgrade tools unless explicitly requested.
-* **Declarative Control:** Toggle benchmarks, docs, coverage, or `hlint` via simple environment variables.
-* **Docspec Integration:** Seamlessly run doctest-style snippets within your source code using `cabal-docspec`. Toggle it on with a single variable and optionally provide a custom binary URL for specific environments.
+    * **SDist Verification:** Builds from the generated tarball to
+    ensure no files are missing from your release.
+    * **Git Parity:** Automatically alerts you if files in your
+    repository are missing from the source distribution.
+* **Smart GHC Discovery:** Automatically resolves GHC versions from
+PATH, `ghcup` (with auto-install), or Stack.
+* **Zero-Footprint:** Non-destructive by default. It won’t alter your
+global configs or upgrade tools unless explicitly requested.
+* **Declarative Control:** Toggle benchmarks, docs, coverage, or `hlint`
+via simple environment variables.
+* **Docspec Integration:** Seamlessly run doctest-style snippets within
+your source code using `cabal-docspec`. Toggle it on with a single
+variable and optionally provide a custom binary URL for specific
+environments.
 
 ---
 
 ## Advanced CI & Caching
 
-For complex projects, Packcheck supports **Split Caching**. The CI is architected to save progress at logical boundaries:
+For complex projects, Packcheck supports **Split Caching**. The CI is
+architected to save progress at logical boundaries:
 1.  **Post-Tool Install:** Caches GHC/Cabal/Stack if the build fails early.
-2.  **Post-Dependency:** Caches the build artifacts before running your local tests.
+2.  **Post-Dependency:** Caches the build artifacts before running your
+local tests.
 
-This ensures that even after a failure, your next CI run starts from the last successful compilation step, significantly reducing iteration time.
+This ensures that even after a failure, your next CI run starts from the
+last successful compilation step, significantly reducing iteration time.
 
 ---
 
@@ -160,7 +171,7 @@ speed up the check:
   ENABLE_DOCSPEC="y" \
   DISABLE_SDIST_BUILD="y" \
   DOCSPEC_OPTIONS="--timeout 60" \
-  DOCSPEC_URL="[https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz](https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz)"
+  DOCSPEC_URL="https://github.com/phadej/cabal-extras/releases/download/cabal-docspec-0.0.0.20250606/cabal-docspec-0.0.0.20250606-x86_64-linux.xz"
 ```
 
 > **Tip:** Instead of passing the options on the command line, you can also
@@ -171,12 +182,19 @@ speed up the check:
 
 ## Pro-Tips & Advanced Logic
 
-* **GHC Resolution:** If `GHCVER` is a prefix (e.g., `9.12`), Packcheck finds the first matching binary in your `PATH`. Set `GHCVER=head` to specifically target `ghc-head`.
+* **GHC Resolution:** If `GHCVER` is a prefix (e.g., `9.12`), Packcheck
+finds the first matching binary in your `PATH`. Set `GHCVER=head` to
+specifically target `ghc-head`.
 * **Hybrid Workflows:** You can use Stack-installed GHCs for Cabal builds: 
     `stack exec ./packcheck.sh cabal RESOLVER=lts-21`
-* **Template Repo:** This repository is a fully functional "Hello World" Haskell package. You can clone it as a foundation for new projects to get CI, testing, and benchmarking pre-configured.
-* **Tooling Pass-through:** Use `HLINT_OPTIONS` and `STACK_BUILD_OPTIONS` to pass raw flags directly to the underlying tools.
-* **Split Caching Control:** Use `SKIP_POST_DEP` and `SKIP_PRE_DEP` in your CI YAML to manually manage where caching starts and stops.
+* **Template Repo:** This repository is a fully functional "Hello World"
+Haskell package. You can clone it as a foundation for new projects to
+get CI, testing, and benchmarking pre-configured.
+* **Tooling Pass-through:** Use `HLINT_OPTIONS` and
+`STACK_BUILD_OPTIONS` to pass raw flags directly to the underlying
+tools.
+* **Split Caching Control:** Use `SKIP_POST_DEP` and `SKIP_PRE_DEP` in
+your CI YAML to manually manage where caching starts and stops.
 
 ---
 

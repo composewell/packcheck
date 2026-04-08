@@ -133,6 +133,7 @@ show_step1() {
   echo "--------------------------------------------------"
   echo "$1"
   echo "--------------------------------------------------"
+  echo
 }
 
 # $1: msg
@@ -1577,7 +1578,6 @@ create_and_unpack_pkg_dist() {
 
   local tarpath=${SDIST_DIR}/${pkgtar}
   rm -f $tarpath
-  echo
   run_verbose_errexit $SDIST_CMD
   if test ! -f $tarpath
   then
@@ -1680,7 +1680,6 @@ then add them to .packcheck.ignore file at the root of the git repository."
   cd .packcheck || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
   $OS_UNGZTAR_CMD $tarpath
-  echo
 
   # NOTE: We are entering the sdist directory inside .packcheck now. The
   # original tree is intact. When we remove the cabal.project or stack.yaml
@@ -1763,7 +1762,6 @@ build_and_test() {
       run_verbose_errexit $SDIST_CABALCMD v2-build \
         --with-compiler "$COMPILER_EXE_PATH" \
         $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
-      echo
 
       if test -z "$DISABLE_DOCS"
       then
@@ -1783,7 +1781,6 @@ build_and_test() {
         then
           SHOW_DETAILS="--test-show-details=streaming"
         fi
-        echo
         run_verbose_errexit $SDIST_CABALCMD v2-test \
           --with-compiler "$COMPILER_EXE_PATH" \
           $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_TEST_OPTIONS $CABAL_BUILD_TARGETS
@@ -1795,7 +1792,6 @@ dist_checks() {
   case "$BUILD" in
     stack) run_verbose $SDIST_STACKCMD sdist $SDIST_OPTIONS ;;
     cabal-v2)
-      echo
       if test -n "$CABAL_CHECK_RELAX"
       then
         run_verbose $CABAL_BINARY_NAME check || true
@@ -2094,8 +2090,8 @@ build_compile () {
   show_step "Check and install build tools"
 
   test -z "$(need_stack)" \
-    || ensure_stack ${LOCAL_BIN} \
-    && echo
+    || ensure_stack ${LOCAL_BIN}
+
   # The tar installed by pacman does not seem to work. Maybe we need to have it
   # packed with msys itself.
   # ensure_msys_tools "tar" && require_cmd tar
