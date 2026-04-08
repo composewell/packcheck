@@ -910,7 +910,8 @@ find_binary () {
     if test -z "$2" || check_version $binary $2
     then
       PATH=$PATH$removed_path
-      echo "Found. PATH set to [$PATH]..."
+      echo "Found [$1] version prefix [$2] at [$binary]..."
+      echo "PATH is now set to [$PATH]..."
       return 0
     else
       # remove it from the path and search again
@@ -920,7 +921,7 @@ find_binary () {
       binary="$(which_cmd $1)"
     fi
   done
-  echo "Not found."
+  echo "[$1] not found in PATH."
 
   # If we did not find the binary, restore the PATH for better error reporting
   PATH=$path
@@ -947,12 +948,13 @@ find_binary () {
           dir=`pwd`/$dir
         fi
         PATH=$dir/bin:$PATH
-        echo "Found. PATH set to [$PATH]..."
+        echo "Found [$1] version prefix [$2] at [$dir/bin/$1]..."
+        echo "PATH is now set to [$PATH]..."
         export PATH
         return 0
       fi
     fi
-    echo "Not found."
+    echo "[$1] not found in PATH."
   fi
 
   STACK_ROOT_PATH="~/.stack"
@@ -975,12 +977,13 @@ find_binary () {
           dir=`pwd`/$dir
         fi
         PATH=$dir/bin:$PATH
-        echo "Found. PATH set to [$PATH]..."
+        echo "Found [$1] version prefix [$2] at [$dir/bin/$1]..."
+        echo "PATH is now set to [$PATH]..."
         export PATH
         return 0
       fi
     fi
-    echo "Not found."
+    echo "[$1] not found in PATH."
   fi
   return 1
 }
