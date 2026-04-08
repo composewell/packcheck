@@ -2136,8 +2136,8 @@ build_compile () {
   # ensure_msys_tools "tar" && require_cmd tar
 
   # This may use STACKCMD so happens after stack install
-  determine_build_type && echo
-  ensure_ghc && echo
+  determine_build_type
+  ensure_ghc
   dont_need_cabal 'verbose' || ensure_cabal ${LOCAL_BIN}
 
   case "$(uname -s)" in
@@ -2342,13 +2342,15 @@ show_build_env
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
 echo
 echo "Original PATH is [$PATH]..."
+PATH_PREFIX=
 if test "$BUILD" = "cabal-v2"
 then
-    export PATH=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH
+    PATH_PREFIX=$OS_APP_HOME/$OS_CABAL_DIR/bin
 fi
-export PATH=$LOCAL_BIN:$PATH
+PATH_PREFIX=$LOCAL_BIN:$PATH_PREFIX
+echo "Prefixing $PATH_PREFIX to PATH"
+export PATH=$PATH_PREFIX:$PATH
 echo
-echo "Added $LOCAL_BIN to PATH [$PATH]"
 
 # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
 # cabal does not complain
