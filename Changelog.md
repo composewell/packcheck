@@ -1,6 +1,12 @@
 ## Unreleased
 
-* Support using ghcup on Windows
+* Windows: Support installing ghc using ghcup.
+* Caching: New `BUILD_ONLY_DEPS` and `BUILD_POST_DEPS` flags to
+    allow pausing/resuming builds for CI cache optimization.
+* Diagnostics: Enhanced machine info captures `df`, `mount`, and
+    detailed CPU/RAM stats across all supported OSs.
+* Fixed many quirks, so that it works smoothly in as many cases as possible.
+* Overhauled all the CI config templates for current and more complex usage
 
 ## 0.7.1 (Feb 2025)
 
