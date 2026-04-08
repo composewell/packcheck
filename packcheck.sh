@@ -306,6 +306,7 @@ SAFE_ENVVARS="\
   CABAL_DISABLE_DEPS \
   CABAL_BUILD_TARGETS \
   CABAL_HADDOCK_TARGETS \
+  CABAL_INDEX_STALE_THRESHOLD \
   HADDOCK_OPTIONS \
   COVERAGE \
   COVERALLS_OPTIONS \
@@ -491,6 +492,7 @@ show_help() {
   help_envvar CABAL_TEST_OPTIONS "ADDITIONAL cabal test options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not return failure if 'cabal check' fails on the package."
   help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
+  help_envvar CABAL_INDEX_STALE_THRESHOLD "Do not attempt cabal update until it is stale by this many hours."
   help_envvar HADDOCK_OPTIONS "ADDITIONAL haddock build options to append to defaults"
 
   show_step1 "stack options"
@@ -725,6 +727,7 @@ EOF
       cabal_only_var CABAL_DISABLE_DEPS
       cabal_only_var CABAL_BUILD_TARGETS
       cabal_only_var CABAL_HADDOCK_TARGETS
+      cabal_only_var CABAL_INDEX_STALE_THRESHOLD
     fi
 
     if test -z "$(need_stack)"
@@ -1502,6 +1505,56 @@ determine_build_type() {
   fi
 }
 
+do_cabal_update() {
+  # 1. Determine the cache path using cabal path
+  # The remote-repo-cache path contains the index for hackage.haskell.org
+  CACHE_DIR=$(cabal path --remote-repo-cache 2>/dev/null)
+
+  # Fallback for older Cabal versions (< 3.10)
+  if test -z "$CACHE_DIR"; then
+      CACHE_DIR="${CABAL_DIR:-$HOME/.cabal}/packages/hackage.haskell.org"
+  else
+      # cabal path returns the base cache dir, we need the specific repo subfolder
+      CACHE_DIR="$CACHE_DIR/hackage.haskell.org"
+  fi
+
+  INDEX_FILE="$CACHE_DIR/01-index.tar"
+
+  # 2. Set the threshold (Default to 72 hours if not set)
+  # Variable: CABAL_INDEX_STALE_THRESHOLD (in hours)
+  STALE_HOURS=${CABAL_INDEX_STALE_THRESHOLD:-72}
+
+  if test -f "$INDEX_FILE"; then
+      # Calculate file age in hours
+      # Using 'stat' is more portable for hours than 'find'
+      # %Y = last modification time in seconds since epoch
+      LAST_UPDATE=$(stat -c %Y "$INDEX_FILE" 2>/dev/null || stat -f %m "$INDEX_FILE" 2>/dev/null)
+      NOW=$(date +%s)
+      
+      AGE_SECONDS=$((NOW - LAST_UPDATE))
+      AGE_HOURS=$((AGE_SECONDS / 3600))
+
+      if test "$AGE_HOURS" -lt "$STALE_HOURS"; then
+          echo "Cabal index is ${AGE_HOURS}h old (threshold is ${STALE_HOURS}h). Skipping update."
+          SKIP_UPDATE=y
+      fi
+  else
+      echo "Cabal index not found at $INDEX_FILE."
+  fi
+
+  # 3. Execute update if needed
+  if test "$SKIP_UPDATE" != "y"; then
+      echo
+      echo "cabal v2-update"
+      if test -n "$CABAL_PROJECT"
+      then
+        retry_cmd $CABAL_BINARY_NAME v2-update --project-file "$CABAL_PROJECT"
+      else
+        retry_cmd $CABAL_BINARY_NAME v2-update
+      fi
+  fi
+}
+
 ensure_cabal_config() {
   # When cabal versions change across builds on a CI host its safer to remove
   # the old config so that the build does not error out.
@@ -1554,14 +1607,7 @@ ensure_cabal_config() {
 
     if test -z "$CABAL_DISABLE_DEPS"
     then
-      echo
-      echo "cabal v2-update"
-      if test -n "$CABAL_PROJECT"
-      then
-        retry_cmd $CABAL_BINARY_NAME v2-update --project-file "$CABAL_PROJECT"
-      else
-        retry_cmd $CABAL_BINARY_NAME v2-update
-      fi
+      do_cabal_update
     fi
   fi
 }
