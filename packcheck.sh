@@ -777,6 +777,8 @@ fetch_stack() {
 
 # $1: directory to place stack executable in
 ensure_stack() {
+  show_step "Check and install stack"
+
   if test -z "$(which_cmd stack)"
   then
     echo "Downloading stack to [$1]..."
@@ -1099,6 +1101,7 @@ ensure_default_ghc() {
 # NOTE: this should be called before ensure_cabal as ensure_cabal needs
 # default_ghc to run "cabal path".
 ensure_ghc() {
+  show_step "Check and install GHC"
   local found
   local compiler
   # If there is a ghc in PATH then use that otherwise install it using
@@ -1288,6 +1291,8 @@ ensure_cabal() {
   # We can only do this after ghc is installed.
   # We need cabal to retrieve the package version
   # We are assuming CI cache will be per resolver so we can cache the bin
+
+  show_step "Check and install cabal"
 
   find_binary $CABAL_BINARY_NAME "$CABALVER"
   found=$?
@@ -2096,9 +2101,6 @@ run_docspec() {
 
 # stack or cabal build (i.e. not hlint)
 build_compile () {
-  # ---------Install any tools needed--------
-  show_step "Check and install build tools"
-
   test -z "$(need_stack)" \
     || ensure_stack ${LOCAL_BIN}
 
