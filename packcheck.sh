@@ -305,6 +305,7 @@ SAFE_ENVVARS="\
   CABAL_TEST_OPTIONS \
   CABAL_DISABLE_DEPS \
   CABAL_BUILD_TARGETS \
+  HADDOCK_OPTIONS \
   COVERAGE \
   COVERALLS_OPTIONS \
   HLINT_VERSION \
@@ -488,6 +489,7 @@ show_help() {
   help_envvar CABAL_TEST_OPTIONS "ADDITIONAL cabal test options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not return failure if 'cabal check' fails on the package."
   help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
+  help_envvar HADDOCK_OPTIONS "ADDITIONAL haddock build options to append to defaults"
 
   show_step1 "stack options"
   help_envvar STACK_YAML "Alternative stack config file path relative to project root"
@@ -662,7 +664,7 @@ verify_build_config() {
 
     STACK_BUILD_OPTIONS_ORIG=$STACK_BUILD_OPTIONS
     STACK_BUILD_OPTIONS=$(cat << EOF
-      $(test -n "$DISABLE_DOCS" || echo "--haddock --no-haddock-deps")
+      $(test -n "$DISABLE_DOCS" || echo "--haddock --no-haddock-deps $HADDOCK_OPTIONS")
       $(test -n "$DISABLE_TEST" || echo "--test")
       $(test -n "$DISABLE_BENCH" || echo "--bench --no-run-benchmarks")
       $(test -z "${COVERAGE}" || echo --coverage)
@@ -1770,7 +1772,10 @@ build_and_test() {
         show_step "Build haddock docs"
         run_verbose_errexit $SDIST_CABALCMD v2-haddock \
           --with-compiler "$COMPILER_EXE_PATH" \
-          $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+          $GHCJS_FLAG $CABAL_BUILD_OPTIONS \
+          --no-haddock-deps \
+          $HADDOCK_OPTIONS \
+          $CABAL_BUILD_TARGETS
       fi
 
       if test -z "$DISABLE_TEST"
