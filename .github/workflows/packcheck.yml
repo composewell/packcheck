@@ -201,7 +201,9 @@ jobs:
             command: cabal
             ghc_version: 9.12.4
             # WARNING! cannot use # comments inside pack_options.
+            # DISABLE_SDIST_BUILD for shorter paths on Windows
             pack_options: >-
+              DISABLE_SDIST_BUILD="y"
               CABAL_PROJECT=cabal.project
 
           - name: ci
@@ -248,7 +250,7 @@ jobs:
         # This does not seem to make much difference.
         # Disable Windows Defender to speed up IO/Tar operations
         Set-MpPreference -DisableRealtimeMonitoring $true
-        
+
     - uses: actions/checkout@v4
 
     # This should happen before cache restore.
@@ -361,6 +363,9 @@ jobs:
             export GHCUP_INSTALL_BASE_PREFIX=$HOME
             ;;
           CYGWIN*|MINGW*|MSYS*)
+            # To keep the paths shorter on Windows
+            # XXX Will docspec work with this?
+            export CABAL_BUILDDIR="C:\b"
             PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
