@@ -1398,6 +1398,8 @@ ensure_cabal() {
   verlte $MIN_CABALVER $CABALVER || \
       die "Cabal version should at least be $MIN_CABALVER"
 
+  ensure_cabal_config
+
   if test -n "$HAVE_DEFAULT_GHC"
   then
     echo
@@ -2025,7 +2027,6 @@ build_hlint() {
   else
     ensure_ghc
     ensure_cabal ${LOCAL_BIN}
-    ensure_cabal_config
     case "$BUILD" in
       cabal-v2) run_verbose_errexit $CABALCMD v2-install hlint ;;
       *) echo "Bug: unknown build type: $BUILD" ;;
@@ -2262,7 +2263,6 @@ build_compile () {
   # ---------Create dist, unpack, install deps, test--------
   show_step "Check tools and build configuration"
   dont_need_cabal || ensure_cabal_project
-  dont_need_cabal || ensure_cabal_config
   if test -z "$DISABLE_SDIST_BUILD"
   then
     determine_package_full_name
