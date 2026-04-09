@@ -355,10 +355,12 @@ jobs:
           rm -f cabal.project
           cd "$SUBDIR"
         fi
-        # Use the default PATH instead of a clean PATH_VAR so that we can make
-        # use of the default installed latest ghc version.
-        # Commands like mount, sysctl for info require sbin
-        # PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
+        # Shorter PATH makes finding binaries in PATH with cold caches faster.
+        # Make sure we have the github ghcup dir in PATH to make use of the
+        # pre-installed GHC.
+        # Commands like mount, sysctl for info require sbin paths
+        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/.ghcup/bin
+        #export TOOLS_DIR=/usr/local/.ghcup
         case "$(uname)" in
           Linux)
             # On Linux it defaults to /usr/local, during cache restore
@@ -369,17 +371,14 @@ jobs:
             # To keep the paths shorter on Windows
             # XXX Will docspec work with this?
             export CABAL_BUILDDIR="C:\b"
-            #PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
-            PATH="$PATH:/c/Program Files/7-Zip:/mingw64/bin"
+            PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
         # Use "bash -c" instead of invoking directly to preserve quoted
         # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
         # Direct invocation would word-split on spaces inside quoted values.
-        #echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        #bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_ONLY_DEPS=y PATH=\"$PATH_VAR\""
-        echo "$PACKCHECK $PACKCHECK_COMMAND BUILD_ONLY_DEPS=y"
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_ONLY_DEPS=y"
+        echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_ONLY_DEPS=y PATH=\"$PATH_VAR\""
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
@@ -436,8 +435,12 @@ jobs:
         then
           cd "$SUBDIR"
         fi
-        # Commands like mount, sysctl for info require sbin
-        # PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
+        # Shorter PATH makes finding binaries in PATH with cold caches faster.
+        # Make sure we have the github ghcup dir in PATH to make use of the
+        # pre-installed GHC.
+        # Commands like mount, sysctl for info require sbin paths
+        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/.ghcup/bin
+        #export TOOLS_DIR=/usr/local/.ghcup
         case "$(uname)" in
           Linux)
             # On Linux it defaults to /usr/local, during cache restore
@@ -445,14 +448,11 @@ jobs:
             export GHCUP_INSTALL_BASE_PREFIX=$HOME
             ;;
           CYGWIN*|MINGW*|MSYS*)
-            #PATH_VAR="$PATH_VAR:/c/Program Files/7-Zip:/mingw64/bin"
-            PATH="$PATH:/c/Program Files/7-Zip:/mingw64/bin"
+            PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
-        #echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        #bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_POST_DEPS=y PATH=\"$PATH_VAR\""
-        echo "$PACKCHECK $PACKCHECK_COMMAND BUILD_POST_DEPS=y"
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_POST_DEPS=y"
+        echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
+        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_POST_DEPS=y PATH=\"$PATH_VAR\""
 
     # Enable for debugging, this itself takes 50 sec on Windows, in packcheck
     # build which is tiny.
