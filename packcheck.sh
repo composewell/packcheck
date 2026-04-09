@@ -337,11 +337,10 @@ ALLOW_SPECIAL_ENVVARS="_"
 # These are allowed even in a clean environment.
 # These are either critical to the functioning ro do not affect the produced
 # artifacts..
-ALLOW_OTHER_ENVVARS="\
+ALLOW_COMMON_ENVVARS="\
 CHECK_ENV \
 PWD \
 SHLVL \
-APPDATA \
 CABAL_DIR \
 CABAL_CONFIG \
 CABAL_BUILDDIR \
@@ -351,7 +350,16 @@ HTTPS_PROXY \
 NO_PROXY \
 "
 
-ALLOW_ENVVARS="$ALLOW_SPECIAL_ENVVARS $ALLOW_OTHER_ENVVARS"
+ALLOW_WIN_ENVVARS="\
+MSYSTEM \
+SYSTEMROOT \
+WINDIR \
+APPDATA \
+"
+
+ALLOW_OTHER_ENVVARS="$ALLOW_COMMON_ENVVARS $ALLOW_WIN_ENVVARS"
+
+ALLOW_ENVVARS="$ALLOW_SPECIAL_ENVVARS $ALLOW_OTHER_ENVVARS $ALLOW_WIN_ENVVARS"
 
 # We do not use HOME, we determine it independently and then set it internally.
 OTHER_ENVVARS="\
