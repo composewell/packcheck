@@ -336,18 +336,18 @@ ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
 # These are either critical to the functioning ro do not affect the produced
 # artifacts..
 ALLOW_ENVVARS="\
-  _ \
-  CHECK_ENV \
-  PWD \
-  SHLVL \
-  APPDATA \
-  CABAL_DIR \
-  CABAL_CONFIG \
-  CABAL_BUILDDIR \
-  STACK_ROOT \
-  HTTP_PROXY \
-  HTTPS_PROXY \
-  NO_PROXY \
+_ \
+CHECK_ENV \
+PWD \
+SHLVL \
+APPDATA \
+CABAL_DIR \
+CABAL_CONFIG \
+CABAL_BUILDDIR \
+STACK_ROOT \
+HTTP_PROXY \
+HTTPS_PROXY \
+NO_PROXY \
 "
 
 # We do not use HOME, we determine it independently and then set it internally.
@@ -2347,6 +2347,9 @@ case $1 in
     short_help; exit 1 ;;
 esac
 
+test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
+test -z "$CHECK_ENV" || check_clean_env
+
 # This should be called after eval_env "$@" has been done above, so that PATH
 # is set.
 require_cmd_silent date
@@ -2388,9 +2391,6 @@ case $BUILD in
   -h|--help|help) show_help; exit;;
   --version|version) show_version; exit;;
 esac
-
-test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
-test -z "$CHECK_ENV" || check_clean_env
 
 require_cmd_silent bash
 echo
