@@ -77,10 +77,12 @@ jobs:
       # WARNING! you cannot use comments in common_pack_options
       common_pack_options: >-
         LC_ALL=C.UTF-8
-        CABAL_REINIT_CONFIG=y
-        CABAL_CHECK_RELAX=y
         GHCUP_VERSION=latest
         GHCVER=${{ matrix.ghc_version }}
+
+      cabal_pack_options: >-
+        CABAL_REINIT_CONFIG=y
+        CABAL_CHECK_RELAX=y
 
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
@@ -175,7 +177,6 @@ jobs:
             command: stack
             # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
-              CABAL_PROJECT=cabal.project
               STACK_UPGRADE="y"
               STACK_YAML="stack.yaml"
               DISABLE_SDIST_BUILD="y"
@@ -380,7 +381,12 @@ jobs:
         # We wrap everything in a string and then EVAL it
         # This is the ONLY way to keep KEY="value with spaces" together
         # Direct invocation would word-split on spaces inside quoted values.
-        ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
+        if test ${{ matrix.command }} = cabal
+        then
+          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ env.cabal_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
+        else
+          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
+        fi
         echo "Executing: $PACKCHECK_SAFE $ARGS"
         eval "$PACKCHECK_SAFE $ARGS"
 
@@ -455,7 +461,12 @@ jobs:
             PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
-        ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_POST_DEPS=y PATH="$PATH_VAR"'
+        if test ${{ matrix.command }} = cabal
+        then
+          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ env.cabal_pack_options }} ${{ matrix.pack_options }} BUILD_POST_DEPS=y PATH="$PATH_VAR"'
+        else
+          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_POST_DEPS=y PATH="$PATH_VAR"'
+        fi
         echo "Executing: $PACKCHECK $ARGS"
         eval "$PACKCHECK $ARGS"
 
