@@ -945,34 +945,41 @@ function path_remove {
 # $2: binary version prefix (e.g. 8 or 8.0 or 8.0.1)
 find_binary () {
   local binary
-  local path=$PATH
+  local path="$PATH"
   local removed_path
 
   echo "Looking for binary [$1] in PATH..."
-  binary=$(which_cmd $1)
+  # Quote positional parameters to handle spaces in names
+  binary="$(which_cmd "$1")"
+  
   while test -n "$binary"
   do
-    if test -z "$2" || check_version $binary $2
+    if test -z "$2" || check_version "$binary" "$2"
     then
-      PATH=$PATH$removed_path
+      # Ensure path concatenation is quoted
+      PATH="${PATH}${removed_path}"
       echo "Found [$1] version prefix [$2] at [$binary]..."
-      if test "$PATH" != $path
+      if test "$PATH" != "$path"
       then
         echo "PATH is changed to [$PATH]..."
       fi
       return 0
     else
       # remove it from the path and search again
-      echo "Mismatching $1 version found at [$(dirname $binary)], removing it from PATH and trying again"
-      removed_path=$removed_path:$(dirname $binary)
-      path_remove $(dirname $binary)
-      binary="$(which_cmd $1)"
+      # Always quote $(dirname ...) results
+      local bin_dir
+      bin_dir="$(dirname "$binary")"
+      echo "Mismatching $1 version found at [$bin_dir], removing it from PATH and trying again"
+      
+      removed_path="$removed_path:$bin_dir"
+      path_remove "$bin_dir"
+      binary="$(which_cmd "$1")"
     fi
   done
   echo "[$1] not found in PATH."
 
-  # If we did not find the binary, restore the PATH for better error reporting
-  PATH=$path
+  # Restore the PATH
+  PATH="$path"
 
   if test -n "$TOOLS_DIR"
   then
@@ -981,50 +988,54 @@ find_binary () {
     local dir
     if test -n "$2"
     then
-      dir=$(echo ${TOOLS_DIR}/$1/$2*/ | tr ' ' '\n' | sort | tail -1)
+      # Using a glob in a string requires careful handling
+      # We use 'ls -d' or a for loop if we want to be 100% space-safe
+      dir=$(ls -d "${TOOLS_DIR}/$1/"$2*/ 2>/dev/null | sort | tail -1)
     else
-      dir=$(echo ${TOOLS_DIR}/$1/[0-9]*/ | tr ' ' '\n' | sort | tail -1)
+      dir=$(ls -d "${TOOLS_DIR}/$1/"[0-9]*/ 2>/dev/null | sort | tail -1)
       test -x "${dir}/bin/$1" || dir="${TOOLS_DIR}/$1/head"
     fi
 
     if test -x "${dir}/bin/$1"
     then
-      if test -z "$2" || check_version "${dir}/bin/$1" $2
+      if test -z "$2" || check_version "${dir}/bin/$1" "$2"
       then
-        if [[ $dir != /* ]]
+        if [[ "$dir" != /* ]]
         then
-          dir=`pwd`/$dir
+          dir="$(pwd)/$dir"
         fi
-        PATH=$dir/bin:$PATH
+        PATH="$dir/bin:$PATH"
         echo "Found [$1] version prefix [$2] at [$dir/bin/$1]..."
         echo "PATH is now set to [$PATH]..."
         export PATH
         return 0
       fi
     fi
-    echo "[$1] not found in PATH."
   fi
 
-  STACK_ROOT_PATH="~/.stack"
+  # Note: ~ does not expand inside quotes. Use $HOME for consistency.
+  local stack_root_path="$HOME/.stack"
   if test -n "$STACK_ROOT"
   then
-    STACK_ROOT_PATH=$STACK_ROOT
+    stack_root_path="$STACK_ROOT"
   fi
-  # XXX what if there are multiple arch dirs in programs?
-  if test -d $STACK_ROOT_PATH -a "$1" = "ghc"
+
+  if test -d "$stack_root_path" && test "$1" = "ghc"
   then
-    echo "Looking for binary [$1] in [$STACK_ROOT_PATH]..."
-    # XXX We should pick the highest version by default
-    local dir=$(echo $STACK_ROOT_PATH/programs/*/${1}-${2}*/)
+    echo "Looking for binary [$1] in [$stack_root_path]..."
+    # Picks the highest version matching the pattern
+    local dir
+    dir=$(ls -d "$stack_root_path/programs"/*/"${1}-${2}"*/ 2>/dev/null | sort | tail -1)
+    
     if test -x "${dir}/bin/$1"
     then
-      if test -z "$2" || check_version "${dir}/bin/$1" $2
+      if test -z "$2" || check_version "${dir}/bin/$1" "$2"
       then
-        if [[ $dir != /* ]]
+        if [[ "$dir" != /* ]]
         then
-          dir=`pwd`/$dir
+          dir="$(pwd)/$dir"
         fi
-        PATH=$dir/bin:$PATH
+        PATH="$dir/bin:$PATH"
         echo "Found [$1] version prefix [$2] at [$dir/bin/$1]..."
         echo "PATH is now set to [$PATH]..."
         export PATH
@@ -2474,7 +2485,7 @@ fi
 # tools are. Anything used in require_cmd can be listed here. But the danger is
 # that we will put a requirement on a tool even if it may not be required in a
 # particular command's flow.
-TOOLS="awk cat curl cut date env head mkdir printf rm sleep sort tr uname which \
+TOOLS="awk cat curl cut date env head mkdir printf rm sleep sort tail tr uname which \
 $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
