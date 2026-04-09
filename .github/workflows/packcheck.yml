@@ -381,8 +381,8 @@ jobs:
         # This is the ONLY way to keep KEY="value with spaces" together
         # Direct invocation would word-split on spaces inside quoted values.
         ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
-        echo "Executing: $PACKCHECK $ARGS"
-        eval "$PACKCHECK $ARGS"
+        echo "Executing: $PACKCHECK_SAFE $ARGS"
+        eval "$PACKCHECK_SAFE $ARGS"
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
