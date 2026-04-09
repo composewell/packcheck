@@ -1667,7 +1667,7 @@ ensure_cabal_config() {
   if test -n "$CABAL_CONFIG"; then
     CABAL_OLD_CONFIG_PATH="$CABAL_CONFIG"
   elif test -n "$CABAL_DIR"; then
-    CABAL_OLD_CONFIG_PATH="$CABAL_DIR/config"
+    CABAL_OLD_CONFIG_PATH="$(cygpath -u $CABAL_DIR)/config"
   else
     CABAL_OLD_CONFIG_PATH="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
     CABAL_NEW_CONFIG_PATH="${OS_APP_HOME}/.config/cabal/config"
@@ -2456,7 +2456,21 @@ DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
 # See set_os_specific_vars
 case "$(uname)" in
   CYGWIN*|MINGW*|MSYS*)
-    GHCUP_PREFIX=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup ;;
+    GHCUP_PREFIX=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup
+    # cabal does not like unix style paths
+    if test -n "$CABAL_DIR"
+    then
+      CABAL_DIR=$(cygpath -w "$CABAL_DIR")
+    fi
+    if test -n "$CABAL_BUILDDIR"
+    then
+      CABAL_BUILDDIR=$(cygpath -w "$CABAL_BUILDDIR")
+    fi
+    if test -n "$CABAL_CONFIG"
+    then
+      CABAL_CONFIG=$(cygpath -w "$CABAL_CONFIG")
+    fi
+    ;;
   *)
     GHCUP_PREFIX="${GHCUP_INSTALL_BASE_PREFIX:-${OS_APP_HOME}}/.ghcup" ;;
 esac
