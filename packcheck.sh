@@ -1142,15 +1142,32 @@ ghcup_install() {
 }
 
 ensure_default_ghc() {
-  local ghc
-  ghc="$(which_cmd ghc)"
-  if test -z "$ghc"
-  then
-    HAVE_DEFAULT_GHC=
-    echo "WARNING! No default \"ghc\" found in PATH."
-    echo "WARNING! cabal path output will not be shown."
-    echo "WARNING! cabal info output will not be shown."
-  else
+  # Commands like cabal path, cabal info, cabal-docspec require a "ghc"
+  # in path they can't work with a versioned ghc-9.10.3 etc. Make sure that the
+  # compiler we are using is also available as "ghc" and not masked by any
+  # other "ghc" in PATH.
+
+	if test "$COMPILER" != ghc
+	then
+    # Use absolute path to prevent breaking PATH after 'cd'
+    local ghc_bin="$(pwd)/.packcheck/ghc-bin"
+    
+    echo "Compiler is [$COMPILER] creating a one-off symlink as 'ghc'"
+    
+    # Do not create a .packcheck/bin we might end up using stale
+    # binaries from a common presistent bin, just use a one-off
+    # .packcheck/ghc-bin dir instead which we always overwrite and then
+    # use.
+    mkdir -p "$ghc_bin" || exit 1
+    
+    # Handle Windows .exe if COMPILER_EXE_PATH has it
+    local exe_ext=""
+    [[ "$COMPILER_EXE_PATH" == *.exe ]] && exe_ext=".exe"
+
+    run_verbose_errexit ln -sf "$COMPILER_EXE_PATH" "$ghc_bin/ghc${exe_ext}"
+    
+    echo "Prefixing [$ghc_bin] to PATH"
+    export PATH="$ghc_bin:$PATH"
     HAVE_DEFAULT_GHC=y
   fi
 }
@@ -1263,13 +1280,13 @@ ensure_ghc() {
     compiler=$($STACKCMD path --compiler-exe) || exit 1
   fi
 
-  export COMPILER_EXE_PATH="$compiler"
   echo "Using $COMPILER at $compiler"
   echo "$($compiler --version) [$($compiler --print-project-git-commit-id 2> /dev/null || echo '?')]"
   # Use the real version, the user might have specified a version prefix in
   # GHCVER
   GHCVER=$($compiler --numeric-version) || exit 1
 
+  export COMPILER_EXE_PATH="$compiler"
   ensure_default_ghc
   ensure_node_for_ghcjs
 }
