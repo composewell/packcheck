@@ -200,8 +200,7 @@ jobs:
           - name: ci
             runner: windows-latest
             command: cabal
-            # Use whichever available or latest ghc
-            #ghc_version: 9.12.4
+            ghc_version: 9.14.1
             # WARNING! cannot use # comments inside pack_options.
             # DISABLE_SDIST_BUILD for shorter paths on Windows
             pack_options: >-
@@ -457,12 +456,12 @@ jobs:
 
     # hackage package index is part of C:/cabal
     # Deps are test/options specific, hence, matrix.name in the key
+    # Add if needed ~/AppData/Roaming/local
     - name: Save build dependencies (Windows)
       uses: actions/cache/save@v4
       if: always() && steps.deps-only.outcome == 'success' && runner.os == 'Windows' && steps.restore-deps-win.outputs.cache-hit != 'true'
       with:
         path: |
-          ${{ env.APPDATA }}/local
           C:/cabal
         key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}-${{ matrix.name }}
 
