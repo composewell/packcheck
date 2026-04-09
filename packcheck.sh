@@ -394,8 +394,11 @@ error_novar() {
 }
 
 error_clean_env() {
-    echo "Error: environment variable [$1] is set."
-    echo "Error: No environment variables except [$ALLOW_OTHER_ENVVARS] are allowed to be set when using CHECK_ENV=y"
+    # $1 will now contain the list of all offending variables
+    echo "Error: The following unallowed environment variables are set:"
+    echo "$1"
+    echo
+    echo "Error: No environment variables except [$ALLOW_OTHER_ENVVARS] are allowed when using CHECK_ENV=y."
     die "Please use a clean environment (e.g. env -i) with CHECK_ENV."
 }
 
@@ -405,10 +408,24 @@ error_clean_param() {
 
 check_clean_env() {
   local vars=$(env | cut -f1 -d=)
+  local found_bad_vars=""
+
   for i in $vars
   do
-    find_var $i "$ALLOW_ENVVARS" || error_clean_env "$i"
+    if ! find_var "$i" "$ALLOW_ENVVARS"; then
+      # Append the variable to our list
+      if [ -z "$found_bad_vars" ]; then
+        found_bad_vars="$i"
+      else
+        found_bad_vars="$found_bad_vars, $i"
+      fi
+    fi
   done
+
+  # If the list is not empty, report all of them and die
+  if [ -n "$found_bad_vars" ]; then
+    error_clean_env "$found_bad_vars"
+  fi
 }
 
 # $1: varname
