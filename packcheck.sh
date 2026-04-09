@@ -332,11 +332,12 @@ UNSAFE_ENVVARS="\
 
 ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
 
+ALLOW_SPECIAL_ENVVARS="_"
+
 # These are allowed even in a clean environment.
 # These are either critical to the functioning ro do not affect the produced
 # artifacts..
-ALLOW_ENVVARS="\
-_ \
+ALLOW_OTHER_ENVVARS="\
 CHECK_ENV \
 PWD \
 SHLVL \
@@ -349,6 +350,8 @@ HTTP_PROXY \
 HTTPS_PROXY \
 NO_PROXY \
 "
+
+ALLOW_ENVVARS="$ALLOW_SPECIAL_ENVVARS $ALLOW_OTHER_ENVVARS"
 
 # We do not use HOME, we determine it independently and then set it internally.
 OTHER_ENVVARS="\
@@ -384,7 +387,7 @@ error_novar() {
 
 error_clean_env() {
     echo "Error: environment variable [$1] is set."
-    echo "Error: No environment variables except [$ALLOW_ENVVARS] are allowed to be set when using CHECK_ENV=y"
+    echo "Error: No environment variables except [$ALLOW_OTHER_ENVVARS] are allowed to be set when using CHECK_ENV=y"
     die "Please use a clean environment (e.g. env -i) with CHECK_ENV."
 }
 
@@ -628,7 +631,7 @@ show_build_command() {
 
 # Environment on entry to packcheck
 show_build_env() {
-  for i in $OTHER_ENVVARS
+  for i in $ALLOW_OTHER_ENVVARS $OTHER_ENVVARS
   do
     show_nonempty_var $i
   done
@@ -1352,6 +1355,8 @@ ensure_cabal() {
   # We are assuming CI cache will be per resolver so we can cache the bin
 
   show_step "Check and install cabal"
+
+  dont_need_cabal 'verbose' && return
 
   find_binary $CABAL_BINARY_NAME "$CABALVER"
   found=$?
@@ -2237,7 +2242,7 @@ build_compile () {
   # This may use STACKCMD so happens after stack install
   determine_build_type
   ensure_ghc
-  dont_need_cabal 'verbose' || ensure_cabal ${LOCAL_BIN}
+  ensure_cabal ${LOCAL_BIN}
 
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*)
@@ -2300,7 +2305,7 @@ eval_env() {
         key=${1%%=*}
         val=${1#*=}
         find_var $key "$ENVVARS $ALLOW_ENVVARS" || error_clean_param "$key"
-        eval "$key=\"$val\""
+        eval "export $key=\"$val\""
         ;;
       (*)
         die "Expecting key=value pair, got [$1]"
@@ -2344,20 +2349,29 @@ set -o pipefail
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
 
+test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
+test -z "$CHECK_ENV" || check_clean_env
+
 # For commands make sure we call eval_env "$@" before doing anything else so
 # that the envvars passed on the command line are evaluated first. We may have
 # PATH as one of the args which we need to evaluate before running any
 # command.
 case $1 in
-  cabal|cabal-v2|stack|hlint|clean|cleanall|-h|--help|help|--version|version) BUILD=$1; shift; eval_env "$@" ;;
+  cabal|cabal-v2|stack|hlint|clean|cleanall|-h|--help|help|--version|version) BUILD=$1; shift ;;
   cabal-v1) die "cabal-v1 is not supported, please use cabal-v2 instead";;
   cabal-new) die "cabal-new is not supported, please use cabal-v2 instead";;
   *) echo -e "$(basename $0): unrecognized command [$1]\n"
     short_help; exit 1 ;;
 esac
 
-test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
-test -z "$CHECK_ENV" || check_clean_env
+# ---------Show, process and verify the config------------
+show_step1 "Implicit environment"
+show_build_env
+
+eval_env "$@"
+
+# After eval_env the PATH changes
+hash -r
 
 # This should be called after eval_env "$@" has been done above, so that PATH
 # is set.
@@ -2434,9 +2448,7 @@ for i in $TOOLS; do require_cmd $i; done
 show_step "Build host machine information"
 show_machine_info
 
-# ---------Show, process and verify the config------------
-show_step "Original build environment"
-show_build_env
+show_step "Prepare to install tools"
 
 #------------------------------------------------------------------------------
 # Some adjustments to the build environment
@@ -2445,16 +2457,14 @@ show_build_env
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
 # XXX add paths only if not already on PATH, but sometimes we have to add path
 # at head for precedence even if it is already on PATH.
-echo
-echo "Original PATH is [$PATH]..."
-PATH_PREFIX=
+#echo "Original PATH is [$PATH]..."
+PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN
 if test "$BUILD" = "cabal-v2"
 then
-    PATH_PREFIX=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH_PREFIX
+    PATH_PREFIX=$PATH_PREFIX:$OS_APP_HOME/$OS_CABAL_DIR/bin
 fi
-PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN:$PATH_PREFIX
 
-echo "Prefixing $PATH_PREFIX to PATH"
+echo "Prefixing [$PATH_PREFIX] to PATH"
 export PATH=$PATH_PREFIX:$PATH
 echo
 
