@@ -1628,48 +1628,38 @@ ensure_cabal_config() {
   # the old config so that the build does not error out.
   #
   # XXX Note that config may also be set on command line --config
-  local cfg
-  local new_cfg
+
+  # For cabal-docspec
+  CABAL_OLD_CONFIG_PATH=
+  CABAL_NEW_CONFIG_PATH=
 
   # XXX Use cabal path to determine the path, but it was introduced in cabal
   # 3.10.
   # Precedence: CABAL_CONFIG > CABAL_DIR > Legacy > XDG
   if test -n "$CABAL_CONFIG"; then
-    cfg="$CABAL_CONFIG"
+    CABAL_OLD_CONFIG_PATH="$CABAL_CONFIG"
   elif test -n "$CABAL_DIR"; then
-    cfg="$CABAL_DIR/config"
+    CABAL_OLD_CONFIG_PATH="$CABAL_DIR/config"
   else
-    cfg="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
-    new_cfg="${OS_APP_HOME}/.config/cabal/config"
+    CABAL_OLD_CONFIG_PATH="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+    CABAL_NEW_CONFIG_PATH="${OS_APP_HOME}/.config/cabal/config"
   fi
 
   # We can use CABAL_CONFIG=/dev/null on Posix,
   # but that would disable remote repositories as well.
   if test "$CABAL_REINIT_CONFIG" = y
   then
-    echo "[CABAL_REINIT_CONFIG=y] Removing cabal config [$cfg]"
-    run_verbose_errexit rm -f "$cfg"
-    if test -n "$new_cfg"; then
-      run_verbose_errexit rm -f "$new_cfg"
+    echo "[CABAL_REINIT_CONFIG=y] Removing cabal config [$CABAL_OLD_CONFIG_PATH]"
+    run_verbose_errexit rm -f "$CABAL_OLD_CONFIG_PATH"
+    if test -n "$CABAL_NEW_CONFIG_PATH"; then
+      run_verbose_errexit rm -f "$CABAL_NEW_CONFIG_PATH"
     fi
   fi
 
   # If the config does not exist create it. Some commands fail without it.
-  if test ! -e "$new_cfg"
+  if test ! -e "$CABAL_NEW_CONFIG_PATH"
   then
     run_verbose "${CABAL_BINARY_NAME}" user-config init || true
-  fi
-
-  # cabal-docspec needs it (checked on 09-Apr-2026 for
-  # cabal-docspec-0.0.0.20250606-x86_64-linux.xz) at old location so
-  # generate it right away and link it.
-  if test -n "$new_cfg" -a ! -e "$cfg" -a -n "$ENABLE_DOCSPEC"
-  then
-    if test ! -f "$cfg" -a -f "$new_cfg"
-    then
-        mkdir -p "$(dirname "$cfg")"
-        run_verbose_errexit ln -s "$new_cfg" "$cfg"
-    fi
   fi
 
   if test "$BUILD" = "cabal-v2"
@@ -2135,7 +2125,6 @@ start_hlint() {
 }
 
 install_docspec() {
-  show_step "Installing docspec from $DOCSPEC_URL"
   case "$(uname)" in
       Linux)
           OS=linux;;
@@ -2148,6 +2137,7 @@ install_docspec() {
   }
   trap cleanup EXIT
 
+  echo "Installing docspec from $DOCSPEC_URL"
   # docspec does not have consistent release naming, therefore, use URL
   # directly instead of version.
   #URL="$DOCSPEC_URL_PREFIX/download/cabal-docspec-$DOCSPEC_VERSION/cabal-docspec-$DOCSPEC_VERSION-x86_64-$OS.xz"
@@ -2255,6 +2245,19 @@ run_docspec() {
     if test -n "$ENABLE_DOCSPEC"
     then
       show_step "Run cabal-docspec"
+
+      # cabal-docspec needs it (checked on 09-Apr-2026 for
+      # cabal-docspec-0.0.0.20250606-x86_64-linux.xz) at old location so
+      # generate it right away and link it.
+      if test -n "$CABAL_NEW_CONFIG_PATH" -a ! -e "$CABAL_OLD_CONFIG_PATH"
+      then
+        if test ! -f "$CABAL_OLD_CONFIG_PATH" -a -f "$CABAL_NEW_CONFIG_PATH"
+        then
+            mkdir -p "$(dirname "$CABAL_OLD_CONFIG_PATH")"
+            run_verbose_errexit ln -s "$CABAL_NEW_CONFIG_PATH" "$CABAL_OLD_CONFIG_PATH"
+        fi
+      fi
+
       # XXX docspec does not seem to honor --with-compiler though it lists that
       # as a flag. It uses "ghc" in PATH.
       run_verbose_errexit $SDIST_CABALCMD exec cabal-docspec -- $DOCSPEC_OPTIONS \
