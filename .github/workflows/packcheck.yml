@@ -29,12 +29,6 @@ jobs:
       ${{ matrix.name }}
     env:
       # ------------------------------------------------------------------------
-      # Common options
-      # ------------------------------------------------------------------------
-      CABAL_REINIT_CONFIG: y
-      LC_ALL: C.UTF-8
-
-      # ------------------------------------------------------------------------
       # What to build
       # ------------------------------------------------------------------------
       # DISABLE_TEST: "y"
@@ -49,12 +43,10 @@ jobs:
       # ------------------------------------------------------------------------
       # For updating see: https://downloads.haskell.org/~ghcup/
       #GHCUP_VERSION: 0.1.50.2
-      GHCVER: ${{ matrix.ghc_version }}
 
       # ------------------------------------------------------------------------
       # cabal options
       # ------------------------------------------------------------------------
-      CABAL_CHECK_RELAX: y
 
       # CABAL_BUILD_OPTIONS="-j1"
       # Enable the above option if you:
@@ -77,7 +69,18 @@ jobs:
       # version.
       #STACKVER: "1.6.5"
       #STACK_UPGRADE: "y"
-      STACK_YAML: "stack.yaml"
+
+      # ------------------------------------------------------------------------
+      # Common options
+      # ------------------------------------------------------------------------
+
+      # WARNING! you cannot use comments in common_pack_options
+      common_pack_options: >-
+        LC_ALL=C.UTF-8
+        CABAL_REINIT_CONFIG=y
+        CABAL_CHECK_RELAX=y
+        GHCUP_VERSION=latest
+        GHCVER=${{ matrix.ghc_version }}
 
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
@@ -87,18 +90,14 @@ jobs:
       # case it will be automatically copied from the packcheck repo to this path
       # during CI tests. In any case it is finally invoked from this path.
       PACKCHECK: "./packcheck.sh"
+      PACKCHECK_SAFE: "./packcheck-safe.sh"
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
       PACKCHECK_GITHUB_COMMIT: "4efa717bc63b4bbd0501a07df5c610849e5d6281"
-
-      # ------------------------------------------------------------------------
-      # Final build variables
-      # ------------------------------------------------------------------------
-      PACKCHECK_COMMAND: ${{ matrix.command }} ${{ matrix.pack_options }}
-
       # Subdir
       SUBDIR: ${{ matrix.subdir }}
+
     # ubuntu seems to have better support than debian on CI systems
     runs-on: ${{ matrix.runner }}
     #continue-on-error: ${{ matrix.ignore_error }}
@@ -178,6 +177,7 @@ jobs:
             pack_options: >-
               CABAL_PROJECT=cabal.project
               STACK_UPGRADE="y"
+              STACK_YAML="stack.yaml"
               DISABLE_SDIST_BUILD="y"
 
           - name: ci
@@ -334,12 +334,15 @@ jobs:
           then
               die "PACKCHECK_GITHUB_COMMIT env var is not specified."
           fi
-          PACKCHECK_URL=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck.sh
-          curl --fail -sL -o "$PACKCHECK" $PACKCHECK_URL || exit 1
+          PACKCHECK_URL_PREFIX=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck
+          curl --fail -sL -o "$PACKCHECK" ${PACKCHECK_URL_PREFIX}.sh || exit 1
           chmod +x $PACKCHECK
+          curl --fail -sL -o "$PACKCHECK" ${PACKCHECK_URL_PREFIX}-safe.sh || exit 1
+          chmod +x $PACKCHECK_SAFE
         elif test ! -x "$PACKCHECK"
         then
             chmod +x $PACKCHECK
+            chmod +x $PACKCHECK_SAFE
         fi
 
     - name: Run packcheck (dependencies only)
@@ -374,11 +377,12 @@ jobs:
             PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
-        # Use "bash -c" instead of invoking directly to preserve quoted
-        # arguments in PACKCHECK_COMMAND e.g. DOCSPEC_OPTIONS="--timeout 60".
+        # We wrap everything in a string and then EVAL it
+        # This is the ONLY way to keep KEY="value with spaces" together
         # Direct invocation would word-split on spaces inside quoted values.
-        echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_ONLY_DEPS=y PATH=\"$PATH_VAR\""
+        ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
+        echo "Executing: $PACKCHECK $ARGS"
+        eval "$PACKCHECK $ARGS"
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
@@ -451,8 +455,9 @@ jobs:
             PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
-        echo "$PACKCHECK $PACKCHECK_COMMAND PATH=\"$PATH_VAR\""
-        bash -c "$PACKCHECK $PACKCHECK_COMMAND BUILD_POST_DEPS=y PATH=\"$PATH_VAR\""
+        ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_POST_DEPS=y PATH="$PATH_VAR"'
+        echo "Executing: $PACKCHECK $ARGS"
+        eval "$PACKCHECK $ARGS"
 
     # Enable for debugging, this itself takes 50 sec on Windows, in packcheck
     # build which is tiny.
