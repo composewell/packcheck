@@ -24,4 +24,7 @@ do
     esac
 done
 
-eval "/usr/bin/env -i CHECK_ENV=y \"$PACKCHECK_DIR/packcheck.sh\" $PACKCHECK_CLI_OPTS"
+# Directly interpret using bash otherwise shebang in packcheck.sh may not work
+# because of PATH issues on Windows.
+BASH_BIN=$(command -v bash)
+eval "/usr/bin/env -i CHECK_ENV=y \"$BASH_BIN\" \"$PACKCHECK_DIR/packcheck.sh\" $PACKCHECK_CLI_OPTS"
