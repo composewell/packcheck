@@ -1628,18 +1628,24 @@ ensure_cabal_config() {
   # but that would disable remote repositories as well.
   if test "$CABAL_REINIT_CONFIG" = y
   then
-    echo "Removing old cabal config [$cfg]"
+    echo "[CABAL_REINIT_CONFIG=y] Removing cabal config [$cfg]"
     run_verbose_errexit rm -f "$cfg"
     if test -n "$new_cfg"; then
       run_verbose_errexit rm -f "$new_cfg"
     fi
   fi
 
-  # cabal-docspec may need it at old location so generate it right away and
-  # link it. This used to be the case but not sure if it is still like that.
-  if test -n "$new_cfg" -a ! -e "$new_cfg" -a -n "$ENABLE_DOCSPEC"
+  # If the config does not exist create it. Some commands fail without it.
+  if test ! -e "$new_cfg"
   then
     run_verbose "${CABAL_BINARY_NAME}" user-config init || true
+  fi
+
+  # cabal-docspec needs it (checked on 09-Apr-2026 for
+  # cabal-docspec-0.0.0.20250606-x86_64-linux.xz) at old location so
+  # generate it right away and link it.
+  if test -n "$new_cfg" -a ! -e "$cfg" -a -n "$ENABLE_DOCSPEC"
+  then
     if test ! -f "$cfg" -a -f "$new_cfg"
     then
         mkdir -p "$(dirname "$cfg")"
@@ -2254,7 +2260,7 @@ build_compile () {
   show_build_config
 
   # ---------Create dist, unpack, install deps, test--------
-  show_step "Build tools and build configuration"
+  show_step "Check tools and build configuration"
   dont_need_cabal || ensure_cabal_project
   dont_need_cabal || ensure_cabal_config
   if test -z "$DISABLE_SDIST_BUILD"
