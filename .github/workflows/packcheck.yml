@@ -353,40 +353,69 @@ jobs:
       run: |
         if test -n "$SUBDIR"
         then
-          mv "$PACKCHECK" "$SUBDIR/packcheck.sh"
+          mv "$PACKCHECK" "$SUBDIR/"
+          mv "$PACKCHECK_SAFE" "$SUBDIR/"
           # This is required otherwise dist-newstyle will be created in
           # the top level directory as it is considered the working dir.
           rm -f cabal.project
           cd "$SUBDIR"
         fi
+        # Checklist for safe path variables:
+        # * Use Double Quotes (if the value or the var may have spaces)
+        # * Escape Internal Quotes (or escape the var)
+        # * Use Forward Slashes (backward slashes act as escape chars)
+        # * Execute with eval (due to nested quoting or unexpanded vars)
+        #
+        ARGS="${{ matrix.command }}"
+        ARGS="$ARGS ${{ env.common_pack_options }}"
+        if test "${{ matrix.command }}" = "cabal"
+        then
+          ARGS="$ARGS ${{ env.cabal_pack_options }}"
+        fi
+        ARGS="$ARGS ${{ env.matrix_pack_options }}"
+        ARGS="$ARGS BUILD_ONLY_DEPS=y"
         # Shorter PATH makes finding binaries in PATH with cold caches faster.
-        # Make sure we have the github ghcup dir in PATH to make use of the
-        # pre-installed GHC.
         # Commands like mount, sysctl for info require sbin paths
-        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/.ghcup/bin
+        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
         #export TOOLS_DIR=/usr/local/.ghcup
         case "$(uname)" in
           Linux)
-            # On Linux it defaults to /usr/local, during cache restore
-            # tar is unable to change permissions and restore fails.
+            # On github it is set to /usr/local, because of that during
+            # cache restore tar is unable to change permissions and
+            # restore fails.
             export GHCUP_INSTALL_BASE_PREFIX=$HOME
+            # Make sure we have the github ghcup dir in PATH to make use
+            # of the pre-installed GHC.
+            PATH_VAR="$PATH_VAR:/usr/local/.ghcup/bin"
             ;;
           CYGWIN*|MINGW*|MSYS*)
-            # To keep the paths shorter on Windows
+            if test -n "$APPDATA"
+            then
+              SAFE_APPDATA=$(cygpath -u "$APPDATA")
+              ARGS="$ARGS APPDATA=\"$SAFE_APPDATA\""
+            fi
+
+            # To keep the paths shorter on Windows (260 char limit)
+            # On github CABAL_DIR=C:\cabal
+            if test -n "$CABAL_DIR"
+            then
+              SAFE_CABAL_DIR=$(cygpath -u "$CABAL_DIR")
+              ARGS="$ARGS CABAL_DIR=\"$SAFE_CABAL_DIR\""
+            fi
+
             # XXX Will docspec work with this?
-            export CABAL_BUILDDIR="C:\b"
+            ARGS="$ARGS CABAL_BUILDDIR=\"/c/b\""
+
+            ARGS="$ARGS WINVER=$WINVER"
+            ARGS="$ARGS NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS"
+            ARGS="$ARGS PROCESSOR_IDENTIFIER=\"$PROCESSOR_IDENTIFIER\""
             PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
             ;;
         esac
+        ARGS="$ARGS PATH=\"$PATH_VAR\""
         # We wrap everything in a string and then EVAL it
         # This is the ONLY way to keep KEY="value with spaces" together
         # Direct invocation would word-split on spaces inside quoted values.
-        if test ${{ matrix.command }} = cabal
-        then
-          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ env.cabal_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
-        else
-          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_ONLY_DEPS=y PATH="$PATH_VAR"'
-        fi
         echo "Executing: $PACKCHECK_SAFE $ARGS"
         eval "$PACKCHECK_SAFE $ARGS"
 
