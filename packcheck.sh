@@ -1047,6 +1047,7 @@ ghcup_install() {
   if test -n "$ghcup_path"
   then
     echo "Using existing $ghcup_path in PATH"
+    GHCUP_PATH="$ghcup_path"
   else
     # User can either add it in the PATH or we can use the full path of the
     # tool either as found in PATH or use GHCUP_PATH directly. We should
