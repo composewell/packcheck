@@ -455,7 +455,7 @@ show_help() {
   show_step1 "Where to find the required tools"
   help_envvar PATH "[path] Set PATH explicitly for predictable builds"
   # Untested/unsupported
-  #help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin"
+  help_envvar TOOLS_DIR "[dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin"
 
   show_step1 "Specifying common tool options"
   # TODO
@@ -592,7 +592,7 @@ show_build_command() {
   fi
 }
 
-OTHER_ENVVARS="HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME APPDATA STACK_ROOT CABAL_DIR CABAL_CONFIG CABAL_BUILDDIR HTTP_PROXY HTTPS_PROXY GHC"
+OTHER_ENVVARS="HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME APPDATA GHC GHC_PACKAGE_PATH STACK_ROOT CABAL_DIR CABAL_CONFIG CABAL_BUILDDIR HTTP_PROXY HTTPS_PROXY"
 
 # Environment on entry to packcheck
 show_build_env() {
@@ -921,7 +921,10 @@ find_binary () {
     then
       PATH=$PATH$removed_path
       echo "Found [$1] version prefix [$2] at [$binary]..."
-      echo "PATH is now set to [$PATH]..."
+      if test "$PATH" != $path
+      then
+        echo "PATH is changed to [$PATH]..."
+      fi
       return 0
     else
       # remove it from the path and search again
@@ -1004,9 +1007,6 @@ ghcup_install() {
   local GHCUP_ARCH
   local ghcup_path
 
-  # XXX add only if not already on PATH
-  PATH=$GHCUP_BIN:$PATH
-  echo "Added $GHCUP_BIN to PATH [$PATH]"
   ghcup_path=$(which_cmd ghcup)
 
   if test -n "$ghcup_path"
@@ -1111,6 +1111,41 @@ ensure_default_ghc() {
   fi
 }
 
+ensure_node_for_ghcjs() {
+  if test -n "$ENABLE_GHCJS"
+  then
+    local tmpdir
+    local shebang
+    local nodepath
+    local output
+
+    # XXX the temp file may not get removed on crash/interrupt
+    tmpdir=`mktemp -d 2>/dev/null || mktemp -d -t 'packcheck'`
+    echo "main=putStrLn \"hello\"" > $tmpdir/test.hs
+    $compiler -build-runner -o ${tmpdir}/run $tmpdir/test.hs
+    shebang=$(head -1 ${tmpdir}/run)
+    nodepath=${shebang:2}
+    echo "$compiler uses node at [${nodepath}] for executing js output"
+    if test -x $nodepath
+    then
+      echo "$nodepath is version [$($nodepath --version)]" || die "Cannot determine node version"
+    else
+      rm -rf $tmpdir
+      die "[$nodepath] not found or not executable"
+    fi
+    echo "Trying to run a test executable produced by [$compiler]..."
+    output=$(${tmpdir}/run)
+    rm -rf $tmpdir
+
+    if test "$output" != "hello"
+    then
+      die "[$compiler] cannot produce executables runnable by [$nodepath]"
+    else
+      echo "[$compiler] produces executables runnable by [$nodepath]"
+    fi
+  fi
+}
+
 # NOTE: this should be called before ensure_cabal as ensure_cabal needs
 # default_ghc to run "cabal path".
 ensure_ghc() {
@@ -1192,39 +1227,7 @@ ensure_ghc() {
   GHCVER=$($compiler --numeric-version) || exit 1
 
   ensure_default_ghc
-
-  if test -n "$ENABLE_GHCJS"
-  then
-    local tmpdir
-    local shebang
-    local nodepath
-    local output
-
-    # XXX the temp file may not get removed on crash/interrupt
-    tmpdir=`mktemp -d 2>/dev/null || mktemp -d -t 'packcheck'`
-    echo "main=putStrLn \"hello\"" > $tmpdir/test.hs
-    $compiler -build-runner -o ${tmpdir}/run $tmpdir/test.hs
-    shebang=$(head -1 ${tmpdir}/run)
-    nodepath=${shebang:2}
-    echo "$compiler uses node at [${nodepath}] for executing js output"
-    if test -x $nodepath
-    then
-      echo "$nodepath is version [$($nodepath --version)]" || die "Cannot determine node version"
-    else
-      rm -rf $tmpdir
-      die "[$nodepath] not found or not executable"
-    fi
-    echo "Trying to run a test executable produced by [$compiler]..."
-    output=$(${tmpdir}/run)
-    rm -rf $tmpdir
-
-    if test "$output" != "hello"
-    then
-      die "[$compiler] cannot produce executables runnable by [$nodepath]"
-    else
-      echo "[$compiler] produces executables runnable by [$nodepath]"
-    fi
-  fi
+  ensure_node_for_ghcjs
 }
 
 # XXX/TODO this may not work for cabal 1.24 config
@@ -2391,21 +2394,38 @@ show_step "Build host machine information"
 show_machine_info
 
 # ---------Show, process and verify the config------------
-show_step "Build environment"
+show_step "Original build environment"
 show_build_env
 
+#------------------------------------------------------------------------------
+# Some adjustments to the build environment
+#------------------------------------------------------------------------------
+
 # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
+# XXX add paths only if not already on PATH, but sometimes we have to add path
+# at head for precedence even if it is already on PATH.
 echo
 echo "Original PATH is [$PATH]..."
 PATH_PREFIX=
 if test "$BUILD" = "cabal-v2"
 then
-    PATH_PREFIX=$OS_APP_HOME/$OS_CABAL_DIR/bin
+    PATH_PREFIX=$OS_APP_HOME/$OS_CABAL_DIR/bin:$PATH_PREFIX
 fi
-PATH_PREFIX=$LOCAL_BIN:$PATH_PREFIX
+PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN:$PATH_PREFIX
+
 echo "Prefixing $PATH_PREFIX to PATH"
 export PATH=$PATH_PREFIX:$PATH
 echo
+
+# XXX we should be able to set multiple paths in it
+# One advantage of using GHCUP_PATH as TOOLS_DIR is that we can pick ghc right
+# from the original dir without having set default ghc which would change the
+# user's environment. Since ghcup provides links to all versions in bin we do
+# not need this.
+#if test -z "$TOOLS_DIR"
+#then
+#  TOOLS_DIR="$GHCUP_PATH"
+#fi
 
 # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
 # cabal does not complain
@@ -2415,6 +2435,11 @@ unset GHC_PACKAGE_PATH
 test -n "$STACK_YAML" || unset STACK_YAML
 
 CABAL_BINARY_NAME=cabal
+
+#------------------------------------------------------------------------------
+# Build
+#------------------------------------------------------------------------------
+
 if test "$BUILD" = "hlint"
 then
   start_hlint
