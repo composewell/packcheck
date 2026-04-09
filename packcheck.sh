@@ -332,6 +332,42 @@ UNSAFE_ENVVARS="\
 
 ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
 
+# These are allowed even in a clean environment.
+# These are either critical to the functioning ro do not affect the produced
+# artifacts..
+ALLOW_ENVVARS="\
+  _ \
+  CHECK_ENV \
+  PWD \
+  SHLVL \
+  APPDATA \
+  CABAL_DIR \
+  CABAL_CONFIG \
+  CABAL_BUILDDIR \
+  STACK_ROOT \
+  HTTP_PROXY \
+  HTTPS_PROXY \
+  NO_PROXY \
+"
+
+# We do not use HOME, we determine it independently and then set it internally.
+OTHER_ENVVARS="\
+  HOME \
+  XDG_CONFIG_HOME \
+  XDG_CACHE_HOME \
+  XDG_DATA_HOME \
+  TMPDIR \
+  LC_CTYPE \
+  LD_LIBRARY_PATH \
+  DYLD_LIBRARY_PATH \
+  C_INCLUDE_PATH \
+  LIBRARY_PATH \
+  PKG_CONFIG_PATH \
+  GHC \
+  GHC_PACKAGE_PATH \
+  GHCRTS \
+"
+
 # $1: varname
 # $2: list of vars to find in
 find_var() {
@@ -355,8 +391,6 @@ error_clean_env() {
 error_clean_param() {
     die "Unknown parameter [$1] specified on command line.\nTry --help for supported parameters"
 }
-
-ALLOW_ENVVARS="CHECK_ENV STACK_ROOT APPDATA PWD SHLVL _"
 
 check_clean_env() {
   local vars=$(env | cut -f1 -d=)
@@ -591,8 +625,6 @@ show_build_command() {
     echo
   fi
 }
-
-OTHER_ENVVARS="HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_DATA_HOME APPDATA GHC GHC_PACKAGE_PATH STACK_ROOT CABAL_DIR CABAL_CONFIG CABAL_BUILDDIR HTTP_PROXY HTTPS_PROXY"
 
 # Environment on entry to packcheck
 show_build_env() {
@@ -1515,7 +1547,7 @@ do_cabal_update() {
 
   # Fallback for older Cabal versions (< 3.10)
   if test -z "$CACHE_DIR"; then
-      CACHE_DIR="${CABAL_DIR:-$HOME/.cabal}/packages/hackage.haskell.org"
+      CACHE_DIR="${CABAL_DIR:-$OS_APP_HOME/$OS_CABAL_DIR}/packages/hackage.haskell.org"
   else
       # cabal path returns the base cache dir, we need the specific repo subfolder
       CACHE_DIR="$CACHE_DIR/hackage.haskell.org"
