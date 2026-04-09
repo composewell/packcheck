@@ -74,12 +74,16 @@ jobs:
       # Common options
       # ------------------------------------------------------------------------
 
-      # WARNING! you cannot use comments in common_pack_options
+      # Subdir
+      SUBDIR: ${{ matrix.subdir }}
+
+      # WARNING! you cannot use comments in this
       common_pack_options: >-
         LC_ALL=C.UTF-8
         GHCUP_VERSION=latest
         GHCVER=${{ matrix.ghc_version }}
 
+      # WARNING! you cannot use comments in this
       cabal_pack_options: >-
         CABAL_REINIT_CONFIG=y
         CABAL_CHECK_RELAX=y
@@ -97,8 +101,6 @@ jobs:
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
       PACKCHECK_GITHUB_COMMIT: "4efa717bc63b4bbd0501a07df5c610849e5d6281"
-      # Subdir
-      SUBDIR: ${{ matrix.subdir }}
 
     # ubuntu seems to have better support than debian on CI systems
     runs-on: ${{ matrix.runner }}
@@ -345,77 +347,65 @@ jobs:
             chmod +x $PACKCHECK_SAFE
         fi
 
-    - name: Run packcheck (dependencies only)
-      id: deps-only
-      # on windows-latest GitHub Actions defaults to PowerShell
+    - name: Setup packcheck
       shell: bash
       run: |
-        if test -n "$SUBDIR"
-        then
-          mv "$PACKCHECK" "$SUBDIR/"
-          mv "$PACKCHECK_SAFE" "$SUBDIR/"
-          # This is required otherwise dist-newstyle will be created in
-          # the top level directory as it is considered the working dir.
-          rm -f cabal.project
-          cd "$SUBDIR"
-        fi
-        # Checklist for safe path variables:
-        # * Use Double Quotes (if the value or the var may have spaces)
-        # * Escape Internal Quotes (or escape the var)
-        # * Use Forward Slashes (backward slashes act as escape chars)
-        # * Execute with eval (due to nested quoting or unexpanded vars)
-        #
-        ARGS="${{ matrix.command }}"
-        ARGS="$ARGS ${{ env.common_pack_options }}"
-        if test "${{ matrix.command }}" = "cabal"
-        then
-          ARGS="$ARGS ${{ env.cabal_pack_options }}"
-        fi
-        ARGS="$ARGS ${{ env.matrix_pack_options }}"
-        ARGS="$ARGS BUILD_ONLY_DEPS=y"
-        # Shorter PATH makes finding binaries in PATH with cold caches faster.
-        # Commands like mount, sysctl for info require sbin paths
-        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
-        #export TOOLS_DIR=/usr/local/.ghcup
-        case "$(uname)" in
-          Linux)
-            # On github it is set to /usr/local, because of that during
-            # cache restore tar is unable to change permissions and
-            # restore fails.
-            export GHCUP_INSTALL_BASE_PREFIX=$HOME
-            # Make sure we have the github ghcup dir in PATH to make use
-            # of the pre-installed GHC.
-            PATH_VAR="$PATH_VAR:/usr/local/.ghcup/bin"
-            ;;
-          CYGWIN*|MINGW*|MSYS*)
-            if test -n "$APPDATA"
-            then
-              SAFE_APPDATA=$(cygpath -u "$APPDATA")
-              ARGS="$ARGS APPDATA=\"$SAFE_APPDATA\""
-            fi
+        cat << 'EOF' > packcheck-setup.sh
+        setup_packcheck_args() {
+          # $1 is the BUILD_MODE (e.g., BUILD_ONLY_DEPS)
+          local MODE=$1
 
-            # To keep the paths shorter on Windows (260 char limit)
-            # On github CABAL_DIR=C:\cabal
-            if test -n "$CABAL_DIR"
-            then
-              SAFE_CABAL_DIR=$(cygpath -u "$CABAL_DIR")
-              ARGS="$ARGS CABAL_DIR=\"$SAFE_CABAL_DIR\""
-            fi
+          if test -n "$SUBDIR"; then
+            mv "$PACKCHECK" "$SUBDIR/"
+            mv "$PACKCHECK_SAFE" "$SUBDIR/"
+            rm -f cabal.project
+            cd "$SUBDIR"
+          fi
 
-            # XXX Will docspec work with this?
-            ARGS="$ARGS CABAL_BUILDDIR=\"/c/b\""
+          ARGS="${{ matrix.command }} $COMMON_PACK_OPTIONS"
+          if test "${{ matrix.command }}" = "cabal"; then
+            ARGS="$ARGS $CABAL_PACK_OPTIONS"
+          fi
+          
+          # Caution: do not use matrix.pack_options directly here
+          # quotes will get stripped.
+          ARGS="$ARGS $MATRIX_PACK_OPTIONS $MODE=y"
+          PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
 
-            ARGS="$ARGS WINVER=$WINVER"
-            ARGS="$ARGS NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS"
-            ARGS="$ARGS PROCESSOR_IDENTIFIER=\"$PROCESSOR_IDENTIFIER\""
-            PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
-            ;;
-        esac
-        ARGS="$ARGS PATH=\"$PATH_VAR\""
-        # We wrap everything in a string and then EVAL it
-        # This is the ONLY way to keep KEY="value with spaces" together
-        # Direct invocation would word-split on spaces inside quoted values.
-        echo "Executing: $PACKCHECK_SAFE $ARGS"
+          case "$(uname)" in
+            Linux)
+              export GHCUP_INSTALL_BASE_PREFIX=$HOME
+              PATH_VAR="$PATH_VAR:/usr/local/.ghcup/bin"
+              ;;
+            CYGWIN*|MINGW*|MSYS*)
+              for var in APPDATA CABAL_DIR; do
+                val="${!var}"
+                [ -n "$val" ] && ARGS="$ARGS $var=\"$(cygpath -u "$val")\""
+              done
+              ARGS="$ARGS CABAL_BUILDDIR=\"/c/b\" WINVER=$WINVER"
+              ARGS="$ARGS NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS"
+              ARGS="$ARGS PROCESSOR_IDENTIFIER=\"$PROCESSOR_IDENTIFIER\""
+              PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
+              ;;
+          esac
+          ARGS="$ARGS PATH=\"$PATH_VAR\""
+          export ARGS
+        }
+        EOF
+
+    - name: Run packcheck (dependencies only)
+      id: deps-only
+      shell: bash
+      env:
+        # NOTE: by capturing the options in env variables here quotes
+        # are presrved, if we expand them directly into the script
+        # quotes are lost.
+        COMMON_PACK_OPTIONS: ${{ env.common_pack_options }}
+        CABAL_PACK_OPTIONS: ${{ env.cabal_pack_options }}
+        MATRIX_PACK_OPTIONS: ${{ matrix.pack_options }}
+      run: |
+        source packcheck-setup.sh
+        setup_packcheck_args "BUILD_ONLY_DEPS"
         eval "$PACKCHECK_SAFE $ARGS"
 
     - name: Save hackage package index (non-Windows)
@@ -466,37 +456,15 @@ jobs:
         key: ${{ matrix.command }}-deps-ghc-${{ matrix.ghc_version }}-v${{ matrix.ghc_salt }}-${{ matrix.runner }}-${{ matrix.name }}
 
     - name: Run packcheck (final build)
-      # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
+      env:
+        COMMON_PACK_OPTIONS: ${{ env.common_pack_options }}
+        CABAL_PACK_OPTIONS: ${{ env.cabal_pack_options }}
+        MATRIX_PACK_OPTIONS: ${{ matrix.pack_options }}
       run: |
-        if test -n "$SUBDIR"
-        then
-          cd "$SUBDIR"
-        fi
-        # Shorter PATH makes finding binaries in PATH with cold caches faster.
-        # Make sure we have the github ghcup dir in PATH to make use of the
-        # pre-installed GHC.
-        # Commands like mount, sysctl for info require sbin paths
-        PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin:/usr/local/.ghcup/bin
-        #export TOOLS_DIR=/usr/local/.ghcup
-        case "$(uname)" in
-          Linux)
-            # On Linux it defaults to /usr/local, during cache restore
-            # tar is unable to change permissions and restore fails.
-            export GHCUP_INSTALL_BASE_PREFIX=$HOME
-            ;;
-          CYGWIN*|MINGW*|MSYS*)
-            PATH_VAR="$PATH_VAR:/c/ghcup:/c/Program Files/7-Zip:/mingw64/bin"
-            ;;
-        esac
-        if test ${{ matrix.command }} = cabal
-        then
-          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ env.cabal_pack_options }} ${{ matrix.pack_options }} BUILD_POST_DEPS=y PATH="$PATH_VAR"'
-        else
-          ARGS='${{ matrix.command }} ${{ env.common_pack_options }} ${{ matrix.pack_options }} BUILD_POST_DEPS=y PATH="$PATH_VAR"'
-        fi
-        echo "Executing: $PACKCHECK $ARGS"
-        eval "$PACKCHECK $ARGS"
+        source packcheck-setup.sh
+        setup_packcheck_args "BUILD_POST_DEPS"
+        eval "$PACKCHECK_SAFE $ARGS"
 
     # Enable for debugging, this itself takes 50 sec on Windows, in packcheck
     # build which is tiny.
