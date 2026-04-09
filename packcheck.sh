@@ -1184,28 +1184,27 @@ ensure_default_ghc() {
   # compiler we are using is also available as "ghc" and not masked by any
   # other "ghc" in PATH.
 
-	if test "$COMPILER" != ghc
-	then
+  if test "$COMPILER" != ghc
+  then
     # Use absolute path to prevent breaking PATH after 'cd'
     local ghc_bin="$(pwd)/.packcheck/ghc-bin"
-    
+
     echo "Compiler is [$COMPILER] creating a one-off symlink as 'ghc'"
-    
+
     # Do not create a .packcheck/bin we might end up using stale
     # binaries from a common presistent bin, just use a one-off
     # .packcheck/ghc-bin dir instead which we always overwrite and then
     # use.
     mkdir -p "$ghc_bin" || exit 1
-    
+
     # Handle Windows .exe if COMPILER_EXE_PATH has it
     local exe_ext=""
     [[ "$COMPILER_EXE_PATH" == *.exe ]] && exe_ext=".exe"
 
     run_verbose_errexit ln -sf "$COMPILER_EXE_PATH" "$ghc_bin/ghc${exe_ext}"
-    
+
     echo "Prefixing [$ghc_bin] to PATH"
     export PATH="$ghc_bin:$PATH"
-    HAVE_DEFAULT_GHC=y
   fi
 }
 
@@ -1453,14 +1452,6 @@ ensure_cabal() {
       die "Cabal version should at least be $MIN_CABALVER"
 
   ensure_cabal_config
-
-  if test -n "$HAVE_DEFAULT_GHC"
-  then
-    echo
-    run_verbose $CABAL_BINARY_NAME path
-  else
-    echo "WARNING! skipping \"cabal path\", \"ghc\" not in PATH"
-  fi
 }
 
 # Find a file in the parent/ancestor directories
@@ -1711,6 +1702,9 @@ ensure_cabal_config() {
       do_cabal_update
     fi
   fi
+
+  echo
+  run_verbose $CABAL_BINARY_NAME path
 }
 
 sdist_remove_project_file () {
@@ -1913,12 +1907,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
   fi
 
   show_step "Package info [sdist $SDIST_OPTIONS]"
-  if test -n "$HAVE_DEFAULT_GHC"
-  then
-    run_verbose $CABAL_BINARY_NAME info . || true
-  else
-    echo "WARNING! skipping \"cabal info\", \"ghc\" not in PATH"
-  fi
+  run_verbose $CABAL_BINARY_NAME info . || true
 
   if test -f "./configure.ac"
   then
