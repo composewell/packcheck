@@ -2212,26 +2212,34 @@ build_post_dep() {
   fi
 }
 
+ensure_docspec() {
+  if test -n "$ENABLE_DOCSPEC"
+  then
+    show_step "Find or install cabal-docspec"
+    if test $BUILD = "cabal-v2"
+    then
+        docspec_path=$(which_cmd cabal-docspec)
+        if test -n "$docspec_path"
+        then
+          echo "WARNING! Using cabal-docspec in PATH at $docspec_path"
+        elif test -n "$DOCSPEC_URL"
+        then
+          install_docspec
+        else
+          echo "cabal-docspec not found."
+          die "Use DOCSPEC_URL option to install."
+        fi
+    fi
+    run_verbose_errexit cabal-docspec --version
+  fi
+}
+
 run_docspec() {
     if test -n "$ENABLE_DOCSPEC"
     then
       show_step "Run cabal-docspec"
-      if test $BUILD = "cabal-v2"
-      then
-          docspec_path=$(which_cmd cabal-docspec)
-          if test -n "$docspec_path"
-          then
-            echo "WARNING! Using cabal-docspec in PATH at $docspec_path"
-          elif test -n "$DOCSPEC_URL"
-          then
-            install_docspec
-          else
-            echo "cabal-docspec not found."
-            die "Use DOCSPEC_URL option to install."
-          fi
-      fi
-      ensure_ghc
-      run_verbose_errexit cabal-docspec --version
+      # XXX docspec does not seem to honor --with-compiler though it lists that
+      # as a flag. It uses "ghc" in PATH.
       run_verbose_errexit $SDIST_CABALCMD exec cabal-docspec -- $DOCSPEC_OPTIONS \
           --with-compiler "$COMPILER_EXE_PATH"
     fi
@@ -2250,6 +2258,7 @@ build_compile () {
   determine_build_type
   ensure_ghc
   ensure_cabal ${LOCAL_BIN}
+  ensure_docspec
 
   case "$(uname -s)" in
     MINGW*|MSYS*|CYGWIN*)
