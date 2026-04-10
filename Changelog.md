@@ -1,5 +1,10 @@
 ## Unreleased
 
+* Use "latest" for ghcup version.
+* Add `CABAL_HADDOCK_TARGETS` option.
+* Add `HADDOCK_OPTIONS` option.
+* Add `CABAL_INDEX_TTL` option - do not attempt cabal update until it is
+  stale by this many hours, saves some build time.
 * Windows: Support installing ghc using ghcup.
 * Caching: New `BUILD_ONLY_DEPS` and `BUILD_POST_DEPS` flags to
     allow pausing/resuming builds for CI cache optimization.
