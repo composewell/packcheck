@@ -375,7 +375,8 @@ jobs:
           case "$(uname)" in
             Linux)
               export GHCUP_INSTALL_BASE_PREFIX=$HOME
-              PATH_VAR="$PATH_VAR:/usr/local/.ghcup/bin"
+              # Access usr/local seems to be much slower on github
+              #PATH_VAR="$PATH_VAR:/usr/local/.ghcup/bin"
               ;;
             CYGWIN*|MINGW*|MSYS*)
               for var in APPDATA CABAL_DIR; do
