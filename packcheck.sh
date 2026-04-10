@@ -2345,13 +2345,6 @@ determine_package_full_name() {
 }
 
 build_pre_dep() {
-  if test -z "$DISABLE_SDIST_BUILD"
-  then
-    # Note this function leaves us in the package dir unpacked from sdist
-    show_step "Prepare to build from source distribution"
-    create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
-  fi
-
   show_step "Install package dependencies"
   install_deps
 }
@@ -2515,6 +2508,13 @@ build_compile () {
       echo "option if you do not have 'autoreconf' available"
       require_cmd autoreconf
     fi
+  fi
+
+  if test -z "$DISABLE_SDIST_BUILD"
+  then
+    # Note this function leaves us in the package dir unpacked from sdist
+    show_step "Prepare to build from source distribution"
+    create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
   fi
 
   if test -n "$BUILD_PACKAGE_ONLY"
