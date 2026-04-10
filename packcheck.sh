@@ -280,6 +280,7 @@ SAFE_ENVVARS="\
   GHCVER \
   GHC_PATH \
   CABALVER \
+  CABAL_PATH \
   GHC_OPTIONS \
   GHCUP_GHC_OPTIONS \
   SDIST_OPTIONS \
@@ -534,7 +535,8 @@ show_help() {
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
   help_envvar GHCUP_VERSION "[a.b.c.d] or 'latest' to install at $GHCUP_PATH (for versions see $GHCUP_URL_PREFIX)"
   help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
-  #help_envvar GHC_PATH "Use GHC at the specified path, overrides GHCVER"
+  #help_envvar GHC_PATH "Use GHC at the specified path"
+  #help_envvar CABAL_PATH "Use cabal at the specified path"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
@@ -1374,6 +1376,13 @@ ensure_ghc() {
   then
     COMPILER=$(basename "$GHC_PATH")
     COMPILER_EXE_PATH="$GHC_PATH"
+    if test "$COMPILER" = ghc
+    then
+      local ghc_dir
+      ghc_dir=$(dirname "$GHC_PATH")
+      echo "Adding "$ghc_dir" to PATH"
+      PATH="$ghc_dir:$PATH"
+    fi
   else
     find_ghc
   fi
@@ -1455,18 +1464,7 @@ stack_install_tool () {
     cd ../..
 }
 
-# $1: Directory to install cabal in
-# We are not using the param as currently it is always the dir where stack
-# installs binaries.
-ensure_cabal() {
-  # We can only do this after ghc is installed.
-  # We need cabal to retrieve the package version
-  # We are assuming CI cache will be per resolver so we can cache the bin
-
-  show_step "Check and install cabal"
-
-  dont_need_cabal 'verbose' && return
-
+find_cabal () {
   find_binary $CABAL_BINARY_NAME "$CABALVER"
   found=$?
   if test "$found" -ne 0
@@ -1496,7 +1494,9 @@ ensure_cabal() {
       fi
     fi
   fi
+}
 
+show_cabal() {
   require_cmd $CABAL_BINARY_NAME
   $CABAL_BINARY_NAME --version
   test -z "$CABALVER" || check_version_die $CABAL_BINARY_NAME $CABALVER
@@ -1506,7 +1506,31 @@ ensure_cabal() {
   MIN_CABALVER="1.24.0.0"
   verlte $MIN_CABALVER $CABALVER || \
       die "Cabal version should at least be $MIN_CABALVER"
+}
 
+# $1: Directory to install cabal in
+# We are not using the param as currently it is always the dir where stack
+# installs binaries.
+ensure_cabal() {
+  # We can only do this after ghc is installed.
+  # We need cabal to retrieve the package version
+  # We are assuming CI cache will be per resolver so we can cache the bin
+
+  show_step "Check and install cabal"
+  dont_need_cabal 'verbose' && return
+
+  if test -n "$CABAL_PATH"
+  then
+    cabal_dir=$(dirname "$CABAL_PATH")
+    echo "Adding "$cabal_dir" to PATH"
+    # Add at the end so that it does not add any ghc at the head.
+    # We add ghc path at the head.
+    PATH="$PATH:$cabal_dir"
+  else
+    find_cabal
+  fi
+
+  show_cabal
   ensure_cabal_config
 }
 
