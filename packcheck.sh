@@ -278,6 +278,7 @@ SAFE_ENVVARS="\
   ENABLE_GHCJS \
   GHCUP_VERSION \
   GHCVER \
+  GHC_PATH \
   CABALVER \
   GHC_OPTIONS \
   GHCUP_GHC_OPTIONS \
@@ -330,7 +331,20 @@ UNSAFE_ENVVARS="\
   CABAL_HACKAGE_MIRROR \
 "
 
-ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
+ALLOW_CMD_PARAMS="\
+APPDATA \
+NUMBER_OF_PROCESSORS \
+PROCESSOR_IDENTIFIER \
+CABAL_DIR \
+CABAL_CONFIG \
+CABAL_BUILDDIR \
+STACK_ROOT \
+HTTP_PROXY \
+HTTPS_PROXY \
+NO_PROXY \
+"
+
+ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS $ALLOW_CMD_PARAMS"
 
 ALLOW_SPECIAL_ENVVARS="_"
 
@@ -341,23 +355,13 @@ ALLOW_COMMON_ENVVARS="\
 CHECK_ENV \
 PWD \
 SHLVL \
-CABAL_DIR \
-CABAL_CONFIG \
-CABAL_BUILDDIR \
-STACK_ROOT \
-HTTP_PROXY \
-HTTPS_PROXY \
-NO_PROXY \
 "
 
 ALLOW_WIN_ENVVARS="\
 MSYSTEM \
 SYSTEMROOT \
 WINDIR \
-APPDATA \
 WINVER \
-NUMBER_OF_PROCESSORS \
-PROCESSOR_IDENTIFIER \
 "
 
 ALLOW_OTHER_ENVVARS="$ALLOW_COMMON_ENVVARS $ALLOW_WIN_ENVVARS"
@@ -429,6 +433,26 @@ check_clean_env() {
   if [ -n "$found_bad_vars" ]; then
     error_clean_env "$found_bad_vars"
   fi
+}
+
+unset_all_env() {
+    # compgen -e lists only exported environment variables
+    # It returns names only, so no parsing with 'cut' is needed
+    local env_vars
+    env_vars=$(compgen -e)
+
+    for var in $env_vars; do
+        # We use a case statement to avoid unsetting
+        # the shell's own vital signs if we want to stay interactive
+        case "$var" in
+            PWD|SHLVL|_|IFS)
+                continue
+                ;;
+            *)
+                unset "$var" 2>/dev/null
+                ;;
+        esac
+    done
 }
 
 # $1: varname
@@ -510,6 +534,7 @@ show_help() {
   #help_envvar ENABLE_GHCJS "[y] Use GHCJS instead of GHC to build"
   help_envvar GHCUP_VERSION "[a.b.c.d] or 'latest' to install at $GHCUP_PATH (for versions see $GHCUP_URL_PREFIX)"
   help_envvar GHCVER "[a.b.c | head] GHC version prefix (may not be enforced when using stack)"
+  #help_envvar GHC_PATH "Use GHC at the specified path, overrides GHCVER"
   help_envvar CABALVER "[a.b.c.d] Cabal version (prefix) to use"
   help_envvar STACKVER "[a.b.c.d] Stack version (prefix) to use"
   help_envvar STACK_UPGRADE "[y] DESTRUCTIVE! Upgrades stack to latest version"
@@ -933,15 +958,24 @@ verlte () {
   [ "$1" = "$(echo -e "$1\n$2" | sort -V | head -n1)" ]
 }
 
-# $1: tool name (used only for ghc, cabal and stack)
+# Second version is minor of the first
+# $1: expected version (prefix) -- 9.2
+# $2: real version -- 9.2.8
+is_version_minor_of() {
+  local expected="$1"
+  local real="$2"
+
+  # Return success if expected is 'head' or if real starts with expected
+  [[ "$expected" == "head" || "$real" == "$expected"* ]]
+}
+
+# $1: tool name
 # $2: expected version
 check_version() {
-  local real_ver=$($1 --numeric-version)
+  local real_ver
+  real_ver=$($1 --numeric-version)
 
-  # Match that the expected version is a prefix of the real version.
-  # Do not check when the expected version is head.
-  if test "${real_ver#$2}" != "${real_ver}" -o "$2" = head
-  then
+  if is_version_minor_of "$2" "$real_ver"; then
     return 0
   else
     echo "Found $1 version [$real_ver] expecting [$2]"
@@ -1131,7 +1165,7 @@ ghcup_install() {
     then
       URL="$GHCUP_URL_PREFIX/$GHCUP_VERSION/${GHCUP_ARCH}-ghcup-$GHCUP_VERSION"
     else
-      die "Please use GHCUP_VERSION=<ver>|latest to install ghcup"
+      die "Please use GHCUP_VERSION=<ver>|latest to install ghcup; or use GHC_PATH"
     fi
 
     if [ "$os_id" = "mingw64" ]; then
@@ -1247,10 +1281,7 @@ ensure_node_for_ghcjs() {
   fi
 }
 
-# NOTE: this should be called before ensure_cabal as ensure_cabal needs
-# default_ghc to run "cabal path".
-ensure_ghc() {
-  show_step "Check and install GHC"
+find_ghc() {
   local found
   local compiler
   # If there is a ghc in PATH then use that otherwise install it using
@@ -1301,11 +1332,6 @@ ensure_ghc() {
     die "$msg"
   fi
 
-  if test -n "$GHCVER"
-  then
-    check_version_die $COMPILER $GHCVER
-  fi
-
   if test -n "$GHCVER" -a -n "$(need_stack)"
   then
     echo "GHCVER is specified, using '$STACKCMD --system-ghc'."
@@ -1320,14 +1346,39 @@ ensure_ghc() {
   then
     compiler=$($STACKCMD path --compiler-exe) || exit 1
   fi
+  export COMPILER_EXE_PATH="$compiler"
+}
 
-  echo "Using $COMPILER at $compiler"
-  echo "$($compiler --version) [$($compiler --print-project-git-commit-id 2> /dev/null || echo '?')]"
+show_ghc() {
+  local required=$GHCVER
+
+  echo "Using $COMPILER at $COMPILER_EXE_PATH"
+  echo "$($COMPILER_EXE_PATH --version) [$($COMPILER_EXE_PATH --print-project-git-commit-id 2> /dev/null || echo '?')]"
   # Use the real version, the user might have specified a version prefix in
   # GHCVER
-  GHCVER=$($compiler --numeric-version) || exit 1
+  GHCVER=$($COMPILER_EXE_PATH --numeric-version) || exit 1
 
-  export COMPILER_EXE_PATH="$compiler"
+  if test -n "$required"
+  then
+    is_version_minor_of $required $GHCVER || \
+      die "Found $COMPILER version [$GHCVER] expecting [$required]"
+  fi
+}
+
+# NOTE: this should be called before ensure_cabal as ensure_cabal needs
+# default_ghc to run "cabal path".
+ensure_ghc() {
+  show_step "Check and install GHC"
+
+  if test -n "$GHC_PATH"
+  then
+    COMPILER=$(basename "$GHC_PATH")
+    COMPILER_EXE_PATH="$GHC_PATH"
+  else
+    find_ghc
+  fi
+
+  show_ghc
   ensure_default_ghc
   ensure_node_for_ghcjs
 }
@@ -1745,9 +1796,9 @@ create_and_unpack_pkg_dist() {
   elif test -n "$CABAL_USE_STACK_SDIST"
   then
     # When custom setup is used we need to configure before we can use sdist.
-    run_verbose_errexit $STACKCMD --compiler=$COMPILER-$GHCVER build --only-configure
-    SDIST_CMD="$STACKCMD --compiler=$COMPILER-$GHCVER sdist $opts"
-    SDIST_DIR=$($STACKCMD --compiler=$COMPILER-$GHCVER path --dist-dir) || exit 1
+    run_verbose_errexit $STACKCMD --compiler=$COMPILER build --only-configure
+    SDIST_CMD="$STACKCMD --compiler=$COMPILER sdist $opts"
+    SDIST_DIR=$($STACKCMD --compiler=$COMPILER path --dist-dir) || exit 1
   else
     # XXX We need to configure to use sdist and we need to install
     # dependencies to configure. So to just create the sdist we will
@@ -2415,18 +2466,12 @@ set -o pipefail
 test -n "$1" \
     || { short_help; echo -e "\nTry --help for detailed help"; exit 1; }
 
-test -z "$CHECK_ENV" || check_boolean_var CHECK_ENV
-test -z "$CHECK_ENV" || check_clean_env
-
 # For commands make sure we call eval_env "$@" before doing anything else so
 # that the envvars passed on the command line are evaluated first. We may have
 # PATH as one of the args which we need to evaluate before running any
 # command.
 case $1 in
   cabal|cabal-v2|stack|hlint)
-    # ---------Show, process and verify the config------------
-    show_step1 "Implicit environment"
-    show_build_env
     ;;
   clean|cleanall|-h|--help|help|--version|version)
     ;;
@@ -2437,8 +2482,22 @@ case $1 in
 esac
 
 BUILD=$1; shift
-eval_env "$@"
+case $BUILD in
+  cabal|cabal-v2|stack|hlint)
+    show_step1 "Implicit environment"
+    if test -n "$CHECK_ENV"
+    then
+      check_boolean_var CHECK_ENV
+      echo "CHECK_ENV=y; ignoring all environment, make sure to pass a sensible PATH on command line"
+      unset_all_env
+    fi
+    show_build_env
+    ;;
+  *) ;;
+esac
 
+# This allows only ALLOW_ENVVARS to be set on the command line
+eval_env "$@"
 # After eval_env the PATH changes
 hash -r
 
