@@ -80,6 +80,7 @@ jobs:
       # WARNING! you cannot use comments in this
       common_pack_options: >-
         LC_ALL=C.UTF-8
+        BUILD_PREFETCH=y
         GHCUP_VERSION=latest
         GHCVER=${{ matrix.ghc_version }}
 
