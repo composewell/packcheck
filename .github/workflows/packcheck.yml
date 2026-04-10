@@ -397,6 +397,10 @@ jobs:
 
     - name: Run packcheck (dependencies only)
       id: deps-only
+      # Check the relevant step based on the runner OS
+      if: |
+        (runner.os != 'Windows' && steps.restore-deps-nonwin.outputs.cache-hit != 'true') ||
+        (runner.os == 'Windows' && steps.restore-deps-win.outputs.cache-hit != 'true')
       shell: bash
       env:
         # NOTE: by capturing the options in env variables here quotes
