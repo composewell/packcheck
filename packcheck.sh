@@ -2422,17 +2422,20 @@ test -z "$CHECK_ENV" || check_clean_env
 # PATH as one of the args which we need to evaluate before running any
 # command.
 case $1 in
-  cabal|cabal-v2|stack|hlint|clean|cleanall|-h|--help|help|--version|version) BUILD=$1; shift ;;
+  cabal|cabal-v2|stack|hlint)
+    # ---------Show, process and verify the config------------
+    show_step1 "Implicit environment"
+    show_build_env
+    ;;
+  clean|cleanall|-h|--help|help|--version|version)
+    ;;
   cabal-v1) die "cabal-v1 is not supported, please use cabal-v2 instead";;
   cabal-new) die "cabal-new is not supported, please use cabal-v2 instead";;
   *) echo -e "$(basename $0): unrecognized command [$1]\n"
     short_help; exit 1 ;;
 esac
 
-# ---------Show, process and verify the config------------
-show_step1 "Implicit environment"
-show_build_env
-
+BUILD=$1; shift
 eval_env "$@"
 
 # After eval_env the PATH changes
