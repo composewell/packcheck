@@ -306,7 +306,7 @@ SAFE_ENVVARS="\
   CABAL_DISABLE_DEPS \
   CABAL_BUILD_TARGETS \
   CABAL_HADDOCK_TARGETS \
-  CABAL_INDEX_STALE_THRESHOLD \
+  CABAL_INDEX_TTL \
   HADDOCK_OPTIONS \
   COVERAGE \
   COVERALLS_OPTIONS \
@@ -557,7 +557,7 @@ show_help() {
   help_envvar CABAL_TEST_OPTIONS "ADDITIONAL cabal test options to append to defaults"
   help_envvar CABAL_CHECK_RELAX "[y] Do not return failure if 'cabal check' fails on the package."
   help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
-  help_envvar CABAL_INDEX_STALE_THRESHOLD "Do not attempt cabal update until it is stale by this many hours."
+  help_envvar CABAL_INDEX_TTL "Do not attempt cabal update until it is stale by this many hours."
   help_envvar HADDOCK_OPTIONS "ADDITIONAL haddock build options to append to defaults"
 
   show_step1 "stack options"
@@ -790,7 +790,7 @@ EOF
       cabal_only_var CABAL_DISABLE_DEPS
       cabal_only_var CABAL_BUILD_TARGETS
       cabal_only_var CABAL_HADDOCK_TARGETS
-      cabal_only_var CABAL_INDEX_STALE_THRESHOLD
+      cabal_only_var CABAL_INDEX_TTL
     fi
 
     if test -z "$(need_stack)"
@@ -1620,8 +1620,8 @@ do_cabal_update() {
   INDEX_FILE="$CACHE_DIR/01-index.tar"
 
   # 2. Set the threshold (Default to 72 hours if not set)
-  # Variable: CABAL_INDEX_STALE_THRESHOLD (in hours)
-  STALE_HOURS=${CABAL_INDEX_STALE_THRESHOLD:-72}
+  # Variable: CABAL_INDEX_TTL (in hours)
+  STALE_HOURS=${CABAL_INDEX_TTL:-72}
 
   if test -f "$INDEX_FILE"; then
       # Calculate file age in hours
