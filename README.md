@@ -255,7 +255,7 @@ help | --help | -h      : show this help message
 Selecting tool versions
 --------------------------------------------------
 
-GHCUP_VERSION           : [a.b.c.d] ghcup version to install at $HOME/.ghcup/bin/ghcup (see [https://downloads.haskell.org/~ghcup](https://downloads.haskell.org/~ghcup))
+GHCUP_VERSION           : [a.b.c.d] or 'latest' to install at $HOME/.ghcup/bin/ghcup (for versions see https://downloads.haskell.org/~ghcup)
 GHCVER                  : [a.b.c | head] GHC version prefix (may not be enforced when using stack)
 CABALVER                : [a.b.c.d] Cabal version (prefix) to use
 STACKVER                : [a.b.c.d] Stack version (prefix) to use
@@ -269,6 +269,7 @@ Where to find the required tools
 --------------------------------------------------
 
 PATH                    : [path] Set PATH explicitly for predictable builds
+TOOLS_DIR               : [dir] Find ghc|cabal by version as in TOOLS_DIR/ghc/<version>/bin
 
 --------------------------------------------------
 Specifying common tool options
@@ -295,8 +296,8 @@ DISABLE_DIST_CHECKS     : [y] Do not perform source distribution checks
 Skipping parts of build (for split caching)
 --------------------------------------------------
 
-BUILD_ONLY_DEPS         : [y] Build dependencies only, skip building the package itself
-BUILD_POST_DEPS         : [y] Skip all the steps before deps, resume main build
+BUILD_DEPS_ONLY         : [y] Build dependencies and exit
+BUILD_PACKAGE_ONLY      : [y] Skip tools/deps; build local package only
 
 --------------------------------------------------
 cabal options
@@ -306,10 +307,13 @@ CABAL_REINIT_CONFIG     : [y] DESTRUCTIVE! Remove old config to avoid incompatib
 CABAL_PROJECT           : Alternative cabal project file, path relative to project root
 CABAL_BUILD_OPTIONS     : ADDITIONAL cabal build options to append to defaults
 CABAL_BUILD_TARGETS     : cabal build targets, default is 'all'
+CABAL_HADDOCK_TARGETS   : cabal haddock targets, default is '.'
 CABAL_DISABLE_DEPS      : [y] Do not install deps, no cabal update, useful for nix
 CABAL_TEST_OPTIONS      : ADDITIONAL cabal test options to append to defaults
 CABAL_CHECK_RELAX       : [y] Do not return failure if 'cabal check' fails on the package.
 CABAL_HACKAGE_MIRROR    : DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file.
+CABAL_INDEX_TTL         : Do not attempt cabal update until it is stale by this many hours.
+HADDOCK_OPTIONS         : ADDITIONAL haddock build options to append to defaults
 
 --------------------------------------------------
 stack options
