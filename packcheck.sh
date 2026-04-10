@@ -292,6 +292,7 @@ SAFE_ENVVARS="\
   BUILD_DEPS_ONLY \
   BUILD_PACKAGE_ONLY \
   BUILD_PREFETCH \
+  BUILD_PREFETCH_DEBUG \
   DISABLE_DOCS \
   ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
@@ -574,6 +575,7 @@ show_help() {
   help_envvar BUILD_DEPS_ONLY "[y] Build dependencies and exit"
   help_envvar BUILD_PACKAGE_ONLY "[y] Skip tools/deps; build local package only"
   help_envvar BUILD_PREFETCH "[y] Enable prefetching to speed up build"
+  help_envvar BUILD_PREFETCH_DEBUG "[y] Enable sync prefetch commands with verbose output"
 
   show_step1 "cabal options"
   # XXX this applies to both stack and cabal builds
@@ -643,6 +645,7 @@ check_all_boolean_vars () {
   check_boolean_var BUILD_DEPS_ONLY
   check_boolean_var BUILD_PACKAGE_ONLY
   check_boolean_var BUILD_PREFETCH
+  check_boolean_var BUILD_PREFETCH_DEBUG
   check_boolean_var DISABLE_DOCS
   check_boolean_var ENABLE_DOCSPEC
   check_boolean_var COVERAGE
@@ -1354,14 +1357,23 @@ find_ghc() {
   export COMPILER_EXE_PATH="$compiler"
 }
 
+run_prefetch() {
+  if [ -n "$BUILD_PREFETCH_DEBUG" ]; then
+    echo "Running prefetch: [$@]"
+    "$@" > /dev/null
+  else
+    "$@" > /dev/null 2>&1 &
+  fi
+}
+
 prefetch_binary() {
   local bin_path
   bin_path=$(command -v "$1")
   if [ -n "$bin_path" ]; then
     # Warm the file content
-    cat "$bin_path" > /dev/null 2>&1 &
+    run_prefetch cat "$bin_path"
     # Warm the dynamic linker/shared libs
-    "$bin_path" --version > /dev/null 2>&1 &
+    run_prefetch "$bin_path" --version
   fi
 }
 
@@ -1369,8 +1381,8 @@ prefetch_binary() {
 # $2: optional explicit path
 prefetch_tool() {
   if [ -n "$2" ]; then
-    cat "$2" > /dev/null 2>&1 &
-    "$2" --version > /dev/null 2>&1 &
+    run_prefetch cat "$2"
+    run_prefetch "$2" --version
   else
     prefetch_binary "$1"
   fi
@@ -2428,10 +2440,10 @@ prefetch_cabal() {
 
   cabal_store=$(cabal path --store-dir 2>/dev/null)
 
-  [ -d "$cabal_dir" ] && find "$cabal_dir" -maxdepth 3 >/dev/null 2>&1 &
-  [ -d "$cabal_store" ] && find "$cabal_store" -maxdepth 3 >/dev/null 2>&1 &
-  [ -d "$CABAL_BUILDDIR" ] && find "$CABAL_BUILDDIR" -maxdepth 3 >/dev/null 2>&1 &
-  find . -maxdepth 4 > /dev/null 2>&1 &
+  [ -d "$cabal_dir" ] && run_prefetch find "$cabal_dir" -maxdepth 3
+  [ -d "$cabal_store" ] && run_prefetch find "$cabal_store" -maxdepth 3
+  [ -d "$CABAL_BUILDDIR" ] && run_prefetch find "$CABAL_BUILDDIR" -maxdepth 3
+  run_prefetch find . -maxdepth 4
 }
 
 # stack or cabal build (i.e. not hlint)
@@ -2441,15 +2453,20 @@ build_compile () {
   # matter.
   if test -n "$BUILD_PREFETCH"
   then
-    cat *.cabal > /dev/null 2>&1 &
+    run_prefetch cat *.cabal
     prefetch_tool ghc "$GHC_PATH"
     #prefetch_tool cabal "$CABAL_PATH"
     # Should we wait for this pid to avoid lock contention
     if test -z "$CABAL_DISABLE_DEPS" -a "$BUILD" = "cabal-v2"
     then
-      do_cabal_update > /dev/null 2>&1 &
+      run_prefetch do_cabal_update
       CABAL_UPDATE_PID=$!
-      prefetch_cabal 2>&1 &
+      if test -n "$BUILD_PREFETCH_DEBUG"
+      then
+        prefetch_cabal
+      else
+        run_prefetch prefetch_cabal
+      fi
     fi
   fi
 
