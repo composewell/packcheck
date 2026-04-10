@@ -287,8 +287,8 @@ SAFE_ENVVARS="\
   DISABLE_SDIST_GIT_CHECK \
   DISABLE_BENCH \
   DISABLE_TEST \
-  BUILD_ONLY_DEPS \
-  BUILD_POST_DEPS \
+  BUILD_DEPS_ONLY \
+  BUILD_PACKAGE_ONLY \
   DISABLE_DOCS \
   ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
@@ -542,8 +542,9 @@ show_help() {
   #help_envvar ENABLE_INSTALL "[y] DESTRUCTIVE! Install the package after building"
 
   show_step1 "Skipping parts of build (for split caching)"
-  help_envvar BUILD_ONLY_DEPS "[y] Build dependencies only, skip building the package itself"
-  help_envvar BUILD_POST_DEPS "[y] Skip all the steps before deps, resume main build"
+  #help_envvar INSTALL_TOOLS_ONLY "[y] Install GHC/tooling and exit"
+  help_envvar BUILD_DEPS_ONLY "[y] Build dependencies and exit"
+  help_envvar BUILD_PACKAGE_ONLY "[y] Skip tools/deps; build local package only"
 
   show_step1 "cabal options"
   # XXX this applies to both stack and cabal builds
@@ -610,8 +611,8 @@ check_all_boolean_vars () {
   fi
   check_boolean_var DISABLE_BENCH
   check_boolean_var DISABLE_TEST
-  check_boolean_var BUILD_ONLY_DEPS
-  check_boolean_var BUILD_POST_DEPS
+  check_boolean_var BUILD_DEPS_ONLY
+  check_boolean_var BUILD_PACKAGE_ONLY
   check_boolean_var DISABLE_DOCS
   check_boolean_var ENABLE_DOCSPEC
   check_boolean_var COVERAGE
@@ -2227,7 +2228,7 @@ build_pre_dep() {
 build_post_dep() {
   show_step "Prepare to build"
   echo "pwd: $(pwd)"
-  if test -z "$DISABLE_SDIST_BUILD" -a -n "$BUILD_POST_DEPS"
+  if test -z "$DISABLE_SDIST_BUILD" -a -n "$BUILD_PACKAGE_ONLY"
   then
     echo "cd .packcheck/$PACKAGE_FULL_NAME"
     cd .packcheck/$PACKAGE_FULL_NAME
@@ -2343,18 +2344,18 @@ build_compile () {
     fi
   fi
 
-  if test -n "$BUILD_POST_DEPS"
+  if test -n "$BUILD_PACKAGE_ONLY"
   then
     show_step "Dependency install"
-    echo "Skipping dependency install steps (BUILD_POST_DEPS=y)"
+    echo "Skipping dependency install steps (BUILD_PACKAGE_ONLY=y)"
   else
     build_pre_dep
   fi
 
-  if test -n "$BUILD_ONLY_DEPS"
+  if test -n "$BUILD_DEPS_ONLY"
   then
     show_step "Post dependency"
-    echo "Skipping post dependency steps (BUILD_ONLY_DEPS=y)"
+    echo "Skipping post dependency steps (BUILD_DEPS_ONLY=y)"
   else
     build_post_dep
     run_docspec
@@ -2500,14 +2501,14 @@ bash --version
 show_step "Build command"
 show_build_command
 
-if test -n "$BUILD_ONLY_DEPS" -a -n "$BUILD_POST_DEPS"
+if test -n "$BUILD_DEPS_ONLY" -a -n "$BUILD_PACKAGE_ONLY"
 then
-    die "Both [BUILD_ONLY_DEPS] and [BUILD_POST_DEPS] cannot be set at the same time."
+    die "Both [BUILD_DEPS_ONLY] and [BUILD_PACKAGE_ONLY] cannot be set at the same time."
 fi
 
-if test "$BUILD" = "hlint" -a -n "$BUILD_POST_DEPS"
+if test "$BUILD" = "hlint" -a -n "$BUILD_PACKAGE_ONLY"
 then
-  show_step "hlint: nothing to do (BUILD_POST_DEPS=y)"
+  show_step "hlint: nothing to do (BUILD_PACKAGE_ONLY=y)"
   exit 0
 fi
 
