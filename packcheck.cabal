@@ -54,7 +54,6 @@ extra-doc-files:
 
 extra-source-files:
     packcheck.sh
-    packcheck-safe.sh
     packcheck-remote.sh
 
 source-repository head
