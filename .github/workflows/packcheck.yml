@@ -97,7 +97,7 @@ jobs:
       # and only uses the options explicitly set on the command line
       # only, implicit environment won't affect the build. if you find
       # this annoying comment is out.
-      PACKCHECK_STRICT: "y"
+      CHECK_ENV: "y"
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
@@ -331,8 +331,6 @@ jobs:
       # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
       run: |
-        PACKCHECK=packcheck.sh
-        PACKCHECK_SAFE=packcheck-safe.sh
         download_one () {
           if test ! -e "$1"
           then
@@ -349,24 +347,17 @@ jobs:
           fi
         }
         download_one packcheck.sh
-        if test "$PACKCHECK_STRICT" = "y"
-        then
-          download_one packcheck-safe.sh
-        fi
 
     - name: Setup packcheck
       shell: bash
       run: |
-        PACKCHECK=packcheck.sh
-        PACKCHECK_SAFE=packcheck-safe.sh
         cat << 'EOF' > packcheck-setup.sh
         setup_packcheck_args() {
           # $1 is the BUILD_MODE (e.g., BUILD_DEPS_ONLY)
           local MODE=$1
 
           if test -n "$SUBDIR"; then
-            mv "$PACKCHECK" "$SUBDIR/"
-            test -e "$PACKCHECK_SAFE" && mv "$PACKCHECK_SAFE" "$SUBDIR/"
+            mv packcheck.sh "$SUBDIR/"
             rm -f cabal.project
             cd "$SUBDIR"
           fi
@@ -415,12 +406,7 @@ jobs:
       run: |
         source packcheck-setup.sh
         setup_packcheck_args "BUILD_DEPS_ONLY"
-        if test "$PACKCHECK_STRICT" = "y"
-        then
-          eval "./packcheck-safe.sh $ARGS"
-        else
-          eval "./packcheck.sh $ARGS"
-        fi
+        eval "./packcheck.sh $ARGS"
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
@@ -478,12 +464,7 @@ jobs:
       run: |
         source packcheck-setup.sh
         setup_packcheck_args "BUILD_PACKAGE_ONLY"
-        if test "$PACKCHECK_STRICT" = "y"
-        then
-          eval "./packcheck-safe.sh $ARGS"
-        else
-          eval "./packcheck.sh $ARGS"
-        fi
+        eval "./packcheck.sh $ARGS"
 
     # Enable for debugging, this itself takes 50 sec on Windows, in packcheck
     # build which is tiny.
