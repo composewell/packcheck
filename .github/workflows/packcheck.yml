@@ -91,12 +91,13 @@ jobs:
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
       # ------------------------------------------------------------------------
-      # You can either commit the packcheck.sh script at this path in your repo or
-      # you can use it by specifying the PACKCHECK_REPO_URL option below in which
-      # case it will be automatically copied from the packcheck repo to this path
-      # during CI tests. In any case it is finally invoked from this path.
-      PACKCHECK: "./packcheck.sh"
-      PACKCHECK_SAFE: "./packcheck-safe.sh"
+      # You can either commit the packcheck.sh script in your repo root or
+      # you can use it by specifying the PACKCHECK_REPO_URL option.
+      # If this option is enabled packcheck clears out the environment
+      # and only uses the options explicitly set on the command line
+      # only, implicit environment won't affect the build. if you find
+      # this annoying comment is out.
+      PACKCHECK_STRICT: "y"
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
@@ -330,26 +331,34 @@ jobs:
       # on windows-latest GitHub Actions defaults to PowerShell
       shell: bash
       run: |
-        if test ! -e "$PACKCHECK"
-        then
-          if test -z "$PACKCHECK_GITHUB_COMMIT"
+        PACKCHECK=packcheck.sh
+        PACKCHECK_SAFE=packcheck-safe.sh
+        download_one () {
+          if test ! -e "$1"
           then
-              die "PACKCHECK_GITHUB_COMMIT env var is not specified."
+            if test -z "$PACKCHECK_GITHUB_COMMIT"
+            then
+            die "Downloading [$1]: PACKCHECK_GITHUB_COMMIT env var is not specified."
+            fi
+            PACKCHECK_URL_PREFIX=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}
+            curl --fail -sLO ${PACKCHECK_URL_PREFIX}/$1 || exit 1
+            chmod +x "$1"
+          elif test ! -x "$1"
+          then
+              chmod +x $1
           fi
-          PACKCHECK_URL_PREFIX=${PACKCHECK_GITHUB_URL}/${PACKCHECK_GITHUB_COMMIT}/packcheck
-          curl --fail -sL -o "$PACKCHECK" ${PACKCHECK_URL_PREFIX}.sh || exit 1
-          chmod +x $PACKCHECK
-          curl --fail -sL -o "$PACKCHECK" ${PACKCHECK_URL_PREFIX}-safe.sh || exit 1
-          chmod +x $PACKCHECK_SAFE
-        elif test ! -x "$PACKCHECK"
+        }
+        download_one packcheck.sh
+        if test "$PACKCHECK_STRICT" = "y"
         then
-            chmod +x $PACKCHECK
-            chmod +x $PACKCHECK_SAFE
+          download_one packcheck-safe.sh
         fi
 
     - name: Setup packcheck
       shell: bash
       run: |
+        PACKCHECK=packcheck.sh
+        PACKCHECK_SAFE=packcheck-safe.sh
         cat << 'EOF' > packcheck-setup.sh
         setup_packcheck_args() {
           # $1 is the BUILD_MODE (e.g., BUILD_DEPS_ONLY)
@@ -357,7 +366,7 @@ jobs:
 
           if test -n "$SUBDIR"; then
             mv "$PACKCHECK" "$SUBDIR/"
-            mv "$PACKCHECK_SAFE" "$SUBDIR/"
+            test -e "$PACKCHECK_SAFE" && mv "$PACKCHECK_SAFE" "$SUBDIR/"
             rm -f cabal.project
             cd "$SUBDIR"
           fi
@@ -406,7 +415,12 @@ jobs:
       run: |
         source packcheck-setup.sh
         setup_packcheck_args "BUILD_DEPS_ONLY"
-        eval "$PACKCHECK_SAFE $ARGS"
+        if test "$PACKCHECK_STRICT" = "y"
+        then
+          eval "./packcheck-safe.sh $ARGS"
+        else
+          eval "./packcheck.sh $ARGS"
+        fi
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
@@ -464,7 +478,12 @@ jobs:
       run: |
         source packcheck-setup.sh
         setup_packcheck_args "BUILD_PACKAGE_ONLY"
-        eval "$PACKCHECK_SAFE $ARGS"
+        if test "$PACKCHECK_STRICT" = "y"
+        then
+          eval "./packcheck-safe.sh $ARGS"
+        else
+          eval "./packcheck.sh $ARGS"
+        fi
 
     # Enable for debugging, this itself takes 50 sec on Windows, in packcheck
     # build which is tiny.
