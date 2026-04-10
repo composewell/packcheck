@@ -1280,10 +1280,11 @@ ensure_ghc() {
         echo
       else
         ghcup_install ghc $GHCVER
-        if test -n "$GHCVER" -a "$COMPILER" != "ghc-head"
-        then
-          COMPILER="$COMPILER-$GHCVER"
-        fi
+        # We already put "ghc" from the versioned bin in PATH
+        #if test -n "$GHCVER" -a "$COMPILER" != "ghc-head"
+        #then
+        #  COMPILER="$COMPILER-$GHCVER"
+        #fi
       fi
     fi
   fi
