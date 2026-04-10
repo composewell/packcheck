@@ -1829,9 +1829,9 @@ ensure_cabal_config() {
       if [ -n "$CABAL_UPDATE_PID" ]; then
         echo "Waiting for async cabal update pid $CABAL_UPDATE_PID..."
         wait "$CABAL_UPDATE_PID"
-      else
-        do_cabal_update
       fi
+      # We do not know if the async update was successful or not
+      do_cabal_update
     fi
   fi
 
