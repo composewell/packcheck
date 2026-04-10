@@ -291,6 +291,7 @@ SAFE_ENVVARS="\
   DISABLE_TEST \
   BUILD_DEPS_ONLY \
   BUILD_PACKAGE_ONLY \
+  BUILD_PREFETCH \
   DISABLE_DOCS \
   ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
@@ -572,6 +573,7 @@ show_help() {
   #help_envvar INSTALL_TOOLS_ONLY "[y] Install GHC/tooling and exit"
   help_envvar BUILD_DEPS_ONLY "[y] Build dependencies and exit"
   help_envvar BUILD_PACKAGE_ONLY "[y] Skip tools/deps; build local package only"
+  help_envvar BUILD_PREFETCH "[y] Enable prefetching to speed up build"
 
   show_step1 "cabal options"
   # XXX this applies to both stack and cabal builds
@@ -640,6 +642,7 @@ check_all_boolean_vars () {
   check_boolean_var DISABLE_TEST
   check_boolean_var BUILD_DEPS_ONLY
   check_boolean_var BUILD_PACKAGE_ONLY
+  check_boolean_var BUILD_PREFETCH
   check_boolean_var DISABLE_DOCS
   check_boolean_var ENABLE_DOCSPEC
   check_boolean_var COVERAGE
@@ -1351,19 +1354,46 @@ find_ghc() {
   export COMPILER_EXE_PATH="$compiler"
 }
 
+prefetch_binary() {
+  local bin_path
+  bin_path=$(command -v "$1")
+  if [ -n "$bin_path" ]; then
+    # Warm the file content
+    cat "$bin_path" > /dev/null 2>&1 &
+    # Warm the dynamic linker/shared libs
+    "$bin_path" --version > /dev/null 2>&1 &
+  fi
+}
+
+# $1: tool name (e.g., ghc)
+# $2: optional explicit path
+prefetch_tool() {
+  if [ -n "$2" ]; then
+    cat "$2" > /dev/null 2>&1 &
+    "$2" --version > /dev/null 2>&1 &
+  else
+    prefetch_binary "$1"
+  fi
+}
+
 show_ghc() {
   local required=$GHCVER
 
-  echo "Using $COMPILER at $COMPILER_EXE_PATH"
-  echo "$($COMPILER_EXE_PATH --version) [$($COMPILER_EXE_PATH --print-project-git-commit-id 2> /dev/null || echo '?')]"
-  # Use the real version, the user might have specified a version prefix in
-  # GHCVER
-  GHCVER=$($COMPILER_EXE_PATH --numeric-version) || exit 1
-
-  if test -n "$required"
+  if test -z "$BUILD_PREFETCH"
   then
-    is_version_minor_of $required $GHCVER || \
-      die "Found $COMPILER version [$GHCVER] expecting [$required]"
+    echo "Using $COMPILER at $COMPILER_EXE_PATH"
+    echo "$($COMPILER_EXE_PATH --version) [$($COMPILER_EXE_PATH --print-project-git-commit-id 2> /dev/null || echo '?')]"
+    # Use the real version, the user might have specified a version prefix in
+    # GHCVER
+    GHCVER=$($COMPILER_EXE_PATH --numeric-version) || exit 1
+
+    if test -n "$required"
+    then
+      is_version_minor_of $required $GHCVER || \
+        die "Found $COMPILER version [$GHCVER] expecting [$required]"
+    fi
+  else
+    prefetch_tool "$COMPILER" "$COMPILER_EXE_PATH"
   fi
 }
 
@@ -1497,15 +1527,20 @@ find_cabal () {
 }
 
 show_cabal() {
-  require_cmd $CABAL_BINARY_NAME
-  $CABAL_BINARY_NAME --version
-  test -z "$CABALVER" || check_version_die $CABAL_BINARY_NAME $CABALVER
-  # Set the real version of cabal
-  CABALVER=$($CABAL_BINARY_NAME --numeric-version) || exit 1
+  if test -z "$BUILD_PREFETCH"
+  then
+    require_cmd $CABAL_BINARY_NAME
+    $CABAL_BINARY_NAME --version
+    test -z "$CABALVER" || check_version_die $CABAL_BINARY_NAME $CABALVER
+    # Set the real version of cabal
+    CABALVER=$($CABAL_BINARY_NAME --numeric-version) || exit 1
 
-  MIN_CABALVER="1.24.0.0"
-  verlte $MIN_CABALVER $CABALVER || \
-      die "Cabal version should at least be $MIN_CABALVER"
+    MIN_CABALVER="1.24.0.0"
+    verlte $MIN_CABALVER $CABALVER || \
+        die "Cabal version should at least be $MIN_CABALVER"
+  else
+    prefetch_tool $CABAL_BINARY_NAME
+  fi
 }
 
 # $1: Directory to install cabal in
@@ -1779,12 +1814,20 @@ ensure_cabal_config() {
 
     if test -z "$CABAL_DISABLE_DEPS"
     then
-      do_cabal_update
+      if [ -n "$CABAL_UPDATE_PID" ]; then
+        echo "Waiting for async cabal update pid $CABAL_UPDATE_PID..."
+        wait "$CABAL_UPDATE_PID"
+      else
+        do_cabal_update
+      fi
     fi
   fi
 
-  echo
-  run_verbose $CABAL_BINARY_NAME path
+  if test -z "$BUILD_PREFETCH"
+  then
+    echo
+    run_verbose $CABAL_BINARY_NAME path
+  fi
 }
 
 sdist_remove_project_file () {
@@ -2371,8 +2414,45 @@ run_docspec() {
     fi
 }
 
+prefetch_cabal() {
+  local cabal_dir
+  local cabal_store
+  local cfg
+
+  if [ -n "$CABAL_DIR" ]; then
+    cabal_dir="$CABAL_DIR"
+  else
+    cfg=$(cabal path --config-file 2>/dev/null)
+    [ -n "$cfg" ] && cabal_dir=$(dirname "$cfg")
+  fi
+
+  cabal_store=$(cabal path --store-dir 2>/dev/null)
+
+  [ -d "$cabal_dir" ] && find "$cabal_dir" -maxdepth 3 >/dev/null 2>&1 &
+  [ -d "$cabal_store" ] && find "$cabal_store" -maxdepth 3 >/dev/null 2>&1 &
+  [ -d "$CABAL_BUILDDIR" ] && find "$CABAL_BUILDDIR" -maxdepth 3 >/dev/null 2>&1 &
+  find . -maxdepth 4 > /dev/null 2>&1 &
+}
+
 # stack or cabal build (i.e. not hlint)
 build_compile () {
+  # Best effort prefetch.  Saves only a few seconds, but for ultra fast
+  # local builds that also helps.  For slow behemoth builds, it does not
+  # matter.
+  if test -n "$BUILD_PREFETCH"
+  then
+    cat *.cabal > /dev/null 2>&1 &
+    prefetch_tool ghc "$GHC_PATH"
+    #prefetch_tool cabal "$CABAL_PATH"
+    # Should we wait for this pid to avoid lock contention
+    if test -z "$CABAL_DISABLE_DEPS" -a "$BUILD" = "cabal-v2"
+    then
+      do_cabal_update > /dev/null 2>&1 &
+      CABAL_UPDATE_PID=$!
+      prefetch_cabal 2>&1 &
+    fi
+  fi
+
   test -z "$(need_stack)" \
     || ensure_stack ${LOCAL_BIN}
 
@@ -2611,8 +2691,11 @@ show_step "Check basic tools"
 require_cmd bash
 for i in $TOOLS; do require_cmd $i; done
 
-show_step "Build host machine information"
-show_machine_info
+if test -z "$BUILD_PREFETCH"
+then
+  show_step "Build host machine information"
+  show_machine_info
+fi
 
 show_step "Prepare to install tools"
 
