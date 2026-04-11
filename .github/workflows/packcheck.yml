@@ -239,7 +239,7 @@ jobs:
               CABAL_PROJECT=cabal.project
 
 #-----------------------------------------------------------------------------
-# Usually you do need to change anything below, this is generic code for
+# Usually you do not need to change anything below, this is generic code for
 # caching and running packcheck on Linux/Mac/Windows.
 #-----------------------------------------------------------------------------
 
