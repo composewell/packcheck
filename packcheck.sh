@@ -558,6 +558,7 @@ show_help() {
   help_envvar GHCUP_GHC_OPTIONS "Used as in \"ghcup install ghc <GHCUP_GHC_OPTIONS> <version>\""
   help_envvar GHC_OPTIONS "Specify GHC options to use"
   help_envvar SDIST_OPTIONS "Arguments to stack/cabal sdist command"
+  help_envvar HADDOCK_OPTIONS "ADDITIONAL haddock build options to append to defaults"
 
   show_step1 "Specifying what to build"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
@@ -590,7 +591,6 @@ show_help() {
   help_envvar CABAL_CHECK_RELAX "[y] Do not return failure if 'cabal check' fails on the package."
   help_envvar CABAL_HACKAGE_MIRROR "DESTRUCTIVE! Specify an alternative mirror, modifies the cabal config file."
   help_envvar CABAL_INDEX_TTL "Do not attempt cabal update until it is stale by this many hours."
-  help_envvar HADDOCK_OPTIONS "ADDITIONAL haddock build options to append to defaults"
 
   show_step1 "stack options"
   help_envvar STACK_YAML "Alternative stack config file path relative to project root"
@@ -2444,7 +2444,7 @@ build_compile () {
     show_step "Best effort prefetch"
     run_prefetch cat *.cabal
     prefetch_tool ghc "$GHC_PATH"
-    test -z "$GHCVER" || prefetch_tool "ghc-$GHCVER" "$GHC_PATH"
+    test -z "$GHCVER" || prefetch_tool "ghc-$GHCVER"
     #prefetch_tool cabal "$CABAL_PATH"
     # Should we wait for this pid to avoid lock contention
     if test "$BUILD" = "cabal-v2"
