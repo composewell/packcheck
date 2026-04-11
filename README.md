@@ -18,7 +18,19 @@ consistent results locally and in CI without extra configuration.
 
 ## Quick Start
 
-### Minimal GitHub Actions Setup
+### Local Testing
+
+Easiest way to try it out is to download the `packcheck.sh` script and run
+it from within your Haskell package repo locally.
+
+```bash
+packcheck.sh cabal
+```
+
+### Running in GitHub Actions
+
+One of Packcheck's core strengths is parity. You can run the exact same
+tests locally or in the CI.
 
 The following `github.yml` uses the default GHC available on the runner
 (typically the latest stable version).
@@ -49,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ["9.12.4", "9.14.1"]
+        ghc: ["9.14.1", "9.12.4", "9.10.3"]
     steps:
       - uses: actions/checkout@v4
       - run: |
@@ -57,27 +69,17 @@ jobs:
           bash packcheck.sh cabal GHCVER=${{ matrix.ghc }}
 ```
 
-### Consistent Local Testing
+### Fast CI Testing
 
-One of Packcheck's core strengths is parity. You can run the exact same
-CI tests locally by executing the script directly:
+Packcheck supports **Split Caching** which makes CI as fast as your
+local testing. Packcheck can be invoked to install dependencies and
+exit, then we save the cache and resume. After failures CI can resume
+from building your package instead of installing dependencies, making it
+fast and amenable to iterative development.
 
-```bash
-./packcheck.sh cabal GHCVER=9.14.1
-```
-
-If you prefer to commit `packcheck.sh` directly to your repository root,
-your GitHub workflow becomes even leaner:
-
-```yaml
-on: [push, pull_request]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: ./packcheck.sh cabal
-```
+See the
+[github CI template](https://github.com/composewell/packcheck/blob/master/.github/workflows/packcheck.yml) |
+for an example use.
 
 ---
 
@@ -89,7 +91,6 @@ ensure your CI runs are fast and efficient.  The templates are designed
 to work immediately for most packages. For fine-grained control, simply
 uncomment the labeled lines in the config files to toggle benchmarks,
 Haddock generation, or coverage reports.
-
 
 | CI System | Platforms | Configuration Template |
 | :--- | :--- | :--- |
@@ -130,17 +131,6 @@ via simple environment variables.
 your source code using `cabal-docspec`. Toggle it on with a single
 variable and optionally provide a custom binary URL for specific
 environments.
-
----
-
-## Advanced CI & Caching
-
-For larger projects, Packcheck supports **Split Caching**. The CI is
-architected to save progress after installing dependencies, save the cache and
-then resume from where we left to do the final build.
-
-This ensures that even after a failure, your next CI run starts from the
-last successful compilation step, significantly reducing iteration time.
 
 ---
 
