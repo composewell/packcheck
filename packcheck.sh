@@ -1358,8 +1358,8 @@ find_ghc() {
 }
 
 run_prefetch() {
+  echo "Prefetch: [$@]"
   if [ -n "$BUILD_PREFETCH_DEBUG" ]; then
-    echo "Running prefetch: [$@]"
     "$@" > /dev/null
   else
     "$@" > /dev/null 2>&1 &
@@ -1827,7 +1827,7 @@ ensure_cabal_config() {
     if test -z "$CABAL_DISABLE_DEPS"
     then
       if [ -n "$CABAL_UPDATE_PID" ]; then
-        echo "Waiting for async cabal update pid $CABAL_UPDATE_PID..."
+        echo "Waiting for async cabal update prefetch pid $CABAL_UPDATE_PID..."
         wait "$CABAL_UPDATE_PID"
       fi
       # We do not know if the async update was successful or not
@@ -2352,11 +2352,6 @@ build_pre_dep() {
 build_post_dep() {
   show_step "Prepare to build"
   echo "pwd: $(pwd)"
-  if test -z "$DISABLE_SDIST_BUILD" -a -n "$BUILD_PACKAGE_ONLY"
-  then
-    echo "cd .packcheck/$PACKAGE_FULL_NAME"
-    cd .packcheck/$PACKAGE_FULL_NAME
-  fi
 
   build_and_test
 
@@ -2446,14 +2441,19 @@ build_compile () {
   # matter.
   if test -n "$BUILD_PREFETCH"
   then
+    show_step "Best effort prefetch"
     run_prefetch cat *.cabal
     prefetch_tool ghc "$GHC_PATH"
+    test -z "$GHCVER" || prefetch_tool "ghc-$GHCVER" "$GHC_PATH"
     #prefetch_tool cabal "$CABAL_PATH"
     # Should we wait for this pid to avoid lock contention
-    if test -z "$CABAL_DISABLE_DEPS" -a "$BUILD" = "cabal-v2"
+    if test "$BUILD" = "cabal-v2"
     then
-      run_prefetch do_cabal_update
-      CABAL_UPDATE_PID=$!
+      if test -z "$CABAL_DISABLE_DEPS"
+      then
+        run_prefetch do_cabal_update
+        CABAL_UPDATE_PID=$!
+      fi
       if test -n "$BUILD_PREFETCH_DEBUG"
       then
         prefetch_cabal
@@ -2462,6 +2462,8 @@ build_compile () {
       fi
     fi
   fi
+
+  show_step "Prepare to install tools"
 
   test -z "$(need_stack)" \
     || ensure_stack ${LOCAL_BIN}
@@ -2573,6 +2575,46 @@ get_sys_time() {
 
 get_rel_time() {
   echo $((`get_sys_time` - ${BASE_TIME}))
+}
+
+#------------------------------------------------------------------------------
+# Some adjustments to the build environment
+#------------------------------------------------------------------------------
+
+setup_environment() {
+
+  # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
+  # XXX add paths only if not already on PATH, but sometimes we have to add path
+  # at head for precedence even if it is already on PATH.
+  #echo "Original PATH is [$PATH]..."
+  PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN
+  if test "$BUILD" = "cabal-v2"
+  then
+      PATH_PREFIX=$PATH_PREFIX:$OS_APP_HOME/$OS_CABAL_DIR/bin
+  fi
+
+  echo "Prefixing [$PATH_PREFIX] to PATH"
+  export PATH=$PATH_PREFIX:$PATH
+  echo
+
+  # XXX we should be able to set multiple paths in it
+  # One advantage of using GHCUP_PATH as TOOLS_DIR is that we can pick ghc right
+  # from the original dir without having set default ghc which would change the
+  # user's environment. Since ghcup provides links to all versions in bin we do
+  # not need this.
+  #if test -z "$TOOLS_DIR"
+  #then
+  #  TOOLS_DIR="$GHCUP_PATH"
+  #fi
+
+  # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
+  # cabal does not complain
+  # XXX this should be done from outside via env
+  unset GHC_PACKAGE_PATH
+  # stack does not work well with empty STACK_YAML env var
+  test -n "$STACK_YAML" || unset STACK_YAML
+
+  CABAL_BINARY_NAME=cabal
 }
 
 #------------------------------------------------------------------------------
@@ -2705,6 +2747,7 @@ TOOLS="awk cat curl cut date env head mkdir printf rm sleep sort tail tr uname w
 $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
+setup_environment
 require_cmd bash
 for i in $TOOLS; do require_cmd $i; done
 
@@ -2713,45 +2756,6 @@ then
   show_step "Build host machine information"
   show_machine_info
 fi
-
-show_step "Prepare to install tools"
-
-#------------------------------------------------------------------------------
-# Some adjustments to the build environment
-#------------------------------------------------------------------------------
-
-# Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
-# XXX add paths only if not already on PATH, but sometimes we have to add path
-# at head for precedence even if it is already on PATH.
-#echo "Original PATH is [$PATH]..."
-PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN
-if test "$BUILD" = "cabal-v2"
-then
-    PATH_PREFIX=$PATH_PREFIX:$OS_APP_HOME/$OS_CABAL_DIR/bin
-fi
-
-echo "Prefixing [$PATH_PREFIX] to PATH"
-export PATH=$PATH_PREFIX:$PATH
-echo
-
-# XXX we should be able to set multiple paths in it
-# One advantage of using GHCUP_PATH as TOOLS_DIR is that we can pick ghc right
-# from the original dir without having set default ghc which would change the
-# user's environment. Since ghcup provides links to all versions in bin we do
-# not need this.
-#if test -z "$TOOLS_DIR"
-#then
-#  TOOLS_DIR="$GHCUP_PATH"
-#fi
-
-# if we are running from a stack environment remove GHC_PACKAGE_PATH so that
-# cabal does not complain
-# XXX this should be done from outside via env
-unset GHC_PACKAGE_PATH
-# stack does not work well with empty STACK_YAML env var
-test -n "$STACK_YAML" || unset STACK_YAML
-
-CABAL_BINARY_NAME=cabal
 
 #------------------------------------------------------------------------------
 # Build
