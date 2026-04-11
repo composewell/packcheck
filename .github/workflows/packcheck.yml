@@ -77,28 +77,35 @@ jobs:
       # Subdir
       SUBDIR: ${{ matrix.subdir }}
 
+      # If this option is enabled packcheck clears out the environment
+      # and only uses the options explicitly set on the command line,
+      # implicit environment won't affect the build. if you find this
+      # annoying comment this.
+      CHECK_ENV: "y"
+
+      # NOTE: by capturing the options in env variables here quotes
+      # are presrved, if we expand them directly into the script
+      # quotes are lost.
+      #
       # WARNING! you cannot use comments in this
-      common_pack_options: >-
+      COMMON_OPTIONS: >-
         LC_ALL=C.UTF-8
         BUILD_PREFETCH=y
         GHCUP_VERSION=latest
         GHCVER=${{ matrix.ghc_version }}
 
       # WARNING! you cannot use comments in this
-      cabal_pack_options: >-
+      CABAL_OPTIONS: >-
         CABAL_REINIT_CONFIG=y
         CABAL_CHECK_RELAX=y
+
+      MATRIX_OPTIONS: ${{ matrix.pack_options }}
 
       # ------------------------------------------------------------------------
       # Location of packcheck.sh (the shell script invoked to perform CI tests ).
       # ------------------------------------------------------------------------
       # You can either commit the packcheck.sh script in your repo root or
       # you can use it by specifying the PACKCHECK_REPO_URL option.
-      # If this option is enabled packcheck clears out the environment
-      # and only uses the options explicitly set on the command line
-      # only, implicit environment won't affect the build. if you find
-      # this annoying comment is out.
-      CHECK_ENV: "y"
       # If you have not committed packcheck.sh in your repo at PACKCHECK
       # then it is automatically pulled from this URL.
       PACKCHECK_GITHUB_URL: "https://raw.githubusercontent.com/composewell/packcheck"
@@ -349,28 +356,27 @@ jobs:
         }
         download_one packcheck.sh
 
+    # Store the function in a file so that it can be reused across multiple
+    # steps.
     - name: Setup packcheck
       shell: bash
       run: |
         cat << 'EOF' > packcheck-setup.sh
         setup_packcheck_args() {
-          # $1 is the BUILD_MODE (e.g., BUILD_DEPS_ONLY)
-          local MODE=$1
-
           if test -n "$SUBDIR"; then
             mv packcheck.sh "$SUBDIR/"
             rm -f cabal.project
             cd "$SUBDIR"
           fi
 
-          ARGS="${{ matrix.command }} $COMMON_PACK_OPTIONS"
+          ARGS="${{ matrix.command }} $COMMON_OPTIONS"
           if test "${{ matrix.command }}" = "cabal"; then
-            ARGS="$ARGS $CABAL_PACK_OPTIONS"
+            ARGS="$ARGS $CABAL_OPTIONS"
           fi
           
           # Caution: do not use matrix.pack_options directly here
           # quotes will get stripped.
-          ARGS="$ARGS $MATRIX_PACK_OPTIONS $MODE=y"
+          ARGS="$ARGS $MATRIX_OPTIONS"
           PATH_VAR=/bin:/usr/bin:/sbin:/usr/sbin
 
           case "$(uname)" in
@@ -402,17 +408,10 @@ jobs:
         (runner.os != 'Windows' && steps.restore-deps-nonwin.outputs.cache-hit != 'true') ||
         (runner.os == 'Windows' && steps.restore-deps-win.outputs.cache-hit != 'true')
       shell: bash
-      env:
-        # NOTE: by capturing the options in env variables here quotes
-        # are presrved, if we expand them directly into the script
-        # quotes are lost.
-        COMMON_PACK_OPTIONS: ${{ env.common_pack_options }}
-        CABAL_PACK_OPTIONS: ${{ env.cabal_pack_options }}
-        MATRIX_PACK_OPTIONS: ${{ matrix.pack_options }}
       run: |
         source packcheck-setup.sh
-        setup_packcheck_args "BUILD_DEPS_ONLY"
-        eval "./packcheck.sh $ARGS"
+        setup_packcheck_args
+        eval "./packcheck.sh $ARGS BUILD_DEPS_ONLY=y"
 
     - name: Save hackage package index (non-Windows)
       uses: actions/cache/save@v4
@@ -463,14 +462,10 @@ jobs:
 
     - name: Run packcheck (final build)
       shell: bash
-      env:
-        COMMON_PACK_OPTIONS: ${{ env.common_pack_options }}
-        CABAL_PACK_OPTIONS: ${{ env.cabal_pack_options }}
-        MATRIX_PACK_OPTIONS: ${{ matrix.pack_options }}
       run: |
         source packcheck-setup.sh
-        setup_packcheck_args "BUILD_PACKAGE_ONLY"
-        eval "./packcheck.sh $ARGS"
+        setup_packcheck_args
+        eval "./packcheck.sh $ARGS BUILD_PACKAGE_ONLY=y"
 
     # Enable for debugging, this itself takes 50 sec on Windows, in packcheck
     # build which is tiny.
