@@ -108,8 +108,8 @@ Haddock generation, or coverage reports.
 * **Identical Testing:** Run the exact same test suite locally that runs
 on your CI—eliminating "it worked on my machine" issues.
 * **Deep Diagnostics:** Precise error messages and detailed build
-metadata (tool paths, versions, OS CPU, memory, disk space), timing for
-every step.
+metadata (tool paths, versions, OS CPU, memory, disk space). Prints
+timing for every step for build performance debugging.
 * **Production-Ready Checks:**
     * **SDist Verification:** Builds from the generated tarball to
     ensure no files are missing from your release.
@@ -177,6 +177,12 @@ To verify the documentation snippets in your source files, enable the
 
 ## Pro-Tips & Advanced Logic
 
+* **Reproducibility:** When `CHECK_ENV=y` is enabled, `packcheck`
+ignores all environment variables and relies solely on command-line
+inputs; it can also detect and report mistyped variable names. We
+recommend using this mode by default, especially when troubleshooting
+“ghost” issues caused by unintended environment variables or typos
+(e.g., `GHCVWR` instead of `GHCVER`).
 * **GHC Resolution:** If `GHCVER` is a prefix (e.g., `9.12`), Packcheck
 finds the first matching binary in your `PATH`. Set `GHCVER=head` to
 specifically target `ghc-head`.
@@ -357,21 +363,10 @@ configurations.
 artifacts are stored in the `.packcheck` directory to keep your project
 root clean.
 
+<!--
 ---
 
-## Advanced Workflows & Diagnostics
-
-#### 1. Bulletproof Reproducibility (`packcheck-safe`)
-If you are troubleshooting a "ghost" issue where a build fails due to a
-hidden environment variable or a typo (e.g., typing `GHCVWR` instead of
-`GHCVER`), use the safe wrapper:
-
-```bash
-# packcheck-safe runs in a clean environment and validates all parameter names
-./packcheck-safe.sh cabal PATH=/bin:/usr/bin:/opt/ghc/bin GHCVER=9.14.1
-```
-
-#### 2. Remote Testing (`packcheck-remote`)
+## Remote Testing (`packcheck-remote`)
 You can run Packcheck on a remote repository without manually cloning
 it. This is particularly useful for verifying Pull Requests locally
 before merging.
@@ -385,9 +380,4 @@ before merging.
     --directory=./temp_build \
     -- cabal GHCVER=9.12.1
 ```
-
-#### 3. Performance & Environment Debugging
-* **Timeline Reporting:** Packcheck prints the elapsed time for every
-build step, allowing you to identify bottlenecks in your CI pipeline.
-* **Variable Validation:** Use `CHECK_ENV=y` to force Packcheck to error
-out if it detects misspelled or unrecognized environment variables.
+-->
