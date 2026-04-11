@@ -296,7 +296,6 @@ SAFE_ENVVARS="\
   DISABLE_DOCS \
   ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
-  PATH \
   TOOLS_DIR \
   STACKVER \
   STACK_YAML \
@@ -322,9 +321,6 @@ SAFE_ENVVARS="\
   DOCSPEC_URL \
   DOCSPEC_OPTIONS \
   CHECK_ENV \
-  LANG \
-  LC_ALL \
-  BASE_TIME \
 "
 
 UNSAFE_ENVVARS="\
@@ -334,60 +330,45 @@ UNSAFE_ENVVARS="\
   CABAL_HACKAGE_MIRROR \
 "
 
-ALLOW_CMD_PARAMS="\
-APPDATA \
-NUMBER_OF_PROCESSORS \
-PROCESSOR_IDENTIFIER \
+# Packcheck's own params
+PACKCHECK_ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS"
+
+# Standard environment variables allowed on command line
+ALLOW_COMMON_ENVVARS="\
+PATH \
+LANG \
+LC_ALL \
+LC_CTYPE \
+HOME \
+XDG_CONFIG_HOME \
+XDG_CACHE_HOME \
+XDG_DATA_HOME \
+TMPDIR \
+LD_LIBRARY_PATH \
+DYLD_LIBRARY_PATH \
+LIBRARY_PATH \
+C_INCLUDE_PATH \
+PKG_CONFIG_PATH \
+HTTP_PROXY \
+HTTPS_PROXY \
+NO_PROXY \
 CABAL_DIR \
 CABAL_CONFIG \
 CABAL_BUILDDIR \
 STACK_ROOT \
-HTTP_PROXY \
-HTTPS_PROXY \
-NO_PROXY \
-"
-
-ENVVARS="$SAFE_ENVVARS $UNSAFE_ENVVARS $ALLOW_CMD_PARAMS"
-
-ALLOW_SPECIAL_ENVVARS="_"
-
-# These are allowed even in a clean environment.
-# These are either critical to the functioning ro do not affect the produced
-# artifacts..
-ALLOW_COMMON_ENVVARS="\
-CHECK_ENV \
-PWD \
-SHLVL \
+GHC \
+GHC_PACKAGE_PATH \
+GHCRTS \
 "
 
 ALLOW_WIN_ENVVARS="\
-MSYSTEM \
-SYSTEMROOT \
-WINDIR \
 WINVER \
+APPDATA \
+NUMBER_OF_PROCESSORS \
+PROCESSOR_IDENTIFIER \
 "
 
-ALLOW_OTHER_ENVVARS="$ALLOW_COMMON_ENVVARS $ALLOW_WIN_ENVVARS"
-
-ALLOW_ENVVARS="$ALLOW_SPECIAL_ENVVARS $ALLOW_OTHER_ENVVARS $ALLOW_WIN_ENVVARS"
-
-# We do not use HOME, we determine it independently and then set it internally.
-OTHER_ENVVARS="\
-  HOME \
-  XDG_CONFIG_HOME \
-  XDG_CACHE_HOME \
-  XDG_DATA_HOME \
-  TMPDIR \
-  LC_CTYPE \
-  LD_LIBRARY_PATH \
-  DYLD_LIBRARY_PATH \
-  C_INCLUDE_PATH \
-  LIBRARY_PATH \
-  PKG_CONFIG_PATH \
-  GHC \
-  GHC_PACKAGE_PATH \
-  GHCRTS \
-"
+SYSTEM_ENVVARS="$ALLOW_COMMON_ENVVARS $ALLOW_WIN_ENVVARS"
 
 # $1: varname
 # $2: list of vars to find in
@@ -400,44 +381,15 @@ find_var() {
 }
 
 error_novar() {
-  find_var "$1" "$ENVVARS" || die "Unknown parameter or environment variable [$1]\nTry --help for supported parameters"
-}
-
-error_clean_env() {
-    # $1 will now contain the list of all offending variables
-    echo "Error: The following unallowed environment variables are set:"
-    echo "$1"
-    echo
-    echo "Error: No environment variables except [$ALLOW_OTHER_ENVVARS] are allowed when using CHECK_ENV=y."
-    die "Please use a clean environment (e.g. env -i) with CHECK_ENV."
+  find_var "$1" "$PACKCHECK_ENVVARS" || die "Unknown parameter or environment variable [$1]\nTry --help for supported parameters"
 }
 
 error_clean_param() {
-    die "Unknown parameter [$1] specified on command line.\nTry --help for supported parameters"
+    die "Unknown command line parameter or environment variable [$1].\nTry --help for supported parameters"
 }
 
-check_clean_env() {
-  local vars=$(env | cut -f1 -d=)
-  local found_bad_vars=""
-
-  for i in $vars
-  do
-    if ! find_var "$i" "$ALLOW_ENVVARS"; then
-      # Append the variable to our list
-      if [ -z "$found_bad_vars" ]; then
-        found_bad_vars="$i"
-      else
-        found_bad_vars="$found_bad_vars, $i"
-      fi
-    fi
-  done
-
-  # If the list is not empty, report all of them and die
-  if [ -n "$found_bad_vars" ]; then
-    error_clean_env "$found_bad_vars"
-  fi
-}
-
+# XXX We should not clear TMPDIR and any other temp dir related envvars
+# ghcup may depend on it.
 unset_all_env() {
     # compgen -e lists only exported environment variables
     # It returns names only, so no parsing with 'cut' is needed
@@ -613,7 +565,7 @@ show_help() {
   # To catch spelling mistakes in envvar names passed, otherwise they will be
   # silently ignored and we will be wondering why the script is not working.
   help_envvar CHECK_ENV "[y] Treat unknown env variables as error, used with env -i"
-  help_envvar BASE_TIME "System time to be used as base for timeline reporting"
+  #help_envvar BASE_TIME "System time to be used as base for timeline reporting"
 }
 
 check_all_boolean_vars () {
@@ -658,7 +610,7 @@ show_build_command() {
   echo "You can use the following command to reproduce this build:"
   echo
   echo -n "$(basename $0) $BUILD "
-  for i in $SAFE_ENVVARS
+  for i in $SAFE_ENVVARS $SYSTEM_ENVVARS
   do
     local val="$(show_nonempty_var $i)"
     test -z "$val" || echo -n "$val "
@@ -692,22 +644,20 @@ show_build_command() {
 }
 
 # Environment on entry to packcheck
-show_build_env() {
-  for i in $ALLOW_OTHER_ENVVARS $OTHER_ENVVARS
+show_system_env() {
+  for i in $SYSTEM_ENVVARS
   do
     show_nonempty_var $i
   done
 }
 
 # Environment just before the build, packcheck may have changed things.
-show_build_config() {
+show_packcheck_config() {
   check_all_boolean_vars
-  for i in $ENVVARS
+  for i in $PACKCHECK_ENVVARS
   do
     show_nonempty_var $i
   done
-  echo
-  show_build_env
 }
 
 need_stack() {
@@ -1618,10 +1568,11 @@ ensure_cabal_project() {
     if test -n "$implicit_proj_file"
     then
       echo "Implicit cabal project file found at [$implicit_proj_file]"
+    else
+      echo "No cabal project file found or specified."
     fi
   fi
   echo "Using cabal command [$CABALCMD]"
-  echo "Using sdist cabal command [$SDIST_CABALCMD]"
 }
 
 ensure_stack_yaml() {
@@ -2042,6 +1993,7 @@ then add them to .packcheck.ignore file at the root of the git repository."
   fi
 
   show_step "Package info [sdist $SDIST_OPTIONS]"
+  echo "pwd: $(pwd)"
   run_verbose $CABAL_BINARY_NAME info . || true
 
   if test -f "./configure.ac"
@@ -2072,9 +2024,11 @@ build_and_test() {
   case "$BUILD" in
     stack)
       show_step "Build and test"
+      echo "pwd: $(pwd)"
       run_verbose_errexit $SDIST_STACKCMD build $STACK_BUILD_OPTIONS ;;
     cabal-v2)
       show_step "Build"
+      echo "pwd: $(pwd)"
       run_verbose_errexit $SDIST_CABALCMD v2-build \
         --with-compiler "$COMPILER_EXE_PATH" \
         $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
@@ -2082,6 +2036,7 @@ build_and_test() {
       if test -z "$DISABLE_DOCS"
       then
         show_step "Build haddock docs"
+        echo "pwd: $(pwd)"
         run_verbose_errexit $SDIST_CABALCMD v2-haddock \
           --with-compiler "$COMPILER_EXE_PATH" \
           $GHCJS_FLAG $CABAL_BUILD_OPTIONS \
@@ -2099,6 +2054,7 @@ build_and_test() {
         then
           SHOW_DETAILS="--test-show-details=streaming"
         fi
+        echo "pwd: $(pwd)"
         run_verbose_errexit $SDIST_CABALCMD v2-test \
           --with-compiler "$COMPILER_EXE_PATH" \
           $SHOW_DETAILS $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_TEST_OPTIONS $CABAL_BUILD_TARGETS
@@ -2108,8 +2064,11 @@ build_and_test() {
 
 dist_checks() {
   case "$BUILD" in
-    stack) run_verbose $SDIST_STACKCMD sdist $SDIST_OPTIONS ;;
+    stack)
+      echo "pwd: $(pwd)"
+      run_verbose $SDIST_STACKCMD sdist $SDIST_OPTIONS ;;
     cabal-v2)
+      echo "pwd: $(pwd)"
       if test -n "$CABAL_CHECK_RELAX"
       then
         run_verbose $CABAL_BINARY_NAME check || true
@@ -2350,9 +2309,6 @@ build_pre_dep() {
 }
 
 build_post_dep() {
-  show_step "Prepare to build"
-  echo "pwd: $(pwd)"
-
   build_and_test
 
   if test -n "$COVERALLS_OPTIONS"
@@ -2463,8 +2419,6 @@ build_compile () {
     fi
   fi
 
-  show_step "Prepare to install tools"
-
   test -z "$(need_stack)" \
     || ensure_stack ${LOCAL_BIN}
 
@@ -2472,8 +2426,6 @@ build_compile () {
   # packed with msys itself.
   # ensure_msys_tools "tar" && require_cmd tar
 
-  # This may use STACKCMD so happens after stack install
-  determine_build_type
   ensure_ghc
   ensure_cabal ${LOCAL_BIN}
   ensure_docspec
@@ -2484,11 +2436,14 @@ build_compile () {
       ;;
   esac
 
-  show_step "Effective build config"
-  show_build_config
+  show_step "System environment before build"
+  show_system_env
+
+  show_step "Examine build and project definition files"
+  # This may use STACKCMD so happens after stack install
+  determine_build_type
 
   # ---------Create dist, unpack, install deps, test--------
-  show_step "Check tools and build configuration"
   dont_need_cabal || ensure_cabal_project
   if test -z "$DISABLE_SDIST_BUILD"
   then
@@ -2502,6 +2457,7 @@ build_compile () {
   # should be used.
   if test -z "$DISABLE_SDIST_BUILD"
   then
+    show_step "Prepare to build from source distribution"
     if test -f "./configure.ac"
     then
       echo "Package contains a 'configure.ac' file."
@@ -2510,13 +2466,10 @@ build_compile () {
       echo "option if you do not have 'autoreconf' available"
       require_cmd autoreconf
     fi
-  fi
-
-  if test -z "$DISABLE_SDIST_BUILD"
-  then
     # Note this function leaves us in the package dir unpacked from sdist
-    show_step "Prepare to build from source distribution"
     create_and_unpack_pkg_dist $PACKAGE_FULL_NAME
+    echo "pwd: $(pwd)"
+    echo "Using sdist cabal command [$SDIST_CABALCMD]"
   fi
 
   if test -n "$BUILD_PACKAGE_ONLY"
@@ -2544,7 +2497,7 @@ eval_env() {
       (*=*)
         key=${1%%=*}
         val=${1#*=}
-        find_var $key "$ENVVARS $ALLOW_ENVVARS" || error_clean_param "$key"
+        find_var $key "$PACKCHECK_ENVVARS $SYSTEM_ENVVARS" || error_clean_param "$key"
         eval "export $key=\"$val\""
         ;;
       (*)
@@ -2647,19 +2600,19 @@ esac
 BUILD=$1; shift
 case $BUILD in
   cabal|cabal-v2|stack|hlint)
-    show_step1 "Implicit environment"
+    show_step1 "Implicit System environment on entry"
     if test -n "$CHECK_ENV"
     then
       check_boolean_var CHECK_ENV
       echo "CHECK_ENV=y; ignoring all environment, make sure to pass a sensible PATH on command line"
       unset_all_env
     fi
-    show_build_env
+    show_system_env
     ;;
   *) ;;
 esac
 
-# This allows only ALLOW_ENVVARS to be set on the command line
+# This allows only SYSTEM_ENVVARS to be set on the command line
 eval_env "$@"
 # After eval_env the PATH changes
 hash -r
@@ -2671,9 +2624,20 @@ test -n "$BASE_TIME" || BASE_TIME=$(get_sys_time)
 
 #------------------------------------------------------------------------------
 
+SHELL_HOME=$(echo ~)
+
 # Need these to produce help
 # Determine home independent of the environment
-export HOME=$(echo ~)
+if test -z "$HOME"
+then
+  export HOME="$SHELL_HOME"
+else
+  if test "$HOME" != "$SHELL_HOME"
+  then
+    die "HOME environment variable [$HOME] is not the same as shell's ~ [$SHELL_HOME]"
+  fi
+fi
+
 set_os_specific_vars # depends on HOME
 
 LOCAL_BIN=$OS_APP_HOME/$OS_LOCAL_DIR/bin
@@ -2726,6 +2690,16 @@ bash --version
 
 show_step "Build command"
 show_build_command
+
+echo
+echo "Packcheck config parameters:"
+echo
+show_packcheck_config
+
+echo
+echo "System environment parameters"
+echo
+show_system_env
 
 if test -n "$BUILD_DEPS_ONLY" -a -n "$BUILD_PACKAGE_ONLY"
 then
