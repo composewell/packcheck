@@ -373,7 +373,7 @@ jobs:
           if test "${{ matrix.command }}" = "cabal"; then
             ARGS="$ARGS $CABAL_OPTIONS"
           fi
-          
+
           # Caution: do not use matrix.pack_options directly here
           # quotes will get stripped.
           ARGS="$ARGS $MATRIX_OPTIONS"
