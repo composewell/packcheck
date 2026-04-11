@@ -5,11 +5,16 @@
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)
 
-**Packcheck** is a universal Haskell build and CI script designed for
-uniform, consistent testing across all platforms (Linux, macOS, Windows,
-FreeBSD). It is the simplest way to build and test your Haskell packages
-comprehensively, ensuring your local environment and CI pipeline run
-identical checks with minimal configuration.
+**Packcheck** is a simple tool that makes it easy to build a Haskell
+package. With a single command, it will build your package, run tests,
+benchmarks, and doctests, generate documentation, check the package,
+validate source distributions, and even verify that everything builds
+correctly from the distribution.
+
+You don’t need to set up or install tools like GHC or Cabal yourself;
+Packcheck handles finding or installing all the tools for you. The same
+command works across Linux, macOS, Windows, and FreeBSD, so you get
+consistent results locally and in CI without extra configuration.
 
 ## Quick Start
 
