@@ -75,9 +75,12 @@ task:
   #  folder: ~/.local/bin
   #  fingerprint_script: echo $HLINT_VERSION
 
+  # git is required for cabal files with git URLs
   deps_install_script: |
+      pkg update
       pkg install -y gmake
       pkg install -y bash
+      pkg install -y git
 
   packcheck_install_script: |
       if test ! -e "$PACKCHECK"
