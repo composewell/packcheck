@@ -24,7 +24,8 @@ Easiest way to try it out is to download the `packcheck.sh` script and run
 it from within your Haskell package repo locally.
 
 ```bash
-packcheck.sh cabal
+curl -sLO https://raw.githubusercontent.com/composewell/packcheck/master/packcheck.sh
+bash packcheck.sh cabal
 ```
 
 ### Running in GitHub Actions
