@@ -49,6 +49,7 @@ extra-doc-files:
     README.md
 
 extra-source-files:
+    configure.ac
     packcheck.sh
     packcheck-remote.sh
 
