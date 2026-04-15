@@ -33,7 +33,10 @@ environment:
     # DISABLE_BENCH: "y"
     # DISABLE_DOCS: "y"
     # DISABLE_DIST_CHECKS: "y"
-    # DISABLE_SDIST_BUILD: "y"
+    # On Windows, DISABLE_SDIST_BUILD is useful for (1) avoiding
+    # path length restriction, (2) avoid installing autoreconf
+    # for configure builds.
+    DISABLE_SDIST_BUILD: "y"
     # Note: these require the "diff" utility.
     # DISABLE_SDIST_GIT_CHECK: "y"
     DISABLE_SDIST_PROJECT_CHECK: "y"

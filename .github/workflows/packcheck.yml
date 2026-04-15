@@ -171,9 +171,13 @@ jobs:
             runner: macos-latest
             command: cabal
             ghc_version: 9.12.4
+            # autoreconf required by SDIST build when a configure script
+            # is present, is not available by default on Windows, so
+            # disable it.
             # WARNING! cannot use # comments inside pack_options.
             pack_options: >-
               CABAL_PROJECT=cabal.project
+              DISABLE_SDIST_BUILD=y
 
           - name: ci
             runner: ubuntu-latest
@@ -212,8 +216,10 @@ jobs:
             runner: windows-latest
             command: cabal
             ghc_version: 9.14.1
+            # On Windows, DISABLE_SDIST_BUILD is useful for (1) avoiding
+            # path length restriction, (2) avoid installing autoreconf
+            # for configure builds.
             # WARNING! cannot use # comments inside pack_options.
-            # DISABLE_SDIST_BUILD for shorter paths on Windows
             pack_options: >-
               DISABLE_SDIST_BUILD="y"
               CABAL_PROJECT=cabal.project
