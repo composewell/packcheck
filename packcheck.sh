@@ -2560,10 +2560,6 @@ setup_environment() {
   #  TOOLS_DIR="$GHCUP_PATH"
   #fi
 
-  # if we are running from a stack environment remove GHC_PACKAGE_PATH so that
-  # cabal does not complain
-  # XXX this should be done from outside via env
-  unset GHC_PACKAGE_PATH
   # stack does not work well with empty STACK_YAML env var
   test -n "$STACK_YAML" || unset STACK_YAML
 
@@ -2611,6 +2607,19 @@ case $BUILD in
     ;;
   *) ;;
 esac
+
+# if we are running from a stack environment remove GHC_PACKAGE_PATH so that
+# cabal does not complain.
+# XXX this should be done from outside via env
+# NOTE: do this before eval_env, so that it can later be set by eval_env if
+# passed on command line.
+
+if test -n "$GHC_PACKAGE_PATH"
+then
+  echo "WARNING! unsetting implicit GHC_PACKAGE_PATH [$GHC_PACKAGE_PATH]"
+  echo "WARNING! if you really want to use it pass it on the command line"
+  unset GHC_PACKAGE_PATH
+fi
 
 # This allows only SYSTEM_ENVVARS to be set on the command line
 eval_env "$@"
