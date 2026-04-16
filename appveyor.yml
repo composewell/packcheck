@@ -64,6 +64,10 @@ environment:
     # See https://github.com/haskell/cabal/issues/5386
     TMP: "c:\\tmp"
 
+# ------------------------------------------------------------------------
+# Usually you do not need to change anything below this line
+# ------------------------------------------------------------------------
+
 # Bump the -> version to clear the cache
 # packcheck uses "%APPDATA%\\local" to install tools like hlint etc.
 # cabal may use "%APPDATA%\\cabal" or "c:\\cabal"
