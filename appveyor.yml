@@ -3,9 +3,9 @@
 # variables here.  See https://github.com/composewell/packcheck for all
 # options and their explanation.
 
-#branches:
-#  only:
-#    - master
+branches:
+  only:
+    - master
 
 environment:
     # ------------------------------------------------------------------------
@@ -23,7 +23,7 @@ environment:
     # ------------------------------------------------------------------------
     #
     GHCUP_VERSION: "0.1.50.2"
-    GHCVER: "9.14.1"
+    GHCVER: "9.12.4"
     #CABALVER: "3.10.3.0"
 
     # ------------------------------------------------------------------------
@@ -75,7 +75,8 @@ cache:
   - "C:\\ghcup"
   - "C:\\cabal"
 
-# Folder where the repository is cloned.
+# Folder where the repository is cloned. Kept as short as possible to avoid
+# long path issues on Windows.
 clone_folder: "c:\\pkg"
 build: off
 
