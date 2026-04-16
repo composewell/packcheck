@@ -2540,15 +2540,21 @@ setup_environment() {
   # XXX add paths only if not already on PATH, but sometimes we have to add path
   # at head for precedence even if it is already on PATH.
   #echo "Original PATH is [$PATH]..."
-  PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN
-  if test "$BUILD" = "cabal-v2"
-  then
-      PATH_PREFIX=$PATH_PREFIX:$OS_APP_HOME/$OS_CABAL_DIR/bin
-  fi
 
-  echo "Prefixing [$PATH_PREFIX] to PATH"
-  export PATH=$PATH_PREFIX:$PATH
-  echo
+  # We should not add anything to PATH, respect the user's PATH. For example,
+  # we may be running in a nix shell which has overridden ghc, and adding
+  # ghcup/bin to the front of PATH will change the ghc and all the packages
+  # that were available.
+  #
+  #PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN
+  #if test "$BUILD" = "cabal-v2"
+  #then
+  #    PATH_PREFIX=$PATH_PREFIX:$OS_APP_HOME/$OS_CABAL_DIR/bin
+  #fi
+
+  #echo "Prefixing [$PATH_PREFIX] to PATH"
+  #export PATH=$PATH_PREFIX:$PATH
+  #echo
 
   # XXX we should be able to set multiple paths in it
   # One advantage of using GHCUP_PATH as TOOLS_DIR is that we can pick ghc right
