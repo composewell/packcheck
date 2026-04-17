@@ -5,16 +5,26 @@
 [![Windows Build status](https://ci.appveyor.com/api/projects/status/f7c0ncy84cxp8lbe?svg=true)](https://ci.appveyor.com/project/harendra-kumar/packcheck)
 [![CircleCI](https://circleci.com/gh/composewell/packcheck/tree/master.svg?style=svg)](https://circleci.com/gh/composewell/packcheck/tree/master)
 
-**Packcheck** is a simple tool that makes it easy to build a Haskell
-package. With a single command, it will build your package, run tests,
-benchmarks, and doctests, generate documentation, check the package,
-validate source distributions, and even verify that everything builds
-correctly from the distribution.
+The goal of packcheck is to build a Haskell package in a single
+command.  Any platform, any package, any machine configuration; you
+simply run one command and it will build your package, run tests,
+benchmarks, and doctests, generate documentation, check the package for
+upload to Hackage, and verify that everything builds correctly from a
+distribution.
 
-You don’t need to set up or install tools like GHC or Cabal yourself;
-Packcheck handles finding or installing all the tools for you. The same
-command works across Linux, macOS, Windows, and FreeBSD, so you get
-consistent results locally and in CI without extra configuration.
+Packcheck automates the discovery and installation of required tools as
+much as possible. You do not need to worry about installing GHC, cabal,
+stack, docspec, or hlint; it is all handled for you. Just run one
+command and get your job done. It works in local development workflows,
+in Nix environments, as well as in CI.
+
+Packcheck never changes your configuration or environment, not even
+temporarily. It finds the requested compiler version wherever it exists
+in your PATH or in standard locations and uses it to compile. If not
+found, it can install one using ghcup, but it never changes your
+ghcup default compiler. Even when installing ghcup, it performs the
+minimal download, just the binary, and does not modify your shell
+configuration.
 
 ## Quick Start
 
@@ -346,18 +356,27 @@ CHECK_ENV               : [y] Treat unknown env variables as error, used with en
 BASE_TIME               : System time to be used as base for timeline reporting
 ```
 
-### Critical Behavioral Notes
-* **SDist Parity:** By default, the build fails if the source
-distribution (`.tar.gz`) does not match your git repository. This
-ensures you only release what you have committed. You can bypass this
-with `DISABLE_SDIST_GIT_CHECK=y`.
+### Important Behavioral Notes
+
+* **SDist git comparison:** By default, the source distribution build
+fails if the source distribution (`.tar.gz`) does not match the contents
+of your git repository. Files not in the distribution can be listed
+in .packcheck.ignore. This ensures you only release what you have
+committed. You can bypass this with `DISABLE_SDIST_GIT_CHECK=y`.
+
+* Source distribution build is isolated for each package. In a
+multi-package repo, a source distribution build can be performed
+for only one repo at a time. When a package is built from a source
+distribution, it does not have visibility into changes in the other
+packages in the same repo. Dependencies in a source distribution build
+are resolved from remote sources (git or Hackage), based on how they are
+specified in the cabal file or cabal.project file, rather than from the
+current repo.
+
 * **Destructive Options:** Parameters marked `DESTRUCTIVE!` (like
 `STACK_UPGRADE` or `CABAL_REINIT_CONFIG`) are safe for CI but should
 be used cautiously on local machines as they modify global user
 configurations.
-* **Sandboxing:** Cabal builds are performed in a sandbox. All temporary
-artifacts are stored in the `.packcheck` directory to keep your project
-root clean.
 
 <!--
 ---
