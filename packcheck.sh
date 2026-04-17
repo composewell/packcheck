@@ -107,24 +107,24 @@ function run_verbose() {
   # Note: we used to redirect the echo to stderr but it leads to
   # misaligned output because stdout and stdin are printed at different
   # times.
-  echo "$*"
-  bash -c "$*"
+  printf '%q ' "$@"
+  printf '\n'
+  "$@"
 }
 
 function run_verbose_errexit_with() {
-    local errScript="$1";
+    local errScript="$1"
     shift
-    if ! run_verbose "$*";
-    then
+    if ! run_verbose "$@"; then
         echo
         echo "Running: $errScript"
-        eval "$errScript"
-        die "Command [$*] failed. Exiting."
+        eval "$errScript"  # WARNING: caller must ensure errScript is trusted
+        die "Command [$@] failed. Exiting."
     fi
 }
 
 function run_verbose_errexit() {
-  run_verbose "$*" || die "Command [$*] failed. Exiting."
+  run_verbose "$@" || die "Command [$@] failed. Exiting."
 }
 
 # $1: msg
@@ -303,7 +303,6 @@ SAFE_ENVVARS="\
   STACK_BUILD_OPTIONS \
   CABAL_PROJECT \
   CABAL_CHECK_RELAX \
-  CABAL_USE_STACK_SDIST \
   CABAL_BUILD_OPTIONS \
   CABAL_TEST_OPTIONS \
   CABAL_DISABLE_DEPS \
@@ -356,6 +355,7 @@ CABAL_DIR \
 CABAL_CONFIG \
 CABAL_BUILDDIR \
 STACK_ROOT \
+GHCUP_INSTALL_BASE_PREFIX \
 GHC \
 GHC_PACKAGE_PATH \
 GHCRTS \
@@ -534,7 +534,6 @@ show_help() {
   # XXX this applies to both stack and cabal builds
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
   help_envvar CABAL_PROJECT "Alternative cabal project file, path relative to project root"
-  #help_envvar CABAL_USE_STACK_SDIST "[y] Use stack sdist (to use --pvp-bounds)"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal build options to append to defaults"
   help_envvar CABAL_BUILD_TARGETS "cabal build targets, default is 'all'"
   help_envvar CABAL_HADDOCK_TARGETS "cabal haddock targets, default is '.'"
@@ -574,7 +573,6 @@ check_all_boolean_vars () {
   check_boolean_var DISABLE_DIST_CHECKS
   check_boolean_var DISABLE_SDIST_PROJECT_CHECK
   check_boolean_var DISABLE_SDIST_GIT_CHECK
-  check_boolean_var CABAL_USE_STACK_SDIST
   check_boolean_var CABAL_REINIT_CONFIG
   check_boolean_var CABAL_CHECK_RELAX
   check_boolean_var CABAL_DISABLE_DEPS
@@ -661,7 +659,7 @@ show_packcheck_config() {
 }
 
 need_stack() {
-  if test "$BUILD" = stack -o -n "$RESOLVER" -o -n "$CABAL_USE_STACK_SDIST"
+  if test "$BUILD" = stack -o -n "$RESOLVER"
   then
     echo true
   fi
@@ -703,15 +701,10 @@ verify_build_config() {
   if test -n "$ENABLE_GHCJS"
   then
     test "$BUILD" = "cabal-v2" || die "ENABLE_GHCJS works only with build type 'cabal-v2'"
-    COMPILER=ghcjs
+    REQUIRED_COMPILER=ghcjs
     GHCJS_FLAG=--ghcjs
   else
-    if test "$GHCVER" = "head"
-    then
-      COMPILER=ghc-head
-    else
-      COMPILER=ghc
-    fi
+      REQUIRED_COMPILER=ghc
   fi
 
   if test "$BUILD" = stack
@@ -765,7 +758,6 @@ EOF
     then
       cabal_only_var CABAL_PROJECT
       cabal_only_var CABALVER
-      cabal_only_var CABAL_USE_STACK_SDIST
       cabal_only_var CABAL_CHECK_RELAX
       cabal_only_var CABAL_HACKAGE_MIRROR
 
@@ -836,6 +828,9 @@ fetch_stack() {
 ensure_stack() {
   show_step "Check and install stack"
 
+  # XXX we should not change the PATH
+  echo "Adding [$1] to PATH for stack"
+  export PATH="$1:$PATH"
   if test -z "$(which_cmd stack)"
   then
     echo "Downloading stack to [$1]..."
@@ -959,47 +954,44 @@ function path_remove {
 
 # Find ghc/cabal having the given version prefix in PATH or in a version
 # suffixed directory at TOOLS_DIR, and check if it matches the requested
-# version. If we found the requested binary we make sure that it is in the
-# PATH.
+# version. If we found the requested binary the path of the binary is returned
+# in the global var FIND_BINARY_RETVAL.
 #
 # $1: binary name (e.g. ghc or cabal)
 # $2: binary version prefix (e.g. 8 or 8.0 or 8.0.1)
 find_binary () {
-  local binary
+  FIND_BINARY_RETVAL=
   local path="$PATH"
   local removed_path
 
   echo "Looking for binary [$1] in PATH..."
-  # Quote positional parameters to handle spaces in names
-  binary="$(which_cmd "$1")"
-  
-  while test -n "$binary"
+  FIND_BINARY_RETVAL="$(which_cmd "$1")"
+
+  while test -n "$FIND_BINARY_RETVAL"
   do
-    if test -z "$2" || check_version "$binary" "$2"
+    if test -z "$2" || check_version "$FIND_BINARY_RETVAL" "$2"
     then
       # Ensure path concatenation is quoted
-      PATH="${PATH}${removed_path}"
-      echo "Found [$1] version prefix [$2] at [$binary]..."
-      if test "$PATH" != "$path"
-      then
-        echo "PATH is changed to [$PATH]..."
-      fi
+      echo "Found [$1] version prefix [$2] at [$FIND_BINARY_RETVAL]..."
+      # Restore the PATH
+      PATH="$path"
       return 0
     else
       # remove it from the path and search again
       # Always quote $(dirname ...) results
       local bin_dir
-      bin_dir="$(dirname "$binary")"
+      bin_dir="$(dirname "$FIND_BINARY_RETVAL")"
       echo "Mismatching $1 version found at [$bin_dir], removing it from PATH and trying again"
-      
+
       removed_path="$removed_path:$bin_dir"
       path_remove "$bin_dir"
-      binary="$(which_cmd "$1")"
+      FIND_BINARY_RETVAL="$(which_cmd "$1")"
     fi
   done
   echo "[$1] not found in PATH."
 
   # Restore the PATH
+  FIND_BINARY_RETVAL=
   PATH="$path"
 
   if test -n "$TOOLS_DIR"
@@ -1025,20 +1017,21 @@ find_binary () {
         then
           dir="$(pwd)/$dir"
         fi
-        PATH="$dir/bin:$PATH"
-        echo "Found [$1] version prefix [$2] at [$dir/bin/$1]..."
-        echo "PATH is now set to [$PATH]..."
-        export PATH
+        FIND_BINARY_RETVAL="$dir/bin/$1"
+        echo "Found [$1] version prefix [$2] at [$FIND_BINARY_RETVAL]..."
         return 0
       fi
     fi
+    echo "[$1] not found in [$TOOLS_DIR]."
   fi
 
   # Note: ~ does not expand inside quotes. Use $HOME for consistency.
-  local stack_root_path="$HOME/.stack"
+  local stack_root_path
   if test -n "$STACK_ROOT"
   then
     stack_root_path="$STACK_ROOT"
+  else
+    stack_root_path="$HOME/.stack"
   fi
 
   if test -d "$stack_root_path" && test "$1" = "ghc"
@@ -1047,7 +1040,7 @@ find_binary () {
     # Picks the highest version matching the pattern
     local dir
     dir=$(ls -d "$stack_root_path/programs"/*/"${1}-${2}"*/ 2>/dev/null | sort | tail -1)
-    
+
     if test -x "${dir}/bin/$1"
     then
       if test -z "$2" || check_version "${dir}/bin/$1" "$2"
@@ -1056,40 +1049,19 @@ find_binary () {
         then
           dir="$(pwd)/$dir"
         fi
-        PATH="$dir/bin:$PATH"
-        echo "Found [$1] version prefix [$2] at [$dir/bin/$1]..."
-        echo "PATH is now set to [$PATH]..."
-        export PATH
+        FIND_BINARY_RETVAL="$dir/bin/$1"
+        echo "Found [$1] version prefix [$2] at [$FIND_BINARY_RETVAL]..."
         return 0
       fi
     fi
-    echo "[$1] not found in PATH."
+    echo "[$1] not found in [$stack_root_path]."
   fi
   return 1
 }
 
-ghcup_install() {
-  local tool=$1
-  local tool_ver=$2
-  local GHCUP_ARCH
-  local ghcup_path
-
-  ghcup_path=$(which_cmd ghcup)
-
-  if test -n "$ghcup_path"
-  then
-    echo "Using existing $ghcup_path in PATH"
-    GHCUP_PATH="$ghcup_path"
-  else
-    # User can either add it in the PATH or we can use the full path of the
-    # tool either as found in PATH or use GHCUP_PATH directly. We should
-    # probably fix each tool's location as found and use that rather
-    # than using it from PATH.
-    if test -e "$GHCUP_PATH"
-    then
-      die "$GHCUP_PATH already exists, not overwriting."
-    fi
-
+# Downloads to the location given by GHCUP_PATH envvar
+download_ghcup() {
+    GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
     # Determine GHCUP_ARCH
     os="$(uname -s)"
     case "$os" in
@@ -1147,31 +1119,53 @@ ghcup_install() {
     chmod +x $GHCUP_PATH
     # Avoid changing the user's setup
     #$GHCUP_PATH set $tool $tool_ver
+}
+
+ghcup_install() {
+  local tool=$1
+  local tool_ver=$2
+  local GHCUP_ARCH
+  local ghcup_path
+
+  # User can either add it in the PATH or we can use the full path of the
+  # tool either as found in PATH or use GHCUP_PATH directly. We should
+  # probably fix each tool's location as found and use that rather
+  # than using it from PATH.
+
+  ghcup_path=$(which_cmd ghcup)
+  if test -n "$ghcup_path"
+  then
+    GHCUP_PATH="$ghcup_path"
+    echo "Using existing [$GHCUP_PATH] found in PATH"
+  else 
+      # See set_os_specific_vars
+      case "$(uname)" in
+        CYGWIN*|MINGW*|MSYS*)
+          GHCUP_PREFIX=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup
+          ;;
+        *)
+          GHCUP_PREFIX="${GHCUP_INSTALL_BASE_PREFIX:-${OS_APP_HOME}}/.ghcup" ;;
+      esac
+      GHCUP_PATH="${GHCUP_PREFIX}/bin/ghcup"
+
+      if test -e "$GHCUP_PATH"
+      then
+        echo "ghcup not found in PATH, using default location [$GHCUP_PATH]"
+      else
+        download_ghcup
+      fi
   fi
 
+  GHCUP_TOOL_OPTIONS=
   if test "$tool" = "ghc"
   then
-    run_verbose_errexit_with "cat ${GHCUP_PREFIX}/logs/*" \
-        $GHCUP_PATH install ghc $GHCUP_GHC_OPTIONS $tool_ver
-
-    # Add the actual GHC bin dir to PATH so plain 'ghc' command without a
-    # version suffix is also available. Commands like "cabal path", "cabal
-    # info" require "ghc" in path. Other tasks like cabal build can use a
-    # specific versioned path like ghc-9.4.3.
-    local ghc_bindir
-    ghc_bindir=$($GHCUP_PATH whereis --directory ghc $tool_ver)
-    case "$(uname)" in
-      CYGWIN*|MINGW*|MSYS*) ghc_bindir=$(cygpath -u "$ghc_bindir") ;;
-    esac
-    echo "Adding GHC bin dir [$ghc_bindir] to PATH"
-    export PATH="$ghc_bindir:$PATH"
-  else
-    run_verbose_errexit ghcup install $tool $tool_ver
+    GHCUP_TOOL_OPTIONS="$GHCUP_GHC_OPTIONS"
   fi
 
+  run_verbose_errexit "$GHCUP_PATH" install $tool $GHCUP_TOOL_OPTIONS $tool_ver
+  # GHC_PATH=$GHCUP_PREFIX/ghc/ghc-$tool_ver)
   echo "Running: $GHCUP_PATH whereis $tool $tool_ver"
-  $GHCUP_PATH whereis $tool $tool_ver
-  echo
+  GHCUP_TOOL_PATH="$("$GHCUP_PATH" whereis $tool $tool_ver)"
 }
 
 ensure_default_ghc() {
@@ -1180,12 +1174,12 @@ ensure_default_ghc() {
   # compiler we are using is also available as "ghc" and not masked by any
   # other "ghc" in PATH.
 
-  if test "$COMPILER" != ghc
+  if test "$REQUIRED_COMPILER" = "ghc" -a "$COMPILER_EXE_PATH" != ghc
   then
     # Use absolute path to prevent breaking PATH after 'cd'
     local ghc_bin="$(pwd)/.packcheck/ghc-bin"
 
-    echo "Compiler is [$COMPILER] creating a one-off symlink as 'ghc'"
+    echo "Compiler is [$COMPILER_EXE_PATH] creating a one-off symlink as 'ghc'"
 
     # Do not create a .packcheck/bin we might end up using stale
     # binaries from a common presistent bin, just use a one-off
@@ -1239,23 +1233,21 @@ ensure_node_for_ghcjs() {
   fi
 }
 
-find_ghc() {
+find_compiler() {
   local found
-  local compiler
+  local compiler_path
   # If there is a ghc in PATH then use that otherwise install it using
   # ghcup or stack
-  find_binary "$COMPILER" "$GHCVER"
+  find_binary "$REQUIRED_COMPILER" "$GHCVER"
   found=$?
+  compiler_path="$FIND_BINARY_RETVAL"
   if test "$found" -ne 0
   then
     if test -n "$GHCVER"
     then
-      find_binary "$COMPILER-$GHCVER" "$GHCVER"
+      find_binary "${REQUIRED_COMPILER}-$GHCVER" "$GHCVER"
       found=$?
-      if test "$found" -eq 0
-      then
-        COMPILER="$COMPILER-$GHCVER"
-      fi
+      compiler_path="$FIND_BINARY_RETVAL"
     fi
 
     if test "$found" -ne 0
@@ -1267,44 +1259,56 @@ find_ghc() {
         retry_cmd $STACKCMD setup || die "stack setup falied"
         use_stack_paths
         echo
+        compiler_path="$(which_cmd $REQUIRED_COMPILER)"
       else
         ghcup_install ghc $GHCVER
-        # We already put "ghc" from the versioned bin in PATH
-        #if test -n "$GHCVER" -a "$COMPILER" != "ghc-head"
-        #then
-        #  COMPILER="$COMPILER-$GHCVER"
-        #fi
+        compiler_path="$GHCUP_TOOL_PATH"
       fi
     fi
   fi
 
-  compiler="$(which_cmd $COMPILER)"
-  if test -z "$compiler"
+  if test -z "$compiler_path"
   then
     local msg
-    msg="$COMPILER version $GHCVER not found in PATH [$PATH]"
+    msg="$REQUIRED_COMPILER version $GHCVER not found in PATH [$PATH]"
     if test -n "$TOOLS_DIR"
     then
-      msg="$msg or in $TOOLS_DIR/$COMPILER/$GHCVER*/bin"
+      msg="$msg or in $TOOLS_DIR/$REQUIRED_COMPILER/$GHCVER*/bin"
     fi
     die "$msg"
   fi
 
-  if test -n "$GHCVER" -a -n "$(need_stack)"
-  then
-    echo "GHCVER is specified, using '$STACKCMD --system-ghc'."
-    echo "Clear GHCVER if you want to use stack supplied ghc."
-    # If the user specified GHCVER then use it as system-ghc
-    # Stack will still silently choose its own ghc if the ghc does not match
-    # the snapshot.
-    STACKCMD="$STACKCMD --system-ghc"
-  fi
-
   if test -n "$(need_stack)"
   then
-    compiler=$($STACKCMD path --compiler-exe) || exit 1
+    if test -n "$GHCVER"
+    then
+      echo "GHCVER is specified, using '$STACKCMD --system-ghc'."
+      echo "Clear GHCVER if you want to use stack supplied ghc."
+      # If the user specified GHCVER then use it as system-ghc
+      # Stack will still silently choose its own ghc if the ghc does not match
+      # the snapshot.
+      #
+      # XXX We should not find the compiler above if we are planning to use
+      # stack supplied ghc?
+      local compiler_dir
+      compiler_dir="$(dirname "$compiler_path")"
+      echo "Adding [$compiler_dir] to PATH"
+      # Note this may affect path of other tools, if any other tools that we
+      # use are also present in the same directory as ghc.
+      export PATH="$compiler_dir:$PATH"
+      STACKCMD="$STACKCMD --system-ghc"
+    fi
+    compiler_path=$($STACKCMD path --compiler-exe) || exit 1
   fi
-  export COMPILER_EXE_PATH="$compiler"
+
+  COMPILER_BASE_NAME="$(basename "$compiler_path")"
+  compiler_in_path="$(which_cmd "$COMPILER_BASE_NAME")"
+  if test "$compiler_in_path" = "$compiler_path"
+  then
+    COMPILER_EXE_PATH="$COMPILER_BASE_NAME"
+  else
+    COMPILER_EXE_PATH="$compiler_path"
+  fi
 }
 
 run_prefetch() {
@@ -1343,7 +1347,7 @@ show_ghc() {
 
   if test -z "$BUILD_PREFETCH"
   then
-    echo "Using $COMPILER at $COMPILER_EXE_PATH"
+    echo "Using $REQUIRED_COMPILER at $COMPILER_EXE_PATH"
     echo "$($COMPILER_EXE_PATH --version) [$($COMPILER_EXE_PATH --print-project-git-commit-id 2> /dev/null || echo '?')]"
     # Use the real version, the user might have specified a version prefix in
     # GHCVER
@@ -1352,10 +1356,16 @@ show_ghc() {
     if test -n "$required"
     then
       is_version_minor_of $required $GHCVER || \
-        die "Found $COMPILER version [$GHCVER] expecting [$required]"
+        die "Found $REQUIRED_COMPILER version [$GHCVER] expecting [$required]"
     fi
   else
-    prefetch_tool "$COMPILER" "$COMPILER_EXE_PATH"
+    local compiler_name="$(basename "$COMPILER_EXE_PATH")"
+    if test "$COMPILER_EXE_PATH" = "$compiler_name"
+    then
+      prefetch_tool "$compiler_name"
+    else
+      prefetch_tool "$compiler_name" "$COMPILER_EXE_PATH"
+    fi
   fi
 }
 
@@ -1364,19 +1374,11 @@ show_ghc() {
 ensure_ghc() {
   show_step "Check and install GHC"
 
-  if test -n "$GHC_PATH"
+  if test "$REQUIRED_COMPILER" = ghc -a -n "$GHC_PATH"
   then
-    COMPILER=$(basename "$GHC_PATH")
     COMPILER_EXE_PATH="$GHC_PATH"
-    if test "$COMPILER" = ghc
-    then
-      local ghc_dir
-      ghc_dir=$(dirname "$GHC_PATH")
-      echo "Adding "$ghc_dir" to PATH"
-      PATH="$ghc_dir:$PATH"
-    fi
   else
-    find_ghc
+    find_compiler
   fi
 
   show_ghc
@@ -1384,40 +1386,18 @@ ensure_ghc() {
   ensure_node_for_ghcjs
 }
 
-# XXX/TODO this may not work for cabal 1.24 config
-# $1: mirror URL
-#cabal_use_mirror() {
-#  local CABAL_CONFIG=${OS_APP_HOME}/${OS_CABAL_DIR}/config
-#  if test -f $CABAL_CONFIG
-#  then
-#    local inplace
-#    if [ `uname` = "Darwin" ]
-#    then
-#      inplace="-i orig"
-#    else
-#      inplace="--in-place"
-#    fi
-#    echo "Adding hackage mirror [$1] to [$CABAL_CONFIG]"
-#    sed $inplace -e "s%^remote-repo:.*%remote-repo: $1%" $CABAL_CONFIG
-#  else
-#    die "cabal config file [$CABAL_CONFIG] not found."
-#  fi
-#}
-
 cabal_use_mirror() {
-  # XXX The config location depends on the cabal installation e.g. ghcup
-  # installed cabal can use c:\cabal\config.
-  local CABAL_CONFIG="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
+  local cabal_cfg=$($CABAL_BINARY_NAME path --config-file 2>/dev/null)
 
-  if test -f "$CABAL_CONFIG"
+  if test -f "$cabal_cfg"
   then
-    echo "Adding hackage mirror [$1] to [$CABAL_CONFIG]"
+    echo "Adding hackage mirror [$1] to [$cabal_cfg]"
 
     sed -i.bak \
       -e "s%^remote-repo:.*%remote-repo: $1%" \
-      "$CABAL_CONFIG"
+      "$cabal_cfg"
   else
-    die "cabal config file [$CABAL_CONFIG] not found."
+    die "cabal config file [$cabal_cfg] not found."
   fi
 }
 
@@ -1457,18 +1437,18 @@ stack_install_tool () {
 }
 
 find_cabal () {
+  CABAL_BINARY_NAME=cabal
+
   find_binary $CABAL_BINARY_NAME "$CABALVER"
   found=$?
+  CABAL_EXE_PATH="$FIND_BINARY_RETVAL"
   if test "$found" -ne 0
   then
     if test -n "$CABALVER"
     then
       find_binary "$CABAL_BINARY_NAME-$CABALVER" "$CABALVER"
       found=$?
-      if test "$found" -eq 0
-      then
-        CABAL_BINARY_NAME="$CABAL_BINARY_NAME-$CABALVER"
-      fi
+      CABAL_EXE_PATH="$FIND_BINARY_RETVAL"
     fi
 
     if test "$found" -ne 0
@@ -1476,32 +1456,53 @@ find_cabal () {
       if test -n "$(need_stack)"
       then
         stack_install_tool cabal-install
+        # XXX we should not change the PATH
+        # XXX Use some stack command to find where it is, or temporarily change
+        # PATH, find_binary and restore PATH.
+        echo "Adding [$LOCAL_BIN] to PATH for stack-installed cabal"
+        export PATH="$LOCAL_BIN:$PATH"
+        CABAL_EXE_PATH="$(which_cmd "$CABAL_BINARY_NAME")"
       elif test -n "$GHCUP_VERSION"
       then
         ghcup_install cabal $CABALVER
-        if test -n "$CABALVER"
-        then
-          CABAL_BINARY_NAME="$CABAL_BINARY_NAME-$CABALVER"
-        fi
+        CABAL_EXE_PATH="$GHCUP_TOOL_PATH"
       fi
     fi
+  fi
+
+  CABAL_BASE_NAME="$(basename "$CABAL_EXE_PATH")"
+  cabal_in_path="$(which_cmd "$CABAL_BASE_NAME")"
+  if test "$cabal_in_path" = "$CABAL_EXE_PATH"
+  then
+    CABAL_BINARY_NAME="$CABAL_BASE_NAME"
+  else
+    CABAL_BINARY_NAME="$CABAL_EXE_PATH"
   fi
 }
 
 show_cabal() {
   if test -z "$BUILD_PREFETCH"
   then
-    require_cmd $CABAL_BINARY_NAME
-    $CABAL_BINARY_NAME --version
-    test -z "$CABALVER" || check_version_die $CABAL_BINARY_NAME $CABALVER
+    if test "$CABAL_BINARY_NAME" = "$(basename "$CABAL_BINARY_NAME")"
+    then
+      require_cmd "$CABAL_BINARY_NAME"
+    fi
+    "$CABAL_BINARY_NAME" --version
+    test -z "$CABALVER" || check_version_die "$CABAL_BINARY_NAME" $CABALVER
     # Set the real version of cabal
-    CABALVER=$($CABAL_BINARY_NAME --numeric-version) || exit 1
+    CABALVER=$("$CABAL_BINARY_NAME" --numeric-version) || exit 1
 
     MIN_CABALVER="1.24.0.0"
     verlte $MIN_CABALVER $CABALVER || \
         die "Cabal version should at least be $MIN_CABALVER"
   else
-    prefetch_tool $CABAL_BINARY_NAME
+    local cabal_name="$(basename "$CABAL_BINARY_NAME")"
+    if test "$CABAL_BINARY_NAME" = "$cabal_name"
+    then
+      prefetch_tool "$cabal_name"
+    else
+      prefetch_tool "$cabal_name" "$CABAL_BINARY_NAME"
+    fi
   fi
 }
 
@@ -1682,7 +1683,7 @@ determine_build_type() {
 do_cabal_update() {
   # 1. Determine the cache path using cabal path
   # The remote-repo-cache path contains the index for hackage.haskell.org
-  CACHE_DIR=$(cabal path --remote-repo-cache 2>/dev/null)
+  CACHE_DIR=$("$CABAL_BINARY_NAME" path --remote-repo-cache 2>/dev/null)
 
   # Fallback for older Cabal versions (< 3.10)
   if test -z "$CACHE_DIR"; then
@@ -1719,7 +1720,7 @@ do_cabal_update() {
   # 3. Execute update if needed
   if test "$SKIP_UPDATE" != "y"; then
       echo
-      echo "cabal v2-update"
+      echo "$CABAL_BINARY_NAME v2-update"
       if test -n "$CABAL_PROJECT"
       then
         retry_cmd $CABAL_BINARY_NAME v2-update --project-file "$CABAL_PROJECT"
@@ -1823,12 +1824,6 @@ create_and_unpack_pkg_dist() {
     run_verbose_errexit $STACKCMD build --only-configure
     SDIST_CMD="$STACKCMD sdist $opts"
     SDIST_DIR=$($STACKCMD path --dist-dir) || exit 1
-  elif test -n "$CABAL_USE_STACK_SDIST"
-  then
-    # When custom setup is used we need to configure before we can use sdist.
-    run_verbose_errexit $STACKCMD --compiler=$COMPILER build --only-configure
-    SDIST_CMD="$STACKCMD --compiler=$COMPILER sdist $opts"
-    SDIST_DIR=$($STACKCMD --compiler=$COMPILER path --dist-dir) || exit 1
   else
     # XXX We need to configure to use sdist and we need to install
     # dependencies to configure. So to just create the sdist we will
@@ -2222,6 +2217,10 @@ your .hlint.ignore file."
 }
 
 start_hlint() {
+    # XXX we should not change the PATH
+    local cabal_bin="${OS_APP_HOME}/${OS_CABAL_DIR}/bin"
+    echo "Adding [$LOCAL_BIN:$cabal_bin] to PATH for hlint"
+    export PATH="$LOCAL_BIN:$cabal_bin:$PATH"
     hlint_path=$(which_cmd hlint)
     if test -n "$hlint_path"
     then
@@ -2283,6 +2282,10 @@ install_docspec() {
 # We run it only after a stack or cabal build so we are sure that stack or
 # cabal are already installed.
 coveralls_io() {
+  # XXX we should not change the PATH
+  local cabal_bin="${OS_APP_HOME}/${OS_CABAL_DIR}/bin"
+  echo "Adding [$LOCAL_BIN:$cabal_bin] to PATH for hpc-coveralls"
+  export PATH="$LOCAL_BIN:$cabal_bin:$PATH"
   if test -z "$(which_cmd hpc-coveralls)"
   then
     if test "$BUILD" = stack
@@ -2327,6 +2330,8 @@ build_post_dep() {
 ensure_docspec() {
   if test -n "$ENABLE_DOCSPEC"
   then
+    echo "Adding [$LOCAL_BIN] to PATH for cabal-docspec"
+    export PATH="$LOCAL_BIN:$PATH"
     show_step "Find or install cabal-docspec"
     if test $BUILD = "cabal-v2"
     then
@@ -2378,11 +2383,11 @@ prefetch_cabal() {
   if [ -n "$CABAL_DIR" ]; then
     cabal_dir="$CABAL_DIR"
   else
-    cfg=$(cabal path --config-file 2>/dev/null)
+    cfg=$($CABAL_BINARY_NAME path --config-file 2>/dev/null)
     [ -n "$cfg" ] && cabal_dir=$(dirname "$cfg")
   fi
 
-  cabal_store=$(cabal path --store-dir 2>/dev/null)
+  cabal_store=$($CABAL_BINARY_NAME path --store-dir 2>/dev/null)
 
   [ -d "$cabal_dir" ] && run_prefetch find "$cabal_dir" -maxdepth 3
   [ -d "$cabal_store" ] && run_prefetch find "$cabal_store" -maxdepth 3
@@ -2535,35 +2540,8 @@ get_rel_time() {
 #------------------------------------------------------------------------------
 
 setup_environment() {
-
-  # Set path for installed utilities, e.g. stack, cabal, hpc-coveralls
-  # XXX add paths only if not already on PATH, but sometimes we have to add path
-  # at head for precedence even if it is already on PATH.
-  #echo "Original PATH is [$PATH]..."
-  PATH_PREFIX=$LOCAL_BIN:$GHCUP_BIN
-  if test "$BUILD" = "cabal-v2"
-  then
-      PATH_PREFIX=$PATH_PREFIX:$OS_APP_HOME/$OS_CABAL_DIR/bin
-  fi
-
-  echo "Prefixing [$PATH_PREFIX] to PATH"
-  export PATH=$PATH_PREFIX:$PATH
-  echo
-
-  # XXX we should be able to set multiple paths in it
-  # One advantage of using GHCUP_PATH as TOOLS_DIR is that we can pick ghc right
-  # from the original dir without having set default ghc which would change the
-  # user's environment. Since ghcup provides links to all versions in bin we do
-  # not need this.
-  #if test -z "$TOOLS_DIR"
-  #then
-  #  TOOLS_DIR="$GHCUP_PATH"
-  #fi
-
   # stack does not work well with empty STACK_YAML env var
   test -n "$STACK_YAML" || unset STACK_YAML
-
-  CABAL_BINARY_NAME=cabal
 }
 
 #------------------------------------------------------------------------------
@@ -2659,7 +2637,6 @@ DOCSPEC_URL_PREFIX="https://github.com/phadej/cabal-extras/releases/"
 # See set_os_specific_vars
 case "$(uname)" in
   CYGWIN*|MINGW*|MSYS*)
-    GHCUP_PREFIX=$(cygpath -u "${GHCUP_INSTALL_BASE_PREFIX:-C:}")/ghcup
     # cabal does not like unix style paths
     if test -n "$CABAL_DIR"
     then
@@ -2675,11 +2652,8 @@ case "$(uname)" in
     fi
     ;;
   *)
-    GHCUP_PREFIX="${GHCUP_INSTALL_BASE_PREFIX:-${OS_APP_HOME}}/.ghcup" ;;
+    ;;
 esac
-GHCUP_BIN="${GHCUP_PREFIX}/bin"
-GHCUP_PATH="${GHCUP_BIN}/ghcup"
-GHCUP_URL_PREFIX="https://downloads.haskell.org/~ghcup"
 
 #------------------------------------------------------------------------------
 
