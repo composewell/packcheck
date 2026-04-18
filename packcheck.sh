@@ -1745,8 +1745,10 @@ ensure_cabal_config() {
   # Precedence: CABAL_CONFIG > CABAL_DIR > Legacy > XDG
   if test -n "$CABAL_CONFIG"; then
     CABAL_OLD_CONFIG_PATH="$CABAL_CONFIG"
+    CABAL_NEW_CONFIG_PATH="$CABAL_CONFIG"
   elif test -n "$CABAL_DIR"; then
     CABAL_OLD_CONFIG_PATH="$(cygpath -u $CABAL_DIR)/config"
+    CABAL_NEW_CONFIG_PATH="${OS_APP_HOME}/.config/cabal/config"
   else
     CABAL_OLD_CONFIG_PATH="${OS_APP_HOME}/${OS_CABAL_DIR}/config"
     CABAL_NEW_CONFIG_PATH="${OS_APP_HOME}/.config/cabal/config"
