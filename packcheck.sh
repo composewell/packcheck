@@ -2549,15 +2549,6 @@ get_rel_time() {
 }
 
 #------------------------------------------------------------------------------
-# Some adjustments to the build environment
-#------------------------------------------------------------------------------
-
-setup_environment() {
-  # stack does not work well with empty STACK_YAML env var
-  test -n "$STACK_YAML" || unset STACK_YAML
-}
-
-#------------------------------------------------------------------------------
 # Main flow of script starts here
 #------------------------------------------------------------------------------
 
@@ -2717,7 +2708,6 @@ TOOLS="awk cat curl cut date env head mkdir printf rm sleep sort tail tr uname w
 $OS_HAS_TOOLS"
 
 show_step "Check basic tools"
-setup_environment
 require_cmd bash
 for i in $TOOLS; do require_cmd $i; done
 
@@ -2735,6 +2725,8 @@ if test "$BUILD" = "hlint"
 then
   start_hlint
 else
+  # stack does not work well with empty STACK_YAML env var
+  test -n "$STACK_YAML" || unset STACK_YAML
   verify_build_config
   build_compile
 fi
