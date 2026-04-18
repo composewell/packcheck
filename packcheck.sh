@@ -294,6 +294,7 @@ SAFE_ENVVARS="\
   BUILD_PREFETCH \
   BUILD_PREFETCH_DEBUG \
   DISABLE_DOCS \
+  DISABLE_BUILD \
   ENABLE_DOCSPEC \
   DISABLE_DIST_CHECKS \
   TOOLS_DIR \
@@ -513,10 +514,11 @@ show_help() {
   help_envvar HADDOCK_OPTIONS "ADDITIONAL haddock build options to append to defaults"
 
   show_step1 "Specifying what to build"
+  help_envvar DISABLE_BUILD "[y] Do not build, makes sense if only docs are built"
   help_envvar DISABLE_BENCH "[y] Do not build benchmarks, default is to build but not run"
   help_envvar DISABLE_TEST "[y] Do not run tests, default is to run tests"
-  help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar ENABLE_DOCSPEC "[y] Run cabal-docspec after the cabal build"
+  help_envvar DISABLE_DOCS "[y] Do not build haddocks, default is to build docs"
   help_envvar DISABLE_SDIST_BUILD "[y] Do not build from source distribution"
   help_envvar DISABLE_SDIST_PROJECT_CHECK "[y] Ignore project file and continue"
   help_envvar DISABLE_SDIST_GIT_CHECK "[y] Do not compare source distribution with git repo"
@@ -596,6 +598,7 @@ check_all_boolean_vars () {
   check_boolean_var BUILD_PACKAGE_ONLY
   check_boolean_var BUILD_PREFETCH
   check_boolean_var BUILD_PREFETCH_DEBUG
+  check_boolean_var DISABLE_BUILD
   check_boolean_var DISABLE_DOCS
   check_boolean_var ENABLE_DOCSPEC
   check_boolean_var COVERAGE
@@ -2027,15 +2030,18 @@ build_and_test() {
       show_step "Build"
       echo "pwd: $(pwd)"
 
-      # If we use --enable-documenation cabal compiles once for build
-      # and compilation is forced again for documentation it says "Flags
-      # Changed". The same thing happens for separate haddock step as
-      # well. But in a separate haddock step we can at least change the
-      # build-dir to not clobber our pervious build. If haddock clobbers then
-      # running tests will build it again.
-      run_verbose_errexit $SDIST_CABALCMD v2-build \
-        --with-compiler "$COMPILER_EXE_PATH" \
-        $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      if test -z "$DISABLE_BUILD" -o -z "$DISABLE_TEST" -o -z "$DISABLE_BENCH" -o -n "$ENABLE_DOCSPEC"
+      then
+        # If we use --enable-documenation cabal compiles once for build
+        # and compilation is forced again for documentation it says "Flags
+        # Changed". The same thing happens for separate haddock step as
+        # well. But in a separate haddock step we can at least change the
+        # build-dir to not clobber our pervious build. If haddock clobbers then
+        # running tests will build it again.
+        run_verbose_errexit $SDIST_CABALCMD v2-build \
+          --with-compiler "$COMPILER_EXE_PATH" \
+          $GHCJS_FLAG $CABAL_BUILD_OPTIONS $CABAL_BUILD_TARGETS
+      fi
 
       # Haddock build forces recompilation of tests, so we should either do
       # haddock in separate builddir or do them after the tests.
@@ -2045,7 +2051,7 @@ build_and_test() {
         echo "pwd: $(pwd)"
         run_verbose_errexit $SDIST_CABALCMD v2-haddock \
           --with-compiler "$COMPILER_EXE_PATH" \
-          $GHCJS_FLAG
+          $GHCJS_FLAG \
           --builddir dist-newstyle-haddock \
           $CABAL_BUILD_OPTIONS \
           $HADDOCK_OPTIONS \
