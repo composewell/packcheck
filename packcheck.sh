@@ -1236,6 +1236,17 @@ ensure_node_for_ghcjs() {
   fi
 }
 
+set_ghc_binary_name() {
+  COMPILER_BASE_NAME="$(basename "$COMPILER_EXE_PATH_ORIG")"
+  compiler_in_path="$(which_cmd "$COMPILER_BASE_NAME")"
+  if test "$compiler_in_path" = "$COMPILER_EXE_PATH_ORIG"
+  then
+    COMPILER_EXE_PATH="$COMPILER_BASE_NAME"
+  else
+    COMPILER_EXE_PATH="$COMPILER_EXE_PATH_ORIG"
+  fi
+}
+
 find_compiler() {
   local found
   local compiler_path
@@ -1304,14 +1315,8 @@ find_compiler() {
     compiler_path=$($STACKCMD path --compiler-exe) || exit 1
   fi
 
-  COMPILER_BASE_NAME="$(basename "$compiler_path")"
-  compiler_in_path="$(which_cmd "$COMPILER_BASE_NAME")"
-  if test "$compiler_in_path" = "$compiler_path"
-  then
-    COMPILER_EXE_PATH="$COMPILER_BASE_NAME"
-  else
-    COMPILER_EXE_PATH="$compiler_path"
-  fi
+  COMPILER_EXE_PATH_ORIG="$compiler_path"
+  set_ghc_binary_name
 }
 
 run_prefetch() {
@@ -1379,7 +1384,8 @@ ensure_ghc() {
 
   if test "$REQUIRED_COMPILER" = ghc -a -n "$GHC_PATH"
   then
-    COMPILER_EXE_PATH="$GHC_PATH"
+    COMPILER_EXE_PATH_ORIG="$GHC_PATH"
+    set_ghc_binary_name
   else
     find_compiler
   fi
@@ -1439,6 +1445,17 @@ stack_install_tool () {
     cd ../..
 }
 
+set_cabal_binary_name() {
+  CABAL_BASE_NAME="$(basename "$CABAL_EXE_PATH")"
+  cabal_in_path="$(which_cmd "$CABAL_BASE_NAME")"
+  if test "$cabal_in_path" = "$CABAL_EXE_PATH"
+  then
+    CABAL_BINARY_NAME="$CABAL_BASE_NAME"
+  else
+    CABAL_BINARY_NAME="$CABAL_EXE_PATH"
+  fi
+}
+
 find_cabal () {
   CABAL_BINARY_NAME=cabal
 
@@ -1472,15 +1489,8 @@ find_cabal () {
       fi
     fi
   fi
-
-  CABAL_BASE_NAME="$(basename "$CABAL_EXE_PATH")"
-  cabal_in_path="$(which_cmd "$CABAL_BASE_NAME")"
-  if test "$cabal_in_path" = "$CABAL_EXE_PATH"
-  then
-    CABAL_BINARY_NAME="$CABAL_BASE_NAME"
-  else
-    CABAL_BINARY_NAME="$CABAL_EXE_PATH"
-  fi
+  # depends on CABAL_EXE_PATH
+  set_cabal_binary_name
 }
 
 show_cabal() {
@@ -1522,11 +1532,9 @@ ensure_cabal() {
 
   if test -n "$CABAL_PATH"
   then
-    cabal_dir=$(dirname "$CABAL_PATH")
-    echo "Adding "$cabal_dir" to PATH"
-    # Add at the end so that it does not add any ghc at the head.
-    # We add ghc path at the head.
-    PATH="$PATH:$cabal_dir"
+    CABAL_EXE_PATH="$CABAL_PATH"
+    # depends on CABAL_EXE_PATH
+    set_cabal_binary_name
   else
     find_cabal
   fi
