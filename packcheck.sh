@@ -2267,7 +2267,12 @@ start_hlint() {
         die "Use HLINT_VERSION option to install."
     fi
     run_verbose_errexit hlint --version
-    run_hlint
+    if test -n "$BUILD_DEPS_ONLY"
+    then
+      echo "hlint: nothing to do (BUILD_DEPS_ONLY=y)"
+    else
+      run_hlint
+    fi
 }
 
 install_docspec() {
@@ -2705,12 +2710,6 @@ show_system_env
 if test -n "$BUILD_DEPS_ONLY" -a -n "$BUILD_PACKAGE_ONLY"
 then
     die "Both [BUILD_DEPS_ONLY] and [BUILD_PACKAGE_ONLY] cannot be set at the same time."
-fi
-
-if test "$BUILD" = "hlint" -a -n "$BUILD_PACKAGE_ONLY"
-then
-  show_step "hlint: nothing to do (BUILD_PACKAGE_ONLY=y)"
-  exit 0
 fi
 
 # Note that date, uname, cygpath, rm are used even before this point. This
