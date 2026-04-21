@@ -1656,7 +1656,7 @@ determine_build_type() {
         echo "No cabal file found but a package.yaml file found"
         echo "Generating cabal file from package.yaml"
         # Generate cabal file from package.yaml
-        run_verbose "$STACKCMD query > /dev/null 2>&1"
+        run_verbose $STACKCMD query > /dev/null 2>&1
     else
       if test $BUILD = "stack" -a -f "stack.yaml"
       then
@@ -2230,7 +2230,7 @@ your .hlint.ignore file."
         found=$(grep "^$i$" .hlint.ignore) || true
         if test -z "$found"
         then
-          run_verbose_errexit "hlint $HLINT_OPTIONS $i"
+          run_verbose_errexit hlint $HLINT_OPTIONS $i
         fi
       done
     done
@@ -2238,7 +2238,7 @@ your .hlint.ignore file."
     local target
     for target in $HLINT_TARGETS
     do
-      run_verbose_errexit "hlint $HLINT_OPTIONS $target"
+      run_verbose_errexit hlint $HLINT_OPTIONS $target
     done
   fi
 }
