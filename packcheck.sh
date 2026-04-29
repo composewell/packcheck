@@ -1482,15 +1482,12 @@ find_cabal () {
         echo "Adding [$LOCAL_BIN] to PATH for stack-installed cabal"
         export PATH="$LOCAL_BIN:$PATH"
         CABAL_EXE_PATH="$(which_cmd "$CABAL_BINARY_NAME")"
-      elif test -n "$GHCUP_VERSION"
-      then
+      else
         ghcup_install cabal $CABALVER
         CABAL_EXE_PATH="$GHCUP_TOOL_PATH"
       fi
     fi
   fi
-  # depends on CABAL_EXE_PATH
-  set_cabal_binary_name
 }
 
 show_cabal() {
@@ -1533,12 +1530,13 @@ ensure_cabal() {
   if test -n "$CABAL_PATH"
   then
     CABAL_EXE_PATH="$CABAL_PATH"
-    # depends on CABAL_EXE_PATH
-    set_cabal_binary_name
   else
     find_cabal
   fi
 
+  test -n "$CABAL_EXE_PATH" || die "Could not find or install cabal"
+  # depends on CABAL_EXE_PATH
+  set_cabal_binary_name
   show_cabal
   ensure_cabal_config
 }
@@ -1734,9 +1732,11 @@ do_cabal_update() {
       echo "$CABAL_BINARY_NAME v2-update"
       if test -n "$CABAL_PROJECT"
       then
-        retry_cmd $CABAL_BINARY_NAME v2-update --project-file "$CABAL_PROJECT"
+        retry_cmd $CABAL_BINARY_NAME v2-update --project-file "$CABAL_PROJECT" \
+          || die "cabal v2-update failed"
       else
-        retry_cmd $CABAL_BINARY_NAME v2-update
+        retry_cmd $CABAL_BINARY_NAME v2-update \
+          || die "cabal v2-update failed"
       fi
   fi
 }
@@ -2444,8 +2444,15 @@ build_compile () {
     then
       if test -z "$CABAL_DISABLE_DEPS"
       then
-        run_prefetch do_cabal_update
-        CABAL_UPDATE_PID=$!
+        if test -z "$CABAL_BINARY_NAME" \
+            || ! command -v "$CABAL_BINARY_NAME" > /dev/null 2>&1
+        then
+          echo "Skipping cabal update prefetch: cabal not available."
+        else
+          run_prefetch do_cabal_update
+          CABAL_UPDATE_PID=$!
+        fi
+
       fi
       if test -n "$BUILD_PREFETCH_DEBUG"
       then
