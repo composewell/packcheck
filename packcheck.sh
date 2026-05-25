@@ -441,7 +441,8 @@ help_cmd() {
 # $1: varname
 # $2: help text
 help_envvar() {
-  error_novar $1
+  find_var "$1" "$PACKCHECK_ENVVARS $SYSTEM_ENVVARS" \
+    || die "Unknown parameter or environment variable [$1]\nTry --help for supported parameters"
   printf "%-24s: %s\n" "$1" "$2"
 }
 
