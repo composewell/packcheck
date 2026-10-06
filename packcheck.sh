@@ -2187,6 +2187,7 @@ build_hlint() {
 run_hlint() {
   show_step "Running hlint ..."
   echo "pwd: $(pwd)"
+  local failed=""
 
   # Old method
   if test -n "$HLINT_COMMANDS"
@@ -2231,7 +2232,7 @@ your .hlint.ignore file."
         found=$(grep "^$i$" .hlint.ignore) || true
         if test -z "$found"
         then
-          run_verbose_errexit hlint $HLINT_OPTIONS $i
+          run_verbose hlint $HLINT_OPTIONS $i || failed="$failed\n$i"
         fi
       done
     done
@@ -2239,8 +2240,13 @@ your .hlint.ignore file."
     local target
     for target in $HLINT_TARGETS
     do
-      run_verbose_errexit hlint $HLINT_OPTIONS $target
+      run_verbose hlint $HLINT_OPTIONS $target || failed="$failed\n$target"
     done
+  fi
+
+  if test -n "$failed"
+  then
+    die "hlint failed on the following files:$failed"
   fi
 }
 
