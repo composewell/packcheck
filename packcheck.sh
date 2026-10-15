@@ -801,13 +801,17 @@ EOF
 #  fi
 #}
 
+# $1: directory to place stack executable in
+# $2: architecture, x86_64 or aarch64
 fetch_stack_osx() {
-  curl --fail -sSkL https://www.stackage.org/stack/osx-x86_64 \
+  curl --fail -sSkL https://www.stackage.org/stack/osx-$2 \
     | tar xz --strip-components=1 -C $1 --include '*/stack'
 }
 
+# $1: directory to place stack executable in
+# $2: architecture, x86_64 or aarch64
 fetch_stack_linux() {
-  curl --fail -sSkL https://www.stackage.org/stack/linux-x86_64 \
+  curl --fail -sSkL https://www.stackage.org/stack/linux-$2 \
     | tar xz --strip-components=1 -C $1 --wildcards '*/stack'
 }
 
@@ -820,9 +824,17 @@ fetch_stack_windows() {
 fetch_stack() {
   mkdir -p $1
   local os=$(uname)
+  # Use the native binary, an x86_64 stack on arm64 macOS runs under
+  # Rosetta and installs an x86_64 GHC.
+  local arch=$(uname -m)
+  case "$arch" in
+    x86_64|amd64) arch=x86_64 ;;
+    arm64|aarch64) arch=aarch64 ;;
+    *) die "Unknown architecture [$arch]" ;;
+  esac
   case "$os" in
-    Darwin) retry_cmd fetch_stack_osx $1 ;;
-    Linux)  retry_cmd fetch_stack_linux $1 ;;
+    Darwin) retry_cmd fetch_stack_osx $1 $arch ;;
+    Linux)  retry_cmd fetch_stack_linux $1 $arch ;;
     CYGWIN*|MINGW*|MSYS*) retry_cmd fetch_stack_windows $1 ;;
     *) die "Unknown OS [$os]" ;;
   esac
