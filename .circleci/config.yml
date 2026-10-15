@@ -45,7 +45,6 @@ env: &env
       # cabal options
       # ------------------------------------------------------------------------
       CABAL_CHECK_RELAX: "y"
-      CABAL_HACKAGE_MIRROR: "hackage.haskell.org:http://hackage.fpcomplete.com"
       CABAL_PROJECT: "cabal.project"
 
       # ------------------------------------------------------------------------
@@ -134,13 +133,19 @@ preinstall: &preinstall
 restore: &restore
   # Needs to happen after installing ca-certificates
   restore_cache:
-    key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
+    keys:
+      - v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
+      # Fallback to master branch's cache.
+      - v1-{{ .Environment.CIRCLE_JOB }}-master
+      # Fallback to any branch's cache.
+      - v1-{{ .Environment.CIRCLE_JOB }}-
 
 save: &save
   save_cache:
       key: v1-{{ .Environment.CIRCLE_JOB }}-{{ .Branch }}
       paths:
-        - ~/.local/bin
+        # cabal 3.10 and later use ~/.local/bin and ~/.local/state/cabal
+        - ~/.local
         - ~/.cabal
         - ~/.stack
         - ~/.ghcup
