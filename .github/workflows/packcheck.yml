@@ -313,7 +313,8 @@ jobs:
     # See the "cabal path" output in the CI logs to tweak the cache
     # locations.
 
-    # Shared by all tests, all platforms
+    # Shared by all tests, all platforms. Other workflows can restore it
+    # with the same key.
     - name: Restore hackage package index (non-Windows)
       id: restore-hackage
       uses: actions/cache/restore@v4
@@ -321,7 +322,7 @@ jobs:
       with:
         path: |
             ~/.cache/cabal/packages
-        key: cabal-hackage-index-non-windows
+        key: cabal-hackage-index
 
     # GHC is not test/options specific
     - name: Restore ghcup and ghc (non-Windows)
@@ -462,7 +463,7 @@ jobs:
       if: always() && steps.deps-only.outcome == 'success' && runner.os != 'Windows' && steps.restore-hackage.outputs.cache-hit != 'true'
       with:
         path: ~/.cache/cabal/packages
-        key: cabal-hackage-index-non-windows
+        key: cabal-hackage-index
 
     - name: Save ghcup and ghc (non-Windows)
       uses: actions/cache/save@v4
