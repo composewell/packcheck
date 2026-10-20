@@ -1969,6 +1969,12 @@ then add them to .packcheck.ignore file at the root of the git repository."
   echo "cd .packcheck"
   cd .packcheck || exit 1
   test "${tarpath:0:1}" == / || tarpath=../$tarpath
+  # Remove the sdist unpacked by an earlier run (e.g. a BUILD_DEPS_ONLY run
+  # followed by a BUILD_PACKAGE_ONLY run). Unpacking over it would keep the
+  # files that run created, such as the explicit cabal.project below, and
+  # the project file check would then fail.
+  test -n "${1}" || die "create_and_unpack_pkg_dist: empty package name"
+  run_verbose_errexit rm -rf "${1}"
   $OS_UNGZTAR_CMD $tarpath
 
   # NOTE: We are entering the sdist directory inside .packcheck now. The
