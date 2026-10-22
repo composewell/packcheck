@@ -6,6 +6,8 @@
 * Add `CABAL_INDEX_TTL` option - do not attempt cabal update until it is
   stale by this many hours, saves some build time.
 * Windows: Support installing ghc using ghcup.
+* Windows: Allow `TEMP` and `TMP` on the command line, so that programs
+  use the system temporary directory instead of the Windows directory.
 * Caching: New `BUILD_ONLY_DEPS` and `BUILD_POST_DEPS` flags to
     allow pausing/resuming builds for CI cache optimization.
 * Diagnostics: Enhanced machine info captures `df`, `mount`, and

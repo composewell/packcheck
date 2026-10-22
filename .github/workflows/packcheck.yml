@@ -427,7 +427,7 @@ jobs:
               #PATH_VAR="$PATH_VAR:/usr/local/.ghcup/bin"
               ;;
             CYGWIN*|MINGW*|MSYS*)
-              for var in APPDATA CABAL_DIR; do
+              for var in APPDATA CABAL_DIR TEMP TMP; do
                 val="${!var}"
                 [ -n "$val" ] && ARGS="$ARGS $var=\"$(cygpath -u "$val")\""
               done
