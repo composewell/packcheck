@@ -2152,15 +2152,15 @@ install_hlint() {
   VERSION=$HLINT_VERSION
 
   URL="$HLINT_URL_PREFIX/download/v$VERSION/hlint-$VERSION-x86_64-$OS$EXT"
-  TEMP=$(mktemp -d .$PACKAGE-XXXXXX)
+  HLINT_TMP_DIR=$(mktemp -d .$PACKAGE-XXXXXX)
 
   cleanup(){
-      rm -r $TEMP
+      rm -r $HLINT_TMP_DIR
   }
   trap cleanup EXIT
 
   echo $URL
-  retry_cmd curl --fail --progress-bar --location -o$TEMP/$PACKAGE$EXT $URL
+  retry_cmd curl --fail --progress-bar --location -o$HLINT_TMP_DIR/$PACKAGE$EXT $URL
   if test "$?" -ne 0
   then
     die "Failed to download $URL"
@@ -2173,14 +2173,14 @@ install_hlint() {
 
   mkdir -p ${LOCAL_BIN}
   if [ "$OS" = "windows" ]; then
-      7z x -y $TEMP/$PACKAGE$EXT -o${TEMP} hlint-$VERSION/hlint.exe > /dev/null
-      mv ${TEMP}/hlint-${VERSION}/hlint.exe ${LOCAL_BIN}
+      7z x -y $HLINT_TMP_DIR/$PACKAGE$EXT -o${HLINT_TMP_DIR} hlint-$VERSION/hlint.exe > /dev/null
+      mv ${HLINT_TMP_DIR}/hlint-${VERSION}/hlint.exe ${LOCAL_BIN}
   elif [ "$OS" = "osx" ]; then
-      tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --include '*/hlint'
-      mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
+      tar -xzvf $HLINT_TMP_DIR/$PACKAGE$EXT -C${HLINT_TMP_DIR} --include '*/hlint'
+      mv ${HLINT_TMP_DIR}/hlint-${VERSION}/hlint ${LOCAL_BIN}
   else
-      tar -xzvf $TEMP/$PACKAGE$EXT -C${TEMP} --wildcards '*/hlint'
-      mv ${TEMP}/hlint-${VERSION}/hlint ${LOCAL_BIN}
+      tar -xzvf $HLINT_TMP_DIR/$PACKAGE$EXT -C${HLINT_TMP_DIR} --wildcards '*/hlint'
+      mv ${HLINT_TMP_DIR}/hlint-${VERSION}/hlint ${LOCAL_BIN}
   fi
   chmod +x $HLINT_PATH
 }
@@ -2307,9 +2307,9 @@ install_docspec() {
       *) die "install_docspec: unknown or unsupported os";;
   esac
 
-  TEMP=$(mktemp -d docspec-XXXXXX)
+  DOCSPEC_TMP_DIR=$(mktemp -d docspec-XXXXXX)
   cleanup(){
-      rm -r $TEMP
+      rm -r $DOCSPEC_TMP_DIR
   }
   trap cleanup EXIT
 
@@ -2318,10 +2318,10 @@ install_docspec() {
   # directly instead of version.
   #URL="$DOCSPEC_URL_PREFIX/download/cabal-docspec-$DOCSPEC_VERSION/cabal-docspec-$DOCSPEC_VERSION-x86_64-$OS.xz"
   #echo "Downloading $URL ..."
-  retry_cmd curl --fail --progress-bar --location -o$TEMP/cabal-docspec.xz $DOCSPEC_URL
+  retry_cmd curl --fail --progress-bar --location -o$DOCSPEC_TMP_DIR/cabal-docspec.xz $DOCSPEC_URL
   if test "$?" -ne 0
   then
-    rm -f $TEMP/cabal-docspec.xz
+    rm -f $DOCSPEC_TMP_DIR/cabal-docspec.xz
     die "Failed to download $DOCSPEC_URL"
   fi
 
@@ -2330,8 +2330,8 @@ install_docspec() {
     die "$DOCSPEC_PATH already exists, not overwriting."
   else
     mkdir -p $(dirname ${DOCSPEC_PATH})
-    xz -d < $TEMP/cabal-docspec.xz > $DOCSPEC_PATH
-    rm -f $TEMP/cabal-docspec.xz
+    xz -d < $DOCSPEC_TMP_DIR/cabal-docspec.xz > $DOCSPEC_PATH
+    rm -f $DOCSPEC_TMP_DIR/cabal-docspec.xz
     chmod +x $DOCSPEC_PATH
   fi
 }
