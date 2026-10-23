@@ -5,6 +5,8 @@
 * Add `HADDOCK_OPTIONS` option.
 * Add `CABAL_INDEX_TTL` option - do not attempt cabal update until it is
   stale by this many hours, saves some build time.
+* Pass `CABAL_BUILDDIR` to cabal as `--builddir`; cabal v2 commands
+  ignore the environment variable.
 * Windows: Support installing ghc using ghcup.
 * Windows: Allow `TEMP` and `TMP` on the command line, so that programs
   use the system temporary directory instead of the Windows directory.

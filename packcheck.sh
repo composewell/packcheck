@@ -539,6 +539,7 @@ show_help() {
   # XXX this applies to both stack and cabal builds
   help_envvar CABAL_REINIT_CONFIG "[y] DESTRUCTIVE! Remove old config to avoid incompatibility issues"
   help_envvar CABAL_PROJECT "Alternative cabal project file, path relative to project root"
+  help_envvar CABAL_BUILDDIR "Absolute path of the cabal build directory, default is dist-newstyle"
   help_envvar CABAL_BUILD_OPTIONS "ADDITIONAL cabal build options to append to defaults"
   help_envvar CABAL_BUILD_TARGETS "cabal build targets, default is 'all'"
   help_envvar CABAL_HADDOCK_TARGETS "cabal haddock targets, default is '.'"
@@ -1570,6 +1571,11 @@ find_in_parents () {
 
 ensure_cabal_project() {
   CABALCMD=$CABAL_BINARY_NAME
+  # cabal v2 commands do not read CABAL_BUILDDIR from the environment
+  if test -n "$CABAL_BUILDDIR"
+  then
+    CABALCMD="$CABALCMD --builddir=$CABAL_BUILDDIR"
+  fi
 
   if test -n "$CABAL_PROJECT"
   then
@@ -1858,7 +1864,7 @@ create_and_unpack_pkg_dist() {
     # have to go through the whole process once and then again after
     # unpacking the sdist and to build it.
     SDIST_CMD="$CABALCMD v2-sdist $opts"
-    SDIST_DIR=dist-newstyle/sdist
+    SDIST_DIR=${CABAL_BUILDDIR:-dist-newstyle}/sdist
   fi
 
   # stack commands return path in windows format
@@ -2429,8 +2435,13 @@ run_docspec() {
 
       # XXX docspec does not seem to honor --with-compiler though it lists that
       # as a flag. It uses "ghc" in PATH.
+      local builddir_opt=
+      if test -n "$CABAL_BUILDDIR"
+      then
+        builddir_opt="--builddir=$CABAL_BUILDDIR"
+      fi
       run_verbose_errexit $SDIST_CABALCMD exec cabal-docspec -- $DOCSPEC_OPTIONS \
-          --with-compiler "$COMPILER_EXE_PATH"
+          $builddir_opt --with-compiler "$COMPILER_EXE_PATH"
     fi
 }
 
