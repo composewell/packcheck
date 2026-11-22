@@ -2769,11 +2769,8 @@ show_step "Check basic tools"
 require_cmd bash
 for i in $TOOLS; do require_cmd $i; done
 
-if test -z "$BUILD_PREFETCH"
-then
-  show_step "Build host machine information"
-  show_machine_info
-fi
+show_step "Build host machine information"
+show_machine_info
 
 #------------------------------------------------------------------------------
 # Build
