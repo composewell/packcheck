@@ -260,7 +260,7 @@ show_machine_info() {
       cat /proc/meminfo
 
       show_step "Disk Usage"
-      run_verbose df -h
+      run_verbose df -T || true
       ;;
 
     *)
