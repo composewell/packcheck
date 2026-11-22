@@ -1,0 +1,82 @@
+# FreeBSD CI
+#
+# FreeBSD is not a native GitHub Actions runner, so this workflow runs
+# packcheck inside a VM via vmactions/freebsd-vm. It is kept separate
+# from packcheck.yml because the cache/restore steps of that workflow
+# (hackage index, ghcup, deps caches) do not apply inside the VM.
+#
+# The packcheck.sh in the repository is tested, it is not downloaded.
+
+name: FREEBSD
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    name: >-
+      freebsd-${{ matrix.release }}
+      ${{ matrix.command }}
+      ${{ matrix.ghc_version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - release: "15.0"
+            command: cabal
+            ghc_version: 9.14.1
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build on FreeBSD
+      uses: vmactions/freebsd-vm@v1
+      env:
+        PACKCHECK_COMMAND: ${{ matrix.command }}
+        GHCVER: ${{ matrix.ghc_version }}
+        # For updating see: https://downloads.haskell.org/~ghcup/
+        GHCUP_VERSION: 0.1.50.2
+        LC_ALL: C.UTF-8
+        CABAL_REINIT_CONFIG: y
+        CABAL_CHECK_RELAX: y
+        CABAL_PROJECT: cabal.project
+        # The VM has 6 GB of memory, the default -j (4 CPUs) may run out of
+        # memory while building the dependencies in parallel.
+        CABAL_BUILD_OPTIONS: "-j2"
+      with:
+        release: ${{ matrix.release }}
+        usesh: true
+        copyback: false
+        envs: >-
+          PACKCHECK_COMMAND GHCVER GHCUP_VERSION LC_ALL
+          CABAL_REINIT_CONFIG CABAL_CHECK_RELAX CABAL_PROJECT CABAL_BUILD_OPTIONS
+        # IGNORE_OSVERSION: the ports repository may have packages built for
+        # a later minor release than the VM, pkg refuses to update then.
+        prepare: |
+          export IGNORE_OSVERSION=yes
+          pkg update
+          pkg install -y gmake
+          pkg install -y bash
+          pkg install -y git
+          pkg install -y gmp
+          pkg install -y autoconf
+          pkg install -y automake
+          # The ghcup and GHC binaries are built on FreeBSD 14 and need
+          # its shared libraries (e.g. libutil.so.9) on FreeBSD 15.
+          case "$(freebsd-version)" in
+            15.*) pkg install -y compat14x-amd64 ;;
+          esac
+        run: |
+          # The checkout is owned by the runner user, the VM runs as root.
+          # Without this git refuses the repository and the sdist check
+          # finds none of the files in git.
+          git config --global --add safe.directory "$PWD"
+          chmod +x ./packcheck.sh
+          # Use "bash -c" instead of invoking directly to preserve quoted
+          # arguments in PACKCHECK_COMMAND.
+          bash -c "./packcheck.sh $PACKCHECK_COMMAND"
